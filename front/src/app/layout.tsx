@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { VillageApp } from "@/components/village-app";
 import { Provider } from "@/components/store";
 export const metadata: Metadata = {
   title: { default: "햇빛마을20단지", template: "%s · 햇빛마을20단지" },
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <Provider>{children}</Provider>
+        <Provider>{children}<VillageApp /></Provider>
       </body>
     </html>
   );

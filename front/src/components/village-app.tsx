@@ -10,19 +10,26 @@ import { VillageMap } from "./village-map";
 import { Report } from "./report";
 import { Account } from "./account";
 import { PostDetail } from "./post-detail";
-export function VillageApp({ section, id }: { section: string; id?: string }) {
+export function VillageApp() {
   const { data, error, message, reload, more, notify } = useVillage();
   const router = useRouter();
   const path = usePathname();
+  const postId = path.startsWith("/post/") ? path.split("/")[2] : undefined;
+  const background = useRef(postId ? "/feed" : path);
+  const hasBackground = useRef(!postId);
+  if (!postId) {
+    background.current = path;
+    hasBackground.current = true;
+  }
+  const [section = "home", id] = background.current.split("/").filter(Boolean);
   const scroll = useRef<HTMLDivElement>(null);
-  const prevPath = useRef(path);
-  const returnPath = useRef("/feed");
+  const previousBackground = useRef(background.current);
   useEffect(() => {
-    if (section === "post" && !prevPath.current.startsWith("/post/"))
-      returnPath.current = prevPath.current;
-    prevPath.current = path;
-    if (section !== "post") scroll.current?.scrollTo(0, 0);
-  }, [path, section]);
+    if (previousBackground.current !== background.current) {
+      scroll.current?.scrollTo(0, 0);
+      previousBackground.current = background.current;
+    }
+  }, [path]);
   const links = [
     ["/", "home", "홈"],
     ["/map", "map", "지도"],
@@ -33,11 +40,10 @@ export function VillageApp({ section, id }: { section: string; id?: string }) {
   const feed = (
     <>
       <h1 className="page-title">생활 피드</h1>
-      <FeedTabs selected={section === "post" ? "all" : id || "all"} />
+      <FeedTabs selected={id || "all"} />
       {data?.posts
         .filter(
           (p) =>
-            section === "post" ||
             !id ||
             id === "all" ||
             p.category === id.toUpperCase(),
@@ -48,8 +54,7 @@ export function VillageApp({ section, id }: { section: string; id?: string }) {
       {data &&
         !data.posts.some(
           (p) => !id || id === "all" || p.category === id.toUpperCase(),
-        ) &&
-        section !== "post" && (
+        ) && (
           <div className="empty mt-3">
             등록된 소식이 없어요.{" "}
             <Link className="icon-btn text-brand" href="/report">
@@ -124,10 +129,7 @@ export function VillageApp({ section, id }: { section: string; id?: string }) {
           const active =
             href === "/"
               ? section === "home"
-              : section ===
-                (href === "/feed" && section === "post"
-                  ? "post"
-                  : href.slice(1));
+              : section === href.slice(1);
           return (
             <Link
               key={href}
@@ -140,8 +142,8 @@ export function VillageApp({ section, id }: { section: string; id?: string }) {
           );
         })}
       </nav>
-      {section === "post" && id && data && (
-        <PostDetail id={id} onClose={() => router.push(returnPath.current)} />
+      {postId && data && (
+        <PostDetail id={postId} onClose={() => hasBackground.current ? router.back() : router.replace("/feed")} />
       )}
       <div role="status" aria-live="polite" className={message ? "toast" : ""}>
         {message}

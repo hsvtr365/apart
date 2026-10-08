@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { VillageApp } from "@/components/village-app";
 export default async function Page({
   params,
 }: {
@@ -14,5 +13,5 @@ export default async function Page({
     (["home", "report", "my"].includes(section) && id)
   )
     notFound();
-  return <VillageApp section={section} id={id} />;
+  return null;
 }

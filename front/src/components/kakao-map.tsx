@@ -2,6 +2,7 @@
 "use client";
 import Script from "next/script";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
@@ -20,6 +21,7 @@ function Pin({
   selected?: boolean;
   zoomed: boolean;
 }) {
+  const router = useRouter();
   const [node, setNode] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -96,6 +98,10 @@ function Pin({
         >
           <Link
             href={"/post/" + post.id}
+            onClickCapture={(event) => {
+              event.preventDefault();
+              router.push("/post/" + post.id, { scroll: false });
+            }}
             className={"map-callout-title " + (selected ? "selected" : "")}
             title={post.title}
           >
