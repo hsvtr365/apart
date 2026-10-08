@@ -64,6 +64,7 @@ model Post {
   likes Like[]
   presences Presence[]
   notifications Notification[]
+  visitorPresences VisitorPresence[]
   @@index([createdAt, id])
   @@index([category, createdAt])
   @@index([authorId, createdAt])
@@ -96,6 +97,15 @@ model Presence {
   state PresenceState
   observedAt DateTime @default(now())
   @@id([userId, postId])
+  @@index([postId, observedAt])
+}
+model VisitorPresence {
+  visitorHash String
+  postId String
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  state PresenceState
+  observedAt DateTime @default(now())
+  @@id([visitorHash, postId])
   @@index([postId, observedAt])
 }
 model Notification {

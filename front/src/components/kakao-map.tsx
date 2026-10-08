@@ -112,7 +112,7 @@ function Pin({
               <path d="m5 4 6 6-6 6" />
             </svg>
           </Link>
-          {post.category === "FOOD" && !confirmed && (
+          {post.category === "FOOD" && !confirmed && !post.presenceConfirmed && (
             <div className="map-callout-actions">
               <Presence post={post} map onConfirmed={() => setConfirmed(true)} />
             </div>

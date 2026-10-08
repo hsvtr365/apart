@@ -6,6 +6,7 @@ import { Icon } from "./icons";
 import { categories, clock, type Post } from "@/lib/types";
 export function Presence({ post, map = false, onConfirmed }: { post: Post; map?: boolean; onConfirmed?: () => void }) {
   const { act, notify, busy } = useVillage();
+  if (post.presenceConfirmed) return null;
   return (
     <div className="presence">
       {(["ARRIVED", "GONE"] as const).map((state) => (

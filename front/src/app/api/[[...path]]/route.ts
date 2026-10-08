@@ -21,6 +21,7 @@ import {
 } from "@/lib/validation";
 import { getPosts, comments, notifications } from "@/lib/queries";
 import { demoData } from "@/lib/demo";
+import { visitorHash } from "@/lib/visitor";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (data: unknown, status = 200) =>
@@ -45,14 +46,14 @@ async function body(req: NextRequest) {
 }
 // Single web instance MVP. Move this bound limiter to shared storage if web replicas are added.
 const buckets = new Map<string, { count: number; until: number }>();
-function limit(key: string) {
+function limit(key: string, maximum = 60) {
   const now = Date.now();
   if (buckets.size > 5000) {
     for (const [k, v] of buckets) if (v.until < now) buckets.delete(k);
   }
   const value = buckets.get(key);
   if (value && value.until > now) {
-    if (++value.count > 60)
+    if (++value.count > maximum)
       throw new HttpError("잠시 후 다시 시도해주세요.", 429);
   } else buckets.set(key, { count: 1, until: now + 60_000 });
 }
@@ -74,6 +75,7 @@ async function handle(
       return json({ ok: true, mode: demo ? "demo" : "live" });
     if (resource === "bootstrap" && method === "GET") {
       if (demo) return json(demoData());
+      await visitorHash(true);
       const user = await currentUser();
       return json({
         mode: "live",
@@ -259,6 +261,37 @@ async function handle(
     }
     if (req.headers.get("origin") !== origin())
       throw new HttpError("요청 출처를 확인할 수 없습니다.", 403);
+    if (resource === "posts" && id && action === "presence" && method === "PUT") {
+      const visitor = (await visitorHash(true))!;
+      limit("presence:" + visitor, 10);
+      // Nginx overwrites X-Real-IP. This loose limit may cover a shared proxy/IP.
+      const ip = req.headers.get("x-real-ip");
+      if (ip) limit("presence-ip:" + hash(ip), 300);
+      const { state } = z.object({ state: z.enum(["ARRIVED", "GONE"]) }).parse(await body(req));
+      const post = await db().post.findUnique({ where: { id } });
+      if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+      if (post.category !== "FOOD") throw new HttpError("먹거리 소식만 현장 확인할 수 있습니다.");
+      await db().$transaction(async tx => {
+        // Serialize the visitor's requests so concurrent clicks cannot bypass the cooldown.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${visitor}))`;
+        const recent = await tx.visitorPresence.findFirst({
+          where: { visitorHash: visitor }, orderBy: { observedAt: "desc" },
+        });
+        if (recent && Date.now() - recent.observedAt.getTime() < 10_000)
+          throw new HttpError("10초 후 다시 확인해주세요.", 429);
+        await tx.visitorPresence.upsert({
+          where: { visitorHash_postId: { visitorHash: visitor, postId: id } },
+          create: { visitorHash: visitor, postId: id, state },
+          update: { state, observedAt: new Date() },
+        });
+        if (user) await tx.presence.upsert({
+          where: { userId_postId: { userId: user.id, postId: id } },
+          create: { userId: user.id, postId: id, state },
+          update: { state, observedAt: new Date() },
+        });
+      });
+      return json({ ok: true });
+    }
     if (!user) throw new HttpError("로그인 후 이용해주세요.", 401);
     limit(user.id);
     if (resource === "auth" && id === "logout" && method === "POST") {
@@ -396,19 +429,7 @@ async function handle(
           });
         return json({ ok: true });
       }
-      if (action === "presence" && method === "PUT") {
-        if (post.category === "NOTICE")
-          throw new HttpError("현장 확인 대상이 아닙니다.");
-        const { state } = z
-          .object({ state: z.enum(["ARRIVED", "GONE"]) })
-          .parse(await body(req));
-        await db().presence.upsert({
-          where: { userId_postId: { userId: user.id, postId: id } },
-          create: { userId: user.id, postId: id, state },
-          update: { state, observedAt: new Date() },
-        });
-        return json({ ok: true });
-      }
+
     }
     if (resource === "comments" && id && method === "DELETE") {
       const result = await db().comment.deleteMany({

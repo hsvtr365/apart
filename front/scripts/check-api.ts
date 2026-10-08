@@ -35,7 +35,7 @@ async function call(
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  return { status: res.status, data: await res.json() };
+  return { status: res.status, data: await res.json(), cookie: res.headers.getSetCookie().map(c => c.split(";")[0]).join("; ") };
 }
 try {
   const login = await fetch(base + "/api/auth/kakao?next=%2Freport", {
@@ -164,6 +164,19 @@ try {
   assert.equal((await call("posts/" + id, b.cookie)).data.likes, 1);
   await call("posts/" + id + "/presence", b.cookie, "PUT", { state: "GONE" });
   assert.equal((await call("posts/" + id)).data.presence, "GONE");
+  const guest = await call("bootstrap");
+  assert.match(guest.cookie, /village_visitor=[a-f0-9]{64}/);
+  assert.equal((await call("posts/" + id + "/presence", guest.cookie, "PUT", { state: "ARRIVED" }, "https://invalid.example")).status, 403);
+  assert.equal((await call("posts/" + id + "/presence", guest.cookie, "PUT", { state: "ARRIVED" })).status, 200);
+  assert.equal((await call("posts/" + id, guest.cookie)).data.presenceConfirmed, true);
+  assert.equal((await call("posts/" + id)).data.presenceConfirmed, false);
+  const refreshed = await call("bootstrap", guest.cookie);
+  assert.equal(refreshed.data.posts.find((p: {id: string}) => p.id === id).presenceConfirmed, true);
+  assert.equal((await call("posts/" + id + "/presence", guest.cookie, "PUT", { state: "GONE" })).status, 429);
+  const visitorHash = createHash("sha256").update(guest.cookie.split("=")[1]).digest("hex");
+  await db().visitorPresence.updateMany({where:{visitorHash},data:{observedAt:new Date(Date.now()-11000)}});
+  assert.equal((await call("posts/" + id + "/presence", guest.cookie, "PUT", { state: "GONE" })).status, 200);
+  assert.equal(await db().visitorPresence.count({where:{visitorHash,postId:id}}),1);
   assert.equal(
     (await call("comments/" + commentId, b.cookie, "DELETE", {})).status,
     200,

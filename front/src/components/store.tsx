@@ -64,7 +64,8 @@ export function Provider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, [message]);
   async function act(kind: string, id = "", payload: unknown = {}) {
-    if (!data?.user)
+    if (!data) throw new Error("소식을 불러온 뒤 다시 시도해주세요.");
+    if (!data?.user && kind !== "presence")
       throw new Error("내 정보에서 카카오 로그인 후 이용해주세요.");
     setBusy(true);
     try {
@@ -93,6 +94,7 @@ export function Provider({ children }: { children: ReactNode }) {
           p.likes += p.liked ? 1 : -1;
         }
         if (kind === "presence" && p) {
+          p.presenceConfirmed = true;
           p.presence = value.state as Post["presence"];
           p.observedAt = new Date().toISOString();
         }

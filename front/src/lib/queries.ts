@@ -1,10 +1,12 @@
 import { db } from "./db";
+import { visitorHash } from "./visitor";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Post, Notice } from "./types";
 const include = {
   author: { select: { id: true, nickname: true, building: true } },
   _count: { select: { likes: true, comments: true } },
   presences: { orderBy: { observedAt: "desc" as const }, take: 1 },
+  visitorPresences: { orderBy: { observedAt: "desc" as const }, take: 1 },
 };
 export async function getPosts(
   userId?: string,
@@ -21,6 +23,17 @@ export async function getPosts(
   });
   const more = rows.length > limit;
   const page = rows.slice(0, limit);
+  const visitor = await visitorHash();
+  const confirmations = visitor ? await db().visitorPresence.findMany({
+    where: { visitorHash: visitor, postId: { in: page.map(p => p.id) } },
+    select: { postId: true },
+  }) : [];
+  const memberConfirmations = userId ? await db().presence.findMany({
+    where: { userId, postId: { in: page.map(p => p.id) } }, select: { postId: true },
+  }) : [];
+  const confirmed = new Set([...confirmations, ...memberConfirmations].map(p => p.postId));
+  const latest = (p: typeof page[number]) => [...p.presences, ...p.visitorPresences]
+    .sort((a,b) => b.observedAt.getTime() - a.observedAt.getTime())[0];
   const likes = userId
     ? await db().like.findMany({
         where: { userId, postId: { in: page.map((p) => p.id) } },
@@ -49,8 +62,9 @@ export async function getPosts(
       liked: likes.some((l) => l.postId === p.id),
       commentCount: p._count.comments,
       comments: [],
-      presence: p.presences[0]?.state ?? null,
-      observedAt: p.presences[0]?.observedAt.toISOString() ?? null,
+      presenceConfirmed: confirmed.has(p.id),
+      presence: latest(p)?.state ?? null,
+      observedAt: latest(p)?.observedAt.toISOString() ?? null,
     })),
   };
 }

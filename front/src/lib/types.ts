@@ -34,6 +34,7 @@ export type Post = {
   commentCount: number;
   comments: Comment[];
   presence: "ARRIVED" | "GONE" | null;
+  presenceConfirmed?: boolean;
   observedAt: string | null;
 };
 export type Notice = {
