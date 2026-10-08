@@ -52,7 +52,7 @@ function Pin({
     node &&
     createPortal(
       <div
-        className="map-marker"
+        className={"map-marker" + (expanded ? " expanded" : "")}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onKeyDown={(e) => {

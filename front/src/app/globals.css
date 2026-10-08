@@ -251,13 +251,13 @@
 .map-pin-card {
   position: absolute;
   left: 50%;
-  bottom: 100%;
+  bottom: 12px;
   transform: translateX(-50%);
-  padding-bottom: 18px;
   width: 260px;
   max-width: calc(100vw - 32px);
 }
 .map-callout-title {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -270,6 +270,19 @@
   font-size: 15px;
   font-weight: 700;
   box-shadow: 0 3px 10px #20272226;
+}
+.map-marker.expanded .map-marker-button {
+  visibility: hidden;
+}
+.map-callout-title::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  transform: translateX(-50%);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid var(--color-brand);
 }
 .map-callout-title span {
   flex: 1;
@@ -286,23 +299,12 @@
   border-color: var(--color-brand);
 }
 .map-callout-actions {
-  position: relative;
-  width: fit-content;
-  margin: 4px auto 0;
-  padding: 4px;
-  border-radius: 28px;
-  background: white;
-  box-shadow: 0 3px 10px #20272226;
-}
-.map-callout-actions::after {
-  content: "";
   position: absolute;
+  top: 100%;
   left: 50%;
-  bottom: -10px;
   transform: translateX(-50%);
-  border-left: 12px solid transparent;
-  border-right: 12px solid transparent;
-  border-top: 12px solid white;
+  width: fit-content;
+  margin: 18px 0 0;
 }
 .map-callout-actions .presence {
   display: flex;
@@ -320,7 +322,8 @@
   justify-content: center;
   gap: 0;
   border-radius: 12px;
-  border: 0;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px #20272226;
   font-weight: 600;
 }
 .map-callout-actions .presence button:first-child {
