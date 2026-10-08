@@ -2,7 +2,6 @@
 import Link from "next/link";
 import type { Post } from "@/lib/types";
 import { Presence } from "./post-card";
-import { Icon } from "./icons";
 import { KakaoMap } from "./kakao-map";
 import { useVillage } from "./store";
 export function VillageMap({
@@ -58,17 +57,7 @@ export function VillageMap({
           지도에 표시할 소식이 아직 없어요.
         </p>
       )}
-      {full ? (
-        <div className="absolute left-3 right-3 top-3 z-10 flex items-center gap-2 rounded-sm border border-line bg-white px-2">
-          <Link className="icon-btn" href="/" aria-label="홈으로">
-            <Icon name="back" />
-          </Link>
-          <b>햇빛마을20단지</b>
-          <Link className="icon-btn ml-auto" href="/feed">
-            피드 보기
-          </Link>
-        </div>
-      ) : (
+      {!full && (
         <Link
           href="/map"
           className="btn btn-secondary absolute right-2 top-2 z-10"
