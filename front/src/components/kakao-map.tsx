@@ -73,7 +73,7 @@ function Pin({
           onClick={() => setOpen(true)}
           onFocus={() => setOpen(true)}
         >
-          <Icon name="pin" width="34" height="40" viewBox="0 0 24 22" preserveAspectRatio="none" />
+          <Icon name="pin" width="36" height="36" />
         </button>
         <div
           id={"map-info-" + post.id}

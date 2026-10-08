@@ -245,6 +245,11 @@
   stroke: white;
   stroke-width: 1.5;
 }
+.map-marker-button svg {
+  display: block;
+  flex-shrink: 0;
+  transform: translateY(3px);
+}
 .map-marker-button svg > circle {
   fill: white;
   stroke: white;
