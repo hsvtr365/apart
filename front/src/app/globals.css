@@ -259,8 +259,8 @@
   left: 50%;
   bottom: 12px;
   transform: translateX(-50%);
-  width: 260px;
-  max-width: calc(100vw - 32px);
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
 }
 .map-callout-title {
   position: relative;
