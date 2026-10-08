@@ -1,6 +1,8 @@
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 if (!(Test-Path -LiteralPath 'front/.env')) { throw 'front/.env is required' }
+# Windows locks Next's native module while the app is running.
+pm2 stop apart 2>$null
 npm --prefix front run setup
 if ($LASTEXITCODE -ne 0) { throw 'Setup failed' }
 npm --prefix front run build
