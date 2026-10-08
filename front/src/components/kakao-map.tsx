@@ -32,7 +32,9 @@ function Pin({
       content,
       clickable: true,
       position: new kakao.maps.LatLng(post.latitude!, post.longitude!),
-      yAnchor: 1,
+      // Anchor the coordinate directly; CSS aligns the portal after it renders.
+      xAnchor: 0,
+      yAnchor: 0,
       zIndex: selected ? 2 : 1,
     });
     overlayRef.current = overlay;
@@ -71,7 +73,7 @@ function Pin({
           onClick={() => setOpen(true)}
           onFocus={() => setOpen(true)}
         >
-          <Icon name="pin" width="34" height="40" />
+          <Icon name="pin" width="34" height="40" viewBox="0 0 24 22" preserveAspectRatio="none" />
         </button>
         <div
           id={"map-info-" + post.id}
