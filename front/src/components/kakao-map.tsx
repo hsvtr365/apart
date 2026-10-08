@@ -23,6 +23,7 @@ function Pin({
   const [node, setNode] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -111,9 +112,9 @@ function Pin({
               <path d="m5 4 6 6-6 6" />
             </svg>
           </Link>
-          {post.category === "FOOD" && (
+          {post.category === "FOOD" && !confirmed && (
             <div className="map-callout-actions">
-              <Presence post={post} map />
+              <Presence post={post} map onConfirmed={() => setConfirmed(true)} />
             </div>
           )}
         </div>

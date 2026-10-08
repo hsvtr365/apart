@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
 import { categories, clock, type Post } from "@/lib/types";
-export function Presence({ post, map = false }: { post: Post; map?: boolean }) {
+export function Presence({ post, map = false, onConfirmed }: { post: Post; map?: boolean; onConfirmed?: () => void }) {
   const { act, notify, busy } = useVillage();
   return (
     <div className="presence">
@@ -15,7 +15,10 @@ export function Presence({ post, map = false }: { post: Post; map?: boolean }) {
           disabled={busy}
           onClick={() =>
             void act("presence", post.id, { state })
-              .then(() => notify("현장 상태를 반영했어요."))
+              .then(() => {
+                onConfirmed?.();
+                notify("현장 상태를 반영했어요.");
+              })
               .catch((e) => notify(e.message))
           }
         >
