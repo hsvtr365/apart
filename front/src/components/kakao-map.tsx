@@ -23,6 +23,12 @@ function Pin({
   const [node, setNode] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
+  useEffect(() => () => cancelClose(), []);
   const overlayRef = useRef<kakao.maps.CustomOverlay | null>(null);
   const expanded = zoomed || !!selected || open || hovered;
   useEffect(() => {
@@ -55,10 +61,17 @@ function Pin({
     createPortal(
       <div
         className={"map-marker" + (expanded ? " expanded" : "")}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => {
+          cancelClose();
+          setHovered(true);
+        }}
+        onMouseLeave={() => {
+          cancelClose();
+          closeTimer.current = setTimeout(() => setHovered(false), 200);
+        }}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
+            cancelClose();
             setOpen(false);
             setHovered(false);
           }
