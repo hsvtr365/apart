@@ -1,0 +1,16 @@
+front/node_modules/
+front/.next/
+front/src/generated/
+front/data/
+front/test-results/
+front/playwright-report/
+front/*.tsbuildinfo
+output/
+.playwright-cli/
+plan/
+.env
+.env.*
+!.env.example
+**/test-results/
+**/playwright-report/
+*.log

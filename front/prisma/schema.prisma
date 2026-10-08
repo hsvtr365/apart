@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+enum Category {
+  FOOD
+  NOTICE
+  MARKET
+}
+enum PresenceState {
+  ARRIVED
+  GONE
+}
+enum Role {
+  USER
+  ADMIN
+}
+model User {
+  id String @id @default(cuid())
+  kakaoId String? @unique
+  nickname String @db.VarChar(12)
+  building String? @db.VarChar(8)
+  role Role @default(USER)
+  createdAt DateTime @default(now())
+  posts Post[]
+  comments Comment[]
+  likes Like[]
+  presences Presence[]
+  sessions Session[]
+  notifications Notification[]
+  uploads Upload[]
+}
+model Session {
+  tokenHash String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  @@index([userId])
+  @@index([expiresAt])
+}
+model Post {
+  id String @id @default(cuid())
+  authorId String
+  author User @relation(fields: [authorId], references: [id])
+  title String @db.VarChar(15)
+  body String @db.VarChar(500)
+  category Category
+  place String @db.VarChar(40)
+  // Schematic coordinates are kept separate from real geographic coordinates.
+  mapX Float?
+  mapY Float?
+  latitude Float?
+  longitude Float?
+  imageUrl String?
+  endDate String? @db.VarChar(10)
+  endTime String? @db.VarChar(5)
+  endsAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  comments Comment[]
+  likes Like[]
+  presences Presence[]
+  notifications Notification[]
+  @@index([createdAt, id])
+  @@index([category, createdAt])
+  @@index([authorId, createdAt])
+}
+model Comment {
+  id String @id @default(cuid())
+  postId String
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String
+  author User @relation(fields: [authorId], references: [id])
+  body String @db.VarChar(500)
+  createdAt DateTime @default(now())
+  notifications Notification[]
+  @@index([postId, createdAt])
+  @@index([authorId, createdAt])
+}
+model Like {
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@id([userId, postId])
+}
+model Presence {
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  state PresenceState
+  observedAt DateTime @default(now())
+  @@id([userId, postId])
+  @@index([postId, observedAt])
+}
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String @unique
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
+}
+model Upload {
+  id String @id
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+model CollectionCandidate {
+  id String @id @default(cuid())
+  source String @db.VarChar(80)
+  externalId String @db.VarChar(200)
+  sourceUrl String
+  title String @db.VarChar(200)
+  body String @db.VarChar(5000)
+  createdAt DateTime @default(now())
+  // Candidates are never auto-published. Review workflow belongs to the operator.
+  @@unique([source, externalId])
+}
