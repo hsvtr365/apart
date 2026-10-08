@@ -28,6 +28,7 @@ export function Icon({
       </>
     ),
     close: <path d="m6 6 12 12M6 18 18 6" />,
+    check: <path d="m5 12 4 4L19 6" />,
     back: <path d="m14 5-7 7 7 7M7 12h14" />,
   };
   return (

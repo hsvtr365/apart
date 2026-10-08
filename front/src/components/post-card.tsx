@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
 import { categories, clock, type Post } from "@/lib/types";
-export function Presence({ post }: { post: Post }) {
+export function Presence({ post, map = false }: { post: Post; map?: boolean }) {
   const { act, notify, busy } = useVillage();
   return (
     <div className="presence">
@@ -19,7 +19,13 @@ export function Presence({ post }: { post: Post }) {
               .catch((e) => notify(e.message))
           }
         >
-          {state === "ARRIVED" ? "왔어요" : "갔어요"}
+          {map && (
+            <Icon
+              name={state === "ARRIVED" ? "check" : "close"}
+              strokeWidth="2.5"
+            />
+          )}
+          {state === "ARRIVED" ? (map ? "있어요" : "왔어요") : "갔어요"}
         </button>
       ))}
     </div>
@@ -78,19 +84,8 @@ export function PostCard({
       </button>
     </div>
   );
-  return (
-    <article className="post">
-      <div className="flex items-center justify-between gap-2 py-2">
-        <div className="flex flex-wrap items-center gap-x-2">
-          <b>{post.author}</b>
-          <small
-            title={post.observedAt ? "마지막 현장 관찰 시각" : "등록 시각"}
-          >
-            {post.place} · {clock(post.observedAt || post.createdAt)}
-          </small>
-        </div>
-        <small className="shrink-0">{categories[post.category]}</small>
-      </div>
+  const content = (
+    <>
       <h3 className="mb-1">{post.title}</h3>
       <p
         className={
@@ -100,6 +95,33 @@ export function PostCard({
       >
         {post.body}
       </p>
+    </>
+  );
+  return (
+    <article className="post">
+      <div className="flex items-center justify-between gap-2 py-2">
+        <div className="flex flex-wrap items-center gap-x-2">
+          <b>{post.author}</b>
+          {post.authorBuilding && <small>{post.authorBuilding}</small>}
+          <small
+            title={post.observedAt ? "마지막 현장 관찰 시각" : "등록 시각"}
+          >
+            {post.place} · {clock(post.observedAt || post.createdAt)}
+          </small>
+        </div>
+        <small className="shrink-0">{categories[post.category]}</small>
+      </div>
+      {full ? (
+        content
+      ) : (
+        <Link
+          href={"/post/" + post.id}
+          className="block"
+          aria-label={post.title + " 상세 보기"}
+        >
+          {content}
+        </Link>
+      )}
       {!full && post.body.length > 70 && (
         <button
           className="icon-btn text-brand"

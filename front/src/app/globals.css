@@ -1,11 +1,12 @@
 @import "tailwindcss";
 @theme {
-  --color-page: #f7f8f4;
-  --color-ink: #273c32;
-  --color-muted: #637369;
-  --color-line: #dfe5dc;
-  --color-brand: #345d48;
-  --color-soft: #edf2e9;
+  --color-page: #ffffff;
+  --color-ink: #202722;
+  --color-muted: #626b65;
+  --color-line: #dde2de;
+  --color-brand: #206444;
+  --color-soft: #e8f2ec;
+  --color-neutral: #f3f5f4;
   --radius-sm: 4px;
 }
 @layer base {
@@ -67,16 +68,16 @@
   }
   h1 {
     font-size: 20px;
-    font-weight: 600;
+    font-weight: 700;
   }
   h2 {
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
   }
   h3,
   strong,
   b {
-    font-weight: 600;
+    font-weight: 700;
   }
   small {
     font-size: 12px;
@@ -99,8 +100,9 @@
     font-weight: 600;
   }
   .btn-secondary {
-    background: var(--color-soft);
-    color: var(--color-brand);
+    background: var(--color-neutral);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line);
   }
   .icon-btn {
     display: inline-flex;
@@ -141,7 +143,7 @@
   .tab[aria-pressed="true"] {
     border-color: var(--color-brand);
     color: var(--color-brand);
-    font-weight: 600;
+    font-weight: 700;
   }
   .field {
     display: flex;
@@ -153,7 +155,7 @@
   .empty {
     padding: 24px 12px;
     text-align: center;
-    background: var(--color-soft);
+    background: var(--color-neutral);
     border-radius: 4px;
   }
   .row {
@@ -212,6 +214,7 @@
   border: 1px solid var(--color-line);
   padding: 6px;
   border-radius: 4px;
+  box-shadow: 0 2px 8px #20272224;
   transform: translate(-50%, -50%);
 }
 .map-pin.selected {
@@ -221,6 +224,132 @@
   position: relative;
   transform: none;
   white-space: normal;
+}
+.map-marker {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+.map-marker-button {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--color-brand);
+  filter: drop-shadow(0 2px 2px #20272240);
+}
+.map-marker-button svg > path {
+  fill: var(--color-brand);
+  stroke: white;
+  stroke-width: 1.5;
+}
+.map-marker-button svg > circle {
+  fill: white;
+  stroke: white;
+}
+.map-pin-card {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  padding-bottom: 18px;
+  width: 260px;
+  max-width: calc(100vw - 32px);
+}
+.map-callout-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 28px;
+  background: white;
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 3px 10px #20272226;
+}
+.map-callout-title span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.map-callout-title svg {
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+.map-callout-title.selected {
+  border-color: var(--color-brand);
+}
+.map-callout-actions {
+  position: relative;
+  margin: 4px 4px 0;
+  padding: 4px;
+  border-radius: 28px;
+  background: white;
+  box-shadow: 0 3px 10px #20272226;
+}
+.map-callout-actions::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 12px solid white;
+}
+.map-callout-actions .presence {
+  display: flex;
+  gap: 6px;
+}
+.map-callout-actions .presence button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 24px;
+  border: 0;
+  font-weight: 600;
+}
+.map-callout-actions .presence button:first-child {
+  color: #206444;
+  background: #e8f2ec;
+}
+.map-callout-actions .presence button:last-child {
+  color: #855525;
+  background: #fbecd9;
+}
+.map-callout-actions .presence button:first-child[aria-pressed="true"] {
+  color: white;
+  background: #087443;
+}
+.map-callout-actions .presence button:last-child[aria-pressed="true"] {
+  color: white;
+  background: #855525;
+}
+.map-pin .presence button:first-child {
+  background: #e8f2ec;
+  color: #206444;
+  border-color: #bfd6c7;
+}
+.map-pin .presence button:last-child {
+  background: #fbf0e4;
+  color: #855525;
+  border-color: #e5cfb6;
+}
+.map-pin .presence button[aria-pressed="true"] {
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: white;
+}
+.map-pin .presence button:last-child[aria-pressed="true"] {
+  background: #855525;
+  border-color: #855525;
 }
 .map-pin button.title {
   display: block;
@@ -242,12 +371,15 @@
   flex: 1;
   min-height: 44px;
   padding: 4px 8px;
-  background: var(--color-soft);
+  background: white;
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
   border-radius: 4px;
   font-size: 14px;
 }
 .presence button[aria-pressed="true"] {
   background: var(--color-brand);
+  border-color: var(--color-brand);
   color: white;
 }
 .post {
@@ -282,6 +414,12 @@
   color: white;
 }
 .detail-dialog {
+  position: fixed;
+  inset: 0 0 auto;
+  margin: 0 auto;
+  height: fit-content;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 0;
   border-radius: 4px;
   padding: 0;
@@ -334,7 +472,14 @@
 .bottom-nav a[aria-current="page"] {
   background: var(--color-soft);
   color: var(--color-brand);
-  font-weight: 600;
+  font-weight: 700;
+}
+.post h3,
+.post strong,
+.map-pin a,
+.news-card > div,
+header a:first-child {
+  font-weight: 700;
 }
 .news-roller {
   display: flex;

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Report } from "./report";
 import { useVillage } from "./store";
 import { PostCard } from "./post-card";
 import { Icon } from "./icons";
@@ -14,10 +14,12 @@ export function PostDetail({
 }) {
   const { data, detail, act, notify, busy } = useVillage();
   const [post, setPost] = useState<Post | null>(null),
+    [editing, setEditing] = useState(false),
     [error, setError] = useState(""),
     [text, setText] = useState(""),
     [next, setNext] = useState<string | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  const backdropPressed = useRef(false);
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
@@ -57,13 +59,44 @@ export function PostDetail({
       ref={dialog}
       className="detail-dialog"
       aria-label="게시물 상세"
+      onPointerDown={(e) => {
+        const box = e.currentTarget.getBoundingClientRect();
+        backdropPressed.current =
+          e.target === e.currentTarget &&
+          (e.clientX < box.left ||
+            e.clientX > box.right ||
+            e.clientY < box.top ||
+            e.clientY > box.bottom);
+      }}
+      onClick={(e) => {
+        const box = e.currentTarget.getBoundingClientRect();
+        if (
+          backdropPressed.current &&
+          e.target === e.currentTarget &&
+          (e.clientX < box.left ||
+            e.clientX > box.right ||
+            e.clientY < box.top ||
+            e.clientY > box.bottom)
+        )
+          close.current();
+        backdropPressed.current = false;
+      }}
       onCancel={(e) => {
         e.preventDefault();
         close.current();
       }}
     >
       <div className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-line bg-white px-3">
-        <b>게시물</b>
+        <b>{editing ? "게시물 수정" : "게시물"}</b>
+        {post && post.authorId === data?.user?.id && (
+          <button
+            className="icon-btn ml-auto mr-2 text-brand"
+            disabled={busy}
+            onClick={() => setEditing(!editing)}
+          >
+            {editing ? "수정 취소" : "수정"}
+          </button>
+        )}
         <button className="icon-btn" aria-label="상세 닫기" onClick={onClose}>
           <Icon name="close" />
         </button>
@@ -74,6 +107,10 @@ export function PostDetail({
         </p>
       ) : !post ? (
         <p className="p-6">소식을 불러오는 중…</p>
+      ) : editing && post.authorId === data?.user?.id ? (
+        <div className="p-4">
+          <Report key={post.id} post={post} onDone={() => setEditing(false)} />
+        </div>
       ) : (
         <div className={post.imageUrl ? "detail-layout" : ""}>
           {post.imageUrl && <img src={post.imageUrl} alt={post.title} />}

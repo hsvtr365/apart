@@ -14,6 +14,9 @@ export function Account() {
     [loading, setLoading] = useState(false),
     [error, setError] = useState("");
   useEffect(() => {
+    if (data?.user && !data.user.building?.trim()) setEditing(true);
+  }, [data?.user?.id, data?.user?.building]);
+  useEffect(() => {
     let active = true;
     if (!data) return;
     setError("");
@@ -130,16 +133,22 @@ export function Account() {
                   </label>
                   <label>
                     <span className="field">동 · 선택</span>
-                    <input
-                      name="building"
-                      maxLength={8}
-                      defaultValue={user.building || ""}
-                      placeholder="예: 2001동"
-                    />
+                    <select name="building" defaultValue={user.building || ""}>
+                      <option value="">동 선택</option>
+                      {Array.from(
+                        { length: 17 },
+                        (_, i) => `${2001 + i}동`,
+                      ).map((building) => (
+                        <option key={building} value={building}>
+                          {building}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
                 <small className="mt-2 block">
-                  동은 내 정보에만 표시됩니다. 거주 인증을 의미하지 않습니다.
+                  동은 게시물에서 닉네임 옆에 표시됩니다. 거주 인증을 의미하지
+                  않습니다.
                 </small>
                 <div className="mt-3 flex justify-end gap-2">
                   <button
@@ -218,21 +227,17 @@ export function Account() {
               </button>
             ))}
           </nav>
-          <div className="flex min-h-12 items-center justify-between">
-            <b>{tabs.find((t) => t[0] === tab)?.[1]}</b>
-            {tab === "received" &&
-              data.notifications.some((n) => !n.readAt) && (
-                <button
-                  className="icon-btn text-brand"
-                  disabled={busy}
-                  onClick={() =>
-                    void act("read").catch((e) => notify(e.message))
-                  }
-                >
-                  모두 읽음
-                </button>
-              )}
-          </div>
+          {tab === "received" && data.notifications.some((n) => !n.readAt) && (
+            <div className="flex justify-end">
+              <button
+                className="icon-btn text-brand"
+                disabled={busy}
+                onClick={() => void act("read").catch((e) => notify(e.message))}
+              >
+                모두 읽음
+              </button>
+            </div>
+          )}
           {error && <p role="alert">{error}</p>}
           {loading ? (
             <p className="py-6 text-muted">불러오는 중…</p>

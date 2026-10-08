@@ -29,6 +29,7 @@ export type Post = {
   authorId: string;
   author: string;
   likes: number;
+  authorBuilding?: string | null;
   liked: boolean;
   commentCount: number;
   comments: Comment[];

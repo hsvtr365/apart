@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { postSchema, ending } from "../src/lib/validation";
+import { postSchema, profileSchema, ending } from "../src/lib/validation";
+test("building is optional and limited to the apartment's 17 buildings", () => {
+  for (let i = 2001; i <= 2017; i++)
+    assert(
+      profileSchema.safeParse({ nickname: "이웃", building: `${i}동` }).success,
+    );
+  assert(profileSchema.safeParse({ nickname: "이웃", building: null }).success);
+  for (const building of ["2000동", "2018동", "103동", "임의 입력"])
+    assert(!profileSchema.safeParse({ nickname: "이웃", building }).success);
+});
 test("title limits and unsafe image URLs are rejected", () => {
   const valid = {
     title: "붕어빵",

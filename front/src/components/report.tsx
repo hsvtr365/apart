@@ -1,10 +1,9 @@
 "use client";
 import { useState, useRef, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useVillage, request } from "./store";
-import { categories, type PostInput } from "@/lib/types";
+import { categories, type Post, type PostInput } from "@/lib/types";
 import { ending } from "@/lib/validation";
-import Link from "next/link";
 import { KakaoMap, type MapPoint } from "./kakao-map";
 const places: Record<string, [number, number]> = {
   정문: [25, 60],
@@ -13,17 +12,25 @@ const places: Record<string, [number, number]> = {
   "103동": [75, 65],
   "관리사무소 앞": [65, 45],
 };
-export function Report() {
-  const { data, create, notify, busy } = useVillage();
+export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
+  const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
-  const [title, setTitle] = useState(""),
-    [text, setText] = useState(""),
-    [image, setImage] = useState<string | null>(null),
+  const params = useSearchParams();
+  const [title, setTitle] = useState(post?.title ?? ""),
+    [text, setText] = useState(post?.body ?? ""),
+    [image, setImage] = useState<string | null>(post?.imageUrl ?? null),
     [uploading, setUploading] = useState(false),
-    [place, setPlace] = useState("정문"),
-    [point, setPoint] = useState<[number, number]>(places["정문"]),
+    [place, setPlace] = useState(post?.place ?? "정문"),
+    [point, setPoint] = useState<[number, number]>([
+      post?.mapX ?? 25,
+      post?.mapY ?? 60,
+    ]),
     [map, setMap] = useState(false),
-    [geo, setGeo] = useState<MapPoint | null>(null),
+    [geo, setGeo] = useState<MapPoint | null>(
+      post?.latitude != null && post.longitude != null
+        ? { latitude: post.latitude, longitude: post.longitude }
+        : null,
+    ),
     [error, setError] = useState("");
   const file = useRef<HTMLInputElement>(null);
   async function upload(f: File) {
@@ -62,10 +69,12 @@ export function Report() {
     setError("");
     const fields = new FormData(e.currentTarget);
     try {
-      const end = ending(
-        String(fields.get("endDate") || "") || null,
-        String(fields.get("endTime") || "") || null,
-      );
+      const endDate = String(fields.get("endDate") || "") || null;
+      const endTime = String(fields.get("endTime") || "") || null;
+      const end =
+        post && endDate === post.endDate && endTime === post.endTime
+          ? { endDate, endTime }
+          : ending(endDate, endTime);
       const input: PostInput = {
         title: title.trim(),
         body: text.trim(),
@@ -81,6 +90,12 @@ export function Report() {
       };
       if (!input.title || !input.body)
         throw new Error("제목과 내용을 입력해주세요.");
+      if (post) {
+        await act("edit-post", post.id, input);
+        notify("소식을 수정했어요.");
+        onDone?.();
+        return;
+      }
       await create(input);
       notify("소식을 올렸어요.");
       router.push("/feed/" + input.category.toLowerCase());
@@ -90,13 +105,28 @@ export function Report() {
   }
   return (
     <>
-      <h1 className="page-title">제보하기</h1>
+      <h1 className="page-title">{post ? "게시물 수정" : "제보하기"}</h1>
+      {params.get("login") === "failed" && !data?.user && (
+        <p role="alert" className="mb-3 text-red-700">
+          로그인을 완료하지 못했어요. 다시 시도해주세요.
+        </p>
+      )}
       {!data?.user ? (
         <div className="empty">
           <p>로그인하고 이웃에게 소식을 전해주세요.</p>
-          <Link href="/my" className="btn mt-3">
-            로그인하기
-          </Link>
+          <p className="mt-1 text-muted">
+            처음 로그인하면 자동으로 가입됩니다.
+          </p>
+          {data?.kakaoReady ? (
+            <a
+              href="/api/auth/kakao?next=%2Freport"
+              className="btn mt-3 bg-[#fee500] text-ink"
+            >
+              카카오로 로그인하고 제보하기
+            </a>
+          ) : (
+            <p className="mt-3 text-muted">카카오 로그인 연결 준비 중입니다.</p>
+          )}
         </div>
       ) : (
         <form className="panel" onSubmit={submit}>
@@ -160,7 +190,7 @@ export function Report() {
           <div className="grid grid-cols-2 gap-3">
             <label>
               <span className="field">카테고리</span>
-              <select name="category">
+              <select name="category" defaultValue={post?.category ?? "FOOD"}>
                 {Object.entries(categories).map(([k, v]) => (
                   <option key={k} value={k}>
                     {v}
@@ -181,7 +211,7 @@ export function Report() {
                 {Object.keys(places).map((p) => (
                   <option key={p}>{p}</option>
                 ))}
-                {place === "지도 지정 위치" && <option>지도 지정 위치</option>}
+                {!places[place] && <option>{place}</option>}
               </select>
             </label>
           </div>
@@ -248,11 +278,21 @@ export function Report() {
           <div className="grid grid-cols-2 gap-3">
             <label className="min-w-0">
               <span className="field">종료일 · 선택</span>
-              <input className="min-w-0" type="date" name="endDate" />
+              <input
+                className="min-w-0"
+                type="date"
+                name="endDate"
+                defaultValue={post?.endDate ?? ""}
+              />
             </label>
             <label className="min-w-0">
               <span className="field">종료시간 · 선택</span>
-              <input className="min-w-0" type="time" name="endTime" />
+              <input
+                className="min-w-0"
+                type="time"
+                name="endTime"
+                defaultValue={post?.endTime ?? ""}
+              />
             </label>
           </div>
           <small className="mt-2 block">
@@ -264,7 +304,7 @@ export function Report() {
             </p>
           )}
           <button className="btn mt-4 w-full" disabled={busy || uploading}>
-            {busy ? "올리는 중…" : "소식 올리기"}
+            {busy ? "저장 중…" : post ? "수정 저장" : "소식 올리기"}
           </button>
         </form>
       )}

@@ -79,7 +79,10 @@ export function Provider({ children }: { children: ReactNode }) {
             building: String(value.building || ""),
           };
           next.posts.forEach((p) => {
-            if (p.authorId === next.user!.id) p.author = next.user!.nickname;
+            if (p.authorId === next.user!.id) {
+              p.author = next.user!.nickname;
+              p.authorBuilding = next.user!.building;
+            }
             p.comments.forEach((c) => {
               if (c.authorId === next.user!.id) c.author = next.user!.nickname;
             });
@@ -92,6 +95,11 @@ export function Provider({ children }: { children: ReactNode }) {
         if (kind === "presence" && p) {
           p.presence = value.state as Post["presence"];
           p.observedAt = new Date().toISOString();
+        }
+        if (kind === "edit-post" && p) {
+          if (p.authorId !== next.user!.id)
+            throw new Error("본인 글만 수정할 수 있어요.");
+          Object.assign(p, payload as PostInput);
         }
         if (kind === "comment" && p) {
           p.comments.push({
@@ -120,6 +128,7 @@ export function Provider({ children }: { children: ReactNode }) {
       }
       const config: Record<string, [string, string, unknown]> = {
         profile: ["/api/profile", "PATCH", payload],
+        "edit-post": [`/api/posts/${id}`, "PATCH", payload],
         like: [`/api/posts/${id}/like`, "PUT", payload],
         presence: [`/api/posts/${id}/presence`, "PUT", payload],
         comment: [`/api/posts/${id}/comments`, "POST", payload],
@@ -146,6 +155,7 @@ export function Provider({ children }: { children: ReactNode }) {
           createdAt: new Date().toISOString(),
           authorId: data.user.id,
           author: data.user.nickname,
+          authorBuilding: data.user.building,
           likes: 0,
           liked: false,
           commentCount: 0,

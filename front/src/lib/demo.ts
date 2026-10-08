@@ -19,6 +19,7 @@ const make = (
   mapY,
   authorId,
   author: authorId === "demo" ? "행복한 이웃" : "동네 이웃",
+  authorBuilding: authorId === "demo" ? "2001동" : null,
   imageUrl: "/" + category.toLowerCase() + ".svg",
   createdAt: now,
   endDate: null,

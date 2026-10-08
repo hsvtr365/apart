@@ -1,4 +1,4 @@
-/// <reference types="kakao.maps.d.ts" />
+﻿/// <reference types="kakao.maps.d.ts" />
 "use client";
 import Script from "next/script";
 import Link from "next/link";
@@ -6,18 +6,25 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
 import { Presence } from "./post-card";
+import { Icon } from "./icons";
 
 export type MapPoint = { latitude: number; longitude: number };
 function Pin({
   map,
   post,
   selected,
+  zoomed,
 }: {
   map: kakao.maps.Map;
   post: Post;
   selected?: boolean;
+  zoomed: boolean;
 }) {
   const [node, setNode] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const overlayRef = useRef<kakao.maps.CustomOverlay | null>(null);
+  const expanded = zoomed || !!selected || open || hovered;
   useEffect(() => {
     const content = document.createElement("div");
     const overlay = new kakao.maps.CustomOverlay({
@@ -25,24 +32,76 @@ function Pin({
       content,
       clickable: true,
       position: new kakao.maps.LatLng(post.latitude!, post.longitude!),
-      yAnchor: 1.1,
+      yAnchor: 1,
       zIndex: selected ? 2 : 1,
     });
+    overlayRef.current = overlay;
     setNode(content);
-    return () => overlay.setMap(null);
+    const dismiss = () => setOpen(false);
+    kakao.maps.event.addListener(map, "click", dismiss);
+    return () => {
+      overlay.setMap(null);
+      overlayRef.current = null;
+      kakao.maps.event.removeListener(map, "click", dismiss);
+    };
   }, [map, post.latitude, post.longitude, selected]);
+  useEffect(() => {
+    overlayRef.current?.setZIndex(hovered || open || selected ? 10 : 1);
+  }, [hovered, open, selected]);
   return (
     node &&
     createPortal(
-      <div className={"map-pin geo-pin " + (selected ? "selected" : "")}>
-        <small>{post.place}</small>
-        <Link
-          href={"/post/" + post.id}
-          className="flex min-h-11 items-center font-semibold"
+      <div
+        className="map-marker"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setOpen(false);
+            setHovered(false);
+          }
+        }}
+      >
+        <button
+          type="button"
+          className="map-marker-button"
+          aria-label={post.title + " 위치 정보"}
+          aria-expanded={expanded}
+          aria-controls={"map-info-" + post.id}
+          onClick={() => setOpen(true)}
+          onFocus={() => setOpen(true)}
         >
-          {post.title}
-        </Link>
-        {post.category === "FOOD" && <Presence post={post} />}
+          <Icon name="pin" width="34" height="40" />
+        </button>
+        <div
+          id={"map-info-" + post.id}
+          className="map-pin-card"
+          hidden={!expanded}
+        >
+          <Link
+            href={"/post/" + post.id}
+            className={"map-callout-title " + (selected ? "selected" : "")}
+            title={post.title}
+          >
+            <span>{post.title}</span>
+            <svg
+              width="16"
+              height="20"
+              viewBox="0 0 16 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="m5 4 6 6-6 6" />
+            </svg>
+          </Link>
+          {post.category === "FOOD" && (
+            <div className="map-callout-actions">
+              <Presence post={post} map />
+            </div>
+          )}
+        </div>
       </div>,
       node,
     )
@@ -65,6 +124,7 @@ export function KakaoMap({
   pick.current = onPick;
   const [ready, setReady] = useState(false);
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
+  const [level, setLevel] = useState(3);
   const [error, setError] = useState("");
   const key = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
   useEffect(() => {
@@ -115,6 +175,13 @@ export function KakaoMap({
       observer?.disconnect();
     };
   }, [ready]);
+  useEffect(() => {
+    if (!map) return;
+    const update = () => setLevel(map.getLevel());
+    update();
+    kakao.maps.event.addListener(map, "zoom_changed", update);
+    return () => kakao.maps.event.removeListener(map, "zoom_changed", update);
+  }, [map]);
   useEffect(() => {
     if (!map || !point) return;
     const marker = new kakao.maps.Marker({
@@ -171,7 +238,13 @@ export function KakaoMap({
               p.longitude != null,
           )
           .map((p) => (
-            <Pin key={p.id} map={map} post={p} selected={p.id === selected} />
+            <Pin
+              key={p.id}
+              map={map}
+              post={p}
+              selected={p.id === selected}
+              zoomed={level <= 3}
+            />
           ))}
       {map && onPick && (
         <button

@@ -2,7 +2,7 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomBytes, createHash } from "node:crypto";
 import { db } from "../src/lib/db";
-const base = "http://localhost:3000";
+const base = "http://localhost:28004";
 const ids: string[] = [];
 const posts: string[] = [];
 let upload = "";
@@ -38,6 +38,30 @@ async function call(
   return { status: res.status, data: await res.json() };
 }
 try {
+  const login = await fetch(base + "/api/auth/kakao?next=%2Freport", {
+    redirect: "manual",
+  });
+  assert.equal(login.status, 307);
+  const loginCookies = login.headers.getSetCookie();
+  assert(
+    loginCookies.some((c) =>
+      decodeURIComponent(c).startsWith("oauth_return=/report;"),
+    ),
+  );
+  const callback = await fetch(base + "/api/auth/callback", {
+    redirect: "manual",
+    headers: { Cookie: loginCookies.map((c) => c.split(";")[0]).join("; ") },
+  });
+  assert.equal(callback.headers.get("location"), base + "/report?login=failed");
+  const unsafeLogin = await fetch(
+    base + "/api/auth/kakao?next=https://invalid.example",
+    { redirect: "manual" },
+  );
+  assert(
+    unsafeLogin.headers
+      .getSetCookie()
+      .some((c) => decodeURIComponent(c).startsWith("oauth_return=/my;")),
+  );
   const a = await session("검증작성자"),
     b = await session("검증댓글러");
   assert.equal((await call("posts", "", "POST", {})).status, 401);
@@ -79,6 +103,33 @@ try {
   assert.equal(created.status, 201);
   const id = created.data.id;
   posts.push(id);
+  assert.equal(
+    (
+      await call("profile", a.cookie, "PATCH", {
+        nickname: "검증작성자",
+        building: "2001동",
+      })
+    ).status,
+    200,
+  );
+  assert.equal((await call("posts/" + id)).data.authorBuilding, "2001동");
+  const original = (await call("posts/" + id)).data;
+  assert.equal(
+    (await call("posts/" + id, b.cookie, "PATCH", input)).status,
+    403,
+  );
+  assert.equal(
+    (
+      await call("posts/" + id, a.cookie, "PATCH", {
+        ...input,
+        title: "수정된 소식",
+      })
+    ).status,
+    200,
+  );
+  const edited = (await call("posts/" + id)).data;
+  assert.equal(edited.title, "수정된 소식");
+  assert.equal(edited.createdAt, original.createdAt);
   assert.equal(
     (
       await call("posts/" + id + "/comments", b.cookie, "POST", {

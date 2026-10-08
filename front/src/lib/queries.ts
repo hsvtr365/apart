@@ -2,7 +2,7 @@ import { db } from "./db";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Post, Notice } from "./types";
 const include = {
-  author: { select: { id: true, nickname: true } },
+  author: { select: { id: true, nickname: true, building: true } },
   _count: { select: { likes: true, comments: true } },
   presences: { orderBy: { observedAt: "desc" as const }, take: 1 },
 };
@@ -44,6 +44,7 @@ export async function getPosts(
       endTime: p.endTime,
       authorId: p.authorId,
       author: p.author.nickname,
+      authorBuilding: p.author.building,
       likes: p._count.likes,
       liked: likes.some((l) => l.postId === p.id),
       commentCount: p._count.comments,

@@ -7,7 +7,7 @@ const text = (max: number) =>
     .max(max, `최대 ${max}자까지 입력할 수 있어요.`);
 export const profileSchema = z.object({
   nickname: text(12),
-  building: z.string().trim().max(8).nullable(),
+  building: z.string().regex(/^20(0[1-9]|1[0-7])동$/, "2001동부터 2017동까지 선택해주세요.").nullable(),
 });
 export const commentSchema = z.object({ body: text(500) });
 export const postSchema = z

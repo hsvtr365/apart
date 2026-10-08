@@ -118,7 +118,13 @@ async function handle(
       if (!process.env.KAKAO_CLIENT_ID)
         throw new HttpError("카카오 로그인 설정이 필요합니다.", 503);
       const state = randomBytes(32).toString("hex");
-      (await cookies()).set("oauth_state", state, {
+      const jar = await cookies();
+      jar.set(
+        "oauth_return",
+        req.nextUrl.searchParams.get("next") === "/report" ? "/report" : "/my",
+        { ...cookieOptions(), maxAge: 600 },
+      );
+      jar.set("oauth_state", state, {
         ...cookieOptions(),
         maxAge: 600,
       });
@@ -134,7 +140,10 @@ async function handle(
     if (resource === "auth" && id === "callback" && method === "GET") {
       const jar = await cookies();
       const expected = jar.get("oauth_state")?.value;
+      const destination =
+        jar.get("oauth_return")?.value === "/report" ? "/report" : "/my";
       jar.delete("oauth_state");
+      jar.delete("oauth_return");
       try {
         const state = req.nextUrl.searchParams.get("state");
         const code = req.nextUrl.searchParams.get("code");
@@ -172,9 +181,9 @@ async function handle(
           update: {},
         });
         await startSession(user.id);
-        return NextResponse.redirect(origin() + "/my");
+        return NextResponse.redirect(origin() + destination);
       } catch {
-        return NextResponse.redirect(origin() + "/my?login=failed");
+        return NextResponse.redirect(origin() + destination + "?login=failed");
       }
     }
     if (resource === "uploads" && id && method === "GET") {
@@ -308,21 +317,48 @@ async function handle(
       await db().upload.create({ data: { id: name, userId: user.id } });
       return json({ url: "/api/uploads/" + name }, 201);
     }
-    if (resource === "posts" && !id && method === "POST") {
+    if (
+      resource === "posts" &&
+      ((!id && method === "POST") || (id && !action && method === "PATCH"))
+    ) {
+      const existing = id
+        ? await db().post.findUnique({ where: { id } })
+        : null;
+      if (id && !existing)
+        throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+      if (existing && existing.authorId !== user.id)
+        throw new HttpError("본인 글만 수정할 수 있어요.", 403);
       const input = postSchema.parse(await body(req));
       let end;
       try {
-        end = ending(input.endDate, input.endTime);
+        end =
+          existing &&
+          input.endDate === existing.endDate &&
+          input.endTime === existing.endTime
+            ? {
+                endDate: existing.endDate,
+                endTime: existing.endTime,
+                endsAt: existing.endsAt,
+              }
+            : ending(input.endDate, input.endTime);
       } catch (e) {
         throw new HttpError((e as Error).message);
       }
       if (
         input.imageUrl &&
+        input.imageUrl !== existing?.imageUrl &&
         !(await db().upload.findFirst({
           where: { id: input.imageUrl.split("/").at(-1), userId: user.id },
         }))
       )
         throw new HttpError("직접 업로드한 사진을 선택해주세요.");
+      if (existing) {
+        await db().post.update({
+          where: { id: existing.id },
+          data: { ...input, ...end },
+        });
+        return json({ id: existing.id });
+      }
       const post = await db().post.create({
         data: { ...input, ...end, authorId: user.id },
       });
