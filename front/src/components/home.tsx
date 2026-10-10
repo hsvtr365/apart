@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useVillage } from "./store";
 import { VillageMap } from "./village-map";
-import { categories, type Category } from "@/lib/types";
+import { categories, type Post } from "@/lib/types";
 import { sources } from "@/lib/sources";
 import { isTodayNews } from "@/lib/map-filter";
 import {
@@ -31,11 +31,17 @@ export function FeedTabs({ selected = "all" }: { selected?: string }) {
     </nav>
   );
 }
-export function Home() {
-  const { data } = useVillage();
+function HomeNewsSection({
+  title,
+  posts,
+  emptyText,
+}: {
+  title: string;
+  posts: Post[];
+  emptyText: string;
+}) {
   const roller = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
-  const [todayCategory, setTodayCategory] = useState<Category | "ALL">("ALL");
   const interacting = useRef(false);
   function move(step: number) {
     const el = roller.current;
@@ -64,6 +70,68 @@ export function Home() {
     }, 5500);
     return () => clearInterval(timer);
   }, [paused]);
+  return (
+    <>
+      <div className="mt-6 mb-2 flex items-center justify-between">
+        <h2>{title}</h2>
+        <div className="flex">
+          <button
+            className="icon-btn"
+            aria-label={`${title} 이전 소식`}
+            onClick={() => move(-1)}
+          >
+            <ChevronLeft size={20} aria-hidden="true" />
+          </button>
+          <button
+            className="icon-btn"
+            aria-label={paused ? "자동 넘김 재생" : "자동 넘김 일시정지"}
+            onClick={() => setPaused(!paused)}
+          >
+            {paused ? (
+              <Play size={18} aria-hidden="true" />
+            ) : (
+              <Pause size={18} aria-hidden="true" />
+            )}
+          </button>
+          <button
+            className="icon-btn"
+            aria-label={`${title} 다음 소식`}
+            onClick={() => move(1)}
+          >
+            <ChevronRight size={20} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      <div
+        className="news-roller"
+        ref={roller}
+        onPointerEnter={() => (interacting.current = true)}
+        onPointerLeave={() => (interacting.current = false)}
+        onFocus={() => (interacting.current = true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget))
+            interacting.current = false;
+        }}
+        onTouchStart={() => setPaused(true)}
+      >
+        {posts.map((p) => (
+          <Link
+            href={"/feed/" + p.category.toLowerCase()}
+            className="news-card"
+            key={p.id}
+          >
+            <small>{categories[p.category]}</small>
+            <b className="my-1 block">{p.title}</b>
+          </Link>
+        ))}
+      </div>
+      {!posts.length && <div className="empty">{emptyText}</div>}
+    </>
+  );
+}
+
+export function Home() {
+  const { data } = useVillage();
   if (!data) return null;
   const todayEligible =
     data.mode === "demo"
@@ -72,7 +140,10 @@ export function Home() {
   const mapPosts =
     data.mode === "demo" ? todayEligible : (data.todayPosts ?? []);
   const todayPosts = todayEligible
-    .filter((p) => todayCategory === "ALL" || p.category === todayCategory)
+    .filter((p) => p.category !== "NOTICE")
+    .slice(0, 8);
+  const notices = todayEligible
+    .filter((p) => p.category === "NOTICE")
     .slice(0, 8);
   function group(start: number, end: number) {
     return (
@@ -100,80 +171,16 @@ export function Home() {
       <div className="pt-3">
         <VillageMap posts={mapPosts} />
       </div>
-      <div className="mt-6 mb-2 flex items-center justify-between">
-        <h2>오늘의 소식</h2>
-        <div className="flex">
-          <button
-            className="icon-btn"
-            aria-label="이전 소식"
-            onClick={() => move(-1)}
-          >
-            <ChevronLeft size={20} aria-hidden="true" />
-          </button>
-          <button
-            className="icon-btn"
-            aria-label={paused ? "자동 넘김 재생" : "자동 넘김 일시정지"}
-            onClick={() => setPaused(!paused)}
-          >
-            {paused ? (
-              <Play size={18} aria-hidden="true" />
-            ) : (
-              <Pause size={18} aria-hidden="true" />
-            )}
-          </button>
-          <button
-            className="icon-btn"
-            aria-label="다음 소식"
-            onClick={() => move(1)}
-          >
-            <ChevronRight size={20} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-      <nav className="tabs" aria-label="오늘의 소식 분류">
-        {(
-          [["ALL", "전체"], ...Object.entries(categories)] as [string, string][]
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            className="tab"
-            aria-pressed={todayCategory === key}
-            onClick={() => setTodayCategory(key as Category | "ALL")}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-      <div
-        className="news-roller"
-        ref={roller}
-        onPointerEnter={() => (interacting.current = true)}
-        onPointerLeave={() => (interacting.current = false)}
-        onFocus={() => (interacting.current = true)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget))
-            interacting.current = false;
-        }}
-        onTouchStart={() => setPaused(true)}
-      >
-        {todayPosts.map((p) => (
-          <Link
-            href={"/feed/" + p.category.toLowerCase()}
-            className="news-card"
-            key={p.id}
-          >
-            <small>{categories[p.category]}</small>
-            <b className="my-1 block">{p.title}</b>
-          </Link>
-        ))}
-      </div>
-      {!todayPosts.length && (
-        <div className="empty">
-          {todayCategory === "ALL"
-            ? "오늘 예정된 소식이 없어요."
-            : `오늘 ${categories[todayCategory]} 소식이 없어요.`}
-        </div>
-      )}
+      <HomeNewsSection
+        title="오늘의 소식"
+        posts={todayPosts}
+        emptyText="오늘 예정된 소식이 없어요."
+      />
+      <HomeNewsSection
+        title="관리사무소"
+        posts={notices}
+        emptyText="진행 중인 공고가 없어요."
+      />
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>생활 피드</h2>
         <Link href="/feed" className="icon-btn text-brand">
