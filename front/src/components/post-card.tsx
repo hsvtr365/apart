@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
 import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
@@ -39,12 +39,16 @@ export function PostCard({
   post,
   full = false,
   hideImage = false,
+  imageDoubleClickLike = false,
 }: {
   post: Post;
   full?: boolean;
   hideImage?: boolean;
+  imageDoubleClickLike?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false),
+    [heartBurst, setHeartBurst] = useState(false);
+  const doubleLikePending = useRef(false);
   const { act, notify, busy } = useVillage();
   async function share() {
     try {
@@ -136,8 +140,26 @@ export function PostCard({
         </button>
       )}
       {post.imageUrl && !hideImage ? (
-        <div className="post-media">
+        <div
+          className={"post-media" + (imageDoubleClickLike ? " post-media-double-like" : "")}
+          onDoubleClick={(event) => {
+            if (
+              !imageDoubleClickLike ||
+              post.liked ||
+              doubleLikePending.current ||
+              !(event.target instanceof HTMLImageElement)
+            ) return;
+            event.preventDefault();
+            doubleLikePending.current = true;
+            setHeartBurst(true);
+            window.setTimeout(() => setHeartBurst(false), 700);
+            void act("like", post.id, { liked: true })
+              .catch((e) => notify(e.message))
+              .finally(() => { doubleLikePending.current = false; });
+          }}
+        >
           <img src={post.imageUrl} alt={post.title} />
+          {heartBurst && <span className="double-like-heart" aria-hidden="true"><Icon name="heart" fill="currentColor" /></span>}
           {post.category !== "NOTICE" && (
             <Link
               className="icon-btn absolute left-2 top-2 bg-white text-brand"

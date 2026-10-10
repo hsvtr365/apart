@@ -49,7 +49,11 @@ export function VillageApp() {
             p.category === id.toUpperCase(),
         )
         .map((p) => (
-          <PostCard key={p.id} post={p} />
+          <PostCard
+            key={p.id}
+            post={p}
+            imageDoubleClickLike={section === "feed" && id === "food"}
+          />
         ))}
       {data &&
         !data.posts.some(

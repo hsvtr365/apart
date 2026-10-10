@@ -30,6 +30,7 @@ export function Icon({
     close: <path d="m6 6 12 12M6 18 18 6" />,
     check: <path d="m5 12 4 4L19 6" />,
     back: <path d="m14 5-7 7 7 7M7 12h14" />,
+    expand: <path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" />,
   };
   return (
     <svg
