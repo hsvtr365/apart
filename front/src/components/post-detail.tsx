@@ -129,7 +129,7 @@ export function PostDetail({
       ) : !post ? (
         <p className="p-6">소식을 불러오는 중…</p>
       ) : editing && (post.authorId === data?.user?.id || data?.user?.permission === 0) ? (
-        <div className="p-4">
+        <div className="detail-edit">
           <Report key={post.id} post={post} onDone={() => setEditing(false)} onCancel={() => setEditing(false)} onDelete={post.authorId === data?.user?.id ? () => {
             if (!window.confirm("이 게시물을 삭제할까요? 삭제 후 공개 목록에서 사라집니다.")) return;
             void act("delete-post", post.id)
@@ -140,7 +140,7 @@ export function PostDetail({
       ) : (
         <div className={post.imageUrl ? "detail-layout" : ""}>
           {post.imageUrl && <ImageViewer src={post.imageUrl} sources={post.imageUrls} alt={post.title} />}
-          <div className="p-4">
+          <div className="detail-body">
             <PostCard post={post} full hideImage />
             <h2 className="mb-2">댓글 {post.commentCount}</h2>
             {!post.comments.length && (

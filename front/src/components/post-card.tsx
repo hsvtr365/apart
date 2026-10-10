@@ -108,8 +108,8 @@ export function PostCard({
     </>
   );
   return (
-    <article className="post">
-      <div className="flex items-center justify-between gap-2 py-2">
+    <article className={full ? "post post-full" : "post"}>
+      <div className={"flex items-center justify-between gap-2 " + (full ? "pb-2" : "py-2")}>
         <div className="flex flex-wrap items-center gap-x-2">
           <b>{post.author}</b>
           {post.authorBuilding && <small>{post.authorBuilding}</small>}
