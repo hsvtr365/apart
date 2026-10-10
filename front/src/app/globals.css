@@ -9,10 +9,11 @@
   --color-neutral: #f3f5f4;
   --color-input: #f3f5f4;
   --color-input-placeholder: #89938c;
-  --color-secondary: #F0F1F1;
+  --color-secondary: #F3F5F7;
   --color-secondary-ink: #475569;
-  --color-secondary-selected: #B9E5C9;
-  --color-secondary-selected-ink: #14532D;
+  --color-secondary-selected: #DDF5E6;
+  --color-secondary-selected-ink: #075B3A;
+  --color-secondary-soft: #EDF8F1;
   --color-disabled: #f3f5f4;
   --color-disabled-ink: #9ca49f;
   --color-disabled-line: #e2e6e3;
@@ -731,6 +732,10 @@ header a:first-child {
   color: var(--color-secondary-selected-ink);
 }
 #report-form .time-picker-fields small { color: inherit; }
+#report-form .time-picker-fields button:not([aria-pressed="true"]) {
+  background: var(--color-secondary-soft);
+  color: var(--color-secondary-selected-ink);
+}
 #report-form .time-picker-footer button { color: var(--color-secondary-ink); }
 #report-form .choice-chip input:disabled + span,
 #report-form .time-picker button:disabled {
