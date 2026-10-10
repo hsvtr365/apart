@@ -723,8 +723,8 @@ header a:first-child {
 .time-picker-fields small, .time-picker-fields strong { display:block; }
 .time-picker-fields strong { margin-top:4px; font-size:15px; }
 .time-picker-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:12px 0 8px; }
-.time-picker-list { position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; height:184px; overflow-y:auto; overscroll-behavior:contain; }
-.time-picker-list button { min-height:32px; border:1px solid var(--color-line); border-radius:20px; font-size:13px; }
+.time-picker-list { position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:32px; gap:6px; height:184px; overflow-y:auto; overscroll-behavior:contain; }
+.time-picker-list button { height:32px; min-height:32px; padding:0; border:1px solid var(--color-line); border-radius:20px; font-size:13px; }
 .time-picker-list button[aria-pressed="true"] { color:white; background:var(--color-brand); border-color:var(--color-brand); }
 .time-picker-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
 .time-picker-footer button { min-height:36px; padding:0 8px; color:var(--color-brand); font-size:12px; }
