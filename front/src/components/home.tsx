@@ -7,12 +7,21 @@ import { categories, type Post } from "@/lib/types";
 import { sources } from "@/lib/sources";
 import { isTodayNews } from "@/lib/map-filter";
 import {
+  Bell,
+  Building2,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Expand,
   ExternalLink,
+  LayoutGrid,
+  MapPin,
+  Megaphone,
   Pause,
   Play,
+  ShoppingBasket,
+  Store,
+  TrendingUp,
 } from "lucide-react";
 export function FeedTabs({ selected = "all" }: { selected?: string }) {
   return (
@@ -34,10 +43,12 @@ export function FeedTabs({ selected = "all" }: { selected?: string }) {
 }
 function HomeNewsSection({
   title,
+  icon: SectionIcon,
   posts,
   emptyText,
 }: {
   title: string;
+  icon: typeof Megaphone;
   posts: Post[];
   emptyText: string;
 }) {
@@ -89,8 +100,8 @@ function HomeNewsSection({
   }, [canScroll, paused]);
   return (
     <>
-      <div className="mt-6 mb-2 flex items-center justify-between">
-        <h2>{title}</h2>
+      <div className="home-section-heading">
+        <h2><SectionIcon size={23} strokeWidth={2.5} aria-hidden="true" />{title}</h2>
         {canScroll && <div className="flex">
           <button
             className="icon-btn"
@@ -146,12 +157,15 @@ function HomeNewsSection({
             className="news-card"
             key={p.id}
           >
-            <small>
+            <span className={`news-card-category news-${p.category.toLowerCase()}`}>
+              {p.category === "NOTICE" ? <CalendarDays size={15} aria-hidden="true" /> : p.category === "FOOD" ? <ShoppingBasket size={15} aria-hidden="true" /> : <Store size={15} aria-hidden="true" />}
               {p.category === "NOTICE" && p.noticeEndDate
                 ? `~ ${Number(p.noticeEndDate.slice(5, 7))}월 ${Number(p.noticeEndDate.slice(8, 10))}일`
                 : categories[p.category]}
-            </small>
-            <b className="my-1 block">{p.title}</b>
+            </span>
+            <b className="news-card-title">{p.title}</b>
+            <p className="news-card-body">{p.body}</p>
+            {p.imageUrl && <img className="news-card-image" src={p.imageUrl} alt="" loading="lazy" />}
           </Link>
         ))}
       </div>
@@ -203,32 +217,35 @@ export function Home() {
       </div>
       <HomeNewsSection
         title="오늘의 소식"
+        icon={Megaphone}
         posts={todayPosts}
         emptyText="오늘 예정된 소식이 없어요."
       />
       <HomeNewsSection
         title="관리사무소"
+        icon={Bell}
         posts={notices}
         emptyText="진행 중인 공고가 없어요."
       />
-      <div className="mt-6 mb-2 flex items-center justify-between">
-        <h2>생활 피드</h2>
+      <div className="home-section-heading">
+        <h2><TrendingUp size={23} strokeWidth={2.5} aria-hidden="true" />생활 피드</h2>
       </div>
-      <div className="flex rounded-sm bg-soft">
+      <div className="home-feed-filters">
         {[["all", "전체"], ...Object.entries(categories)].map(
           ([key, label]) => (
             <Link
               key={key}
               href={key === "all" ? "/feed" : "/feed/" + key.toLowerCase()}
-              className="tab"
+              className={"home-feed-filter" + (key === "all" ? " active" : "")}
             >
+              {key === "all" ? <LayoutGrid size={19} aria-hidden="true" /> : key === "FOOD" ? <ShoppingBasket size={19} aria-hidden="true" /> : key === "NOTICE" ? <Building2 size={19} aria-hidden="true" /> : <Store size={19} aria-hidden="true" />}
               {label}
             </Link>
           ),
         )}
       </div>
-      <div className="mt-6 mb-2 flex items-center justify-between">
-        <h2>우리 동네 기관</h2>
+      <div className="home-section-heading">
+        <h2><MapPin size={23} strokeWidth={2.5} aria-hidden="true" />우리 동네 기관</h2>
       </div>
       {group(0, 4)}
       <details>

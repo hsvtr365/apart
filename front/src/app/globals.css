@@ -633,20 +633,103 @@ header a:first-child {
 }
 .news-roller {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+  scroll-behavior: smooth;
+  padding: 2px 2px 8px;
 }
 .news-card {
   flex: 0 0 calc((100% - 24px) / 3);
   min-width: 240px;
-  padding: 12px;
-  background: white;
-  border: 1px solid var(--color-line);
-  border-radius: 4px;
+  padding: 14px;
+  background: linear-gradient(155deg, #ffffff 58%, #f7fbf8 100%);
+  border: 1px solid #e8efea;
+  border-radius: 12px;
+  box-shadow: 0 3px 14px #183b2810;
   scroll-snap-align: start;
 }
+.home-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 24px 0 10px;
+}
+.home-section-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #17251e;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+.home-section-heading h2 > svg { color: var(--color-brand); }
+.news-card-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #e3f2e9;
+  color: #145c3d;
+  font-size: 13px;
+  font-weight: 700;
+}
+.news-card-category.news-food { background: #fff0dc; color: #b95b08; }
+.news-card-category.news-notice { background: #e7f2eb; color: #145c3d; }
+.news-card-title {
+  display: block;
+  margin-top: 10px;
+  color: #17221b;
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+.news-card-body {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 5px 0 0;
+  color: #626b65;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.news-card-image {
+  display: block;
+  width: 100%;
+  height: 112px;
+  margin-top: 12px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+.home-feed-filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0 4px;
+}
+.home-feed-filter {
+  display: inline-flex;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #e8f3ec;
+  color: #175b3d;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.home-feed-filter.active { background: #176344; color: #fff; }
 .toast {
   position: fixed;
   bottom: 76px;
@@ -712,6 +795,9 @@ header a:first-child {
     flex-basis: 88%;
     min-width: 0;
   }
+  .news-card-image { height: 150px; }
+  .home-section-heading { margin-top: 22px; }
+  .home-section-heading h2 { font-size: 19px; }
   .tab {
     font-size: 12px;
   }
