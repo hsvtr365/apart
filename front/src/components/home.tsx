@@ -5,6 +5,7 @@ import { useVillage } from "./store";
 import { VillageMap } from "./village-map";
 import { categories, type Post } from "@/lib/types";
 import { sources } from "@/lib/sources";
+import { InstagramEmbed } from "./instagram-embed";
 import { isTodayNews } from "@/lib/map-filter";
 import {
   Bell,
@@ -270,6 +271,7 @@ export function Home() {
             </span>
             <ExternalLink size={18} aria-hidden="true" />
           </a>
+          {s.url.startsWith("https://www.instagram.com/") && <InstagramEmbed url={s.url} name={s.name} />}
           </div>
         ))}
       </div>
@@ -326,12 +328,12 @@ export function Home() {
           우리 동네 기관
         </h2>
       </div>
-      {group(0, 3)}
+      {group(0, 4)}
       <details open>
         <summary className="min-h-11 cursor-pointer py-3">
-          고양시 기관·문화 채널 <small className="float-right">{sources.length - 3}곳</small>
+          고양시 기관·문화 채널 <small className="float-right">{sources.length - 4}곳</small>
         </summary>
-        {group(3, sources.length)}
+        {group(4, sources.length)}
       </details>
     </>
   );
