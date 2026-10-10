@@ -9,7 +9,6 @@ import { isTodayNews } from "@/lib/map-filter";
 import {
   Bell,
   Building2,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Expand,
@@ -174,35 +173,73 @@ function HomeNewsSection({
         {posts.map((p) => (
           <Link
             href={"/feed/" + p.category.toLowerCase()}
-            className="news-card"
+            className={
+              "news-card" + (p.category === "NOTICE" ? " news-card-notice" : "")
+            }
             key={p.id}
           >
-            <span
-              className={`news-card-category news-${p.category.toLowerCase()}`}
-            >
-              {p.category === "NOTICE" ? (
-                <CalendarDays size={15} aria-hidden="true" />
-              ) : p.category === "FOOD" ? (
-                <ShoppingBasket size={15} aria-hidden="true" />
-              ) : (
-                <Store size={15} aria-hidden="true" />
-              )}
-              {p.category === "NOTICE" && p.noticeEndDate
-                ? `~ ${Number(p.noticeEndDate.slice(5, 7))}월 ${Number(p.noticeEndDate.slice(8, 10))}일`
-                : categories[p.category]}
-            </span>
-            <b className="news-card-title">{p.title}</b>
-            <p className="news-card-body">{p.body}</p>
-            {(p.imageUrl || p.category !== "NOTICE") && (
-              <img
-                className="news-card-image"
-                src={
-                  p.imageUrl ||
-                  (p.category === "MARKET" ? "/market.svg" : "/food.svg")
-                }
-                alt={p.imageUrl ? "" : `${categories[p.category]} 기본 이미지`}
-                loading="lazy"
-              />
+            {p.category === "NOTICE" ? (
+              <>
+                <div className="notice-card-date">
+                  {p.noticeStartDate &&
+                    (() => {
+                      const date = new Date(`${p.noticeStartDate}T12:00:00`);
+                      return (
+                        <>
+                          <small>{date.getMonth() + 1}월</small>
+                          <b>{date.getDate()}</b>
+                          <small>
+                            (
+                            {
+                              ["일", "월", "화", "수", "목", "금", "토"][
+                                date.getDay()
+                              ]
+                            }
+                            )
+                          </small>
+                        </>
+                      );
+                    })()}
+                </div>
+                <div className="notice-card-content">
+                  <div className="notice-card-title-row">
+                    <b className="news-card-title">{p.title}</b>
+                    {p.noticeEndDate && (
+                      <small className="notice-card-end">
+                        ~ {Number(p.noticeEndDate.slice(5, 7))}월{" "}
+                        {Number(p.noticeEndDate.slice(8, 10))}일
+                      </small>
+                    )}
+                  </div>
+                  <p className="news-card-body">{p.body}</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <span
+                  className={`news-card-category news-${p.category.toLowerCase()}`}
+                >
+                  {p.category === "FOOD" ? (
+                    <ShoppingBasket size={15} aria-hidden="true" />
+                  ) : (
+                    <Store size={15} aria-hidden="true" />
+                  )}
+                  {categories[p.category]}
+                </span>
+                <b className="news-card-title">{p.title}</b>
+                <p className="news-card-body">{p.body}</p>
+                <img
+                  className="news-card-image"
+                  src={
+                    p.imageUrl ||
+                    (p.category === "MARKET" ? "/market.svg" : "/food.svg")
+                  }
+                  alt={
+                    p.imageUrl ? "" : `${categories[p.category]} 기본 이미지`
+                  }
+                  loading="lazy"
+                />
+              </>
             )}
           </Link>
         ))}
