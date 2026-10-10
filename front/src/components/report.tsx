@@ -171,7 +171,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                       ? Building2
                       : Store;
                 return (
-                  <label className={`choice-chip category-${value.toLowerCase()}`} key={value}>
+                  <label className="choice-chip" key={value}>
                     <input
                       type="radio"
                       name="category"

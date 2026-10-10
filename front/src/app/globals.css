@@ -853,14 +853,6 @@ header a:first-child {
 .tab[class*="category-"][aria-current="page"]:not(.category-all) {
   border-color: var(--category-ink);
 }
-#report-form .choice-chip[class*="category-"] > input + span {
-  background: var(--category-bg);
-  color: var(--category-ink);
-}
-#report-form .choice-chip[class*="category-"] > input:checked + span {
-  background: color-mix(in srgb, var(--category-ink) 15%, var(--category-bg));
-  color: var(--category-ink);
-}
 .news-card-title {
   display: block;
   margin-top: 5px;
