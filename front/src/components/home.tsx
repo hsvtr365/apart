@@ -5,6 +5,7 @@ import { useVillage } from "./store";
 import { VillageMap } from "./village-map";
 import { categories, type Post } from "@/lib/types";
 import { sources } from "@/lib/sources";
+import { InstagramEmbed } from "./instagram-embed";
 import { isTodayNews } from "@/lib/map-filter";
 import {
   Bell,
@@ -256,6 +257,7 @@ export function Home() {
     return (
       <div className="grid md:grid-cols-2 md:gap-x-6">
         {sources.slice(start, end).map((s) => (
+          <div key={s.name} className="min-w-0">
           <a
             className="row flex items-center justify-between gap-3"
             href={s.url}
@@ -269,6 +271,8 @@ export function Home() {
             </span>
             <ExternalLink size={18} aria-hidden="true" />
           </a>
+          {s.url.startsWith("https://www.instagram.com/") && <InstagramEmbed url={s.url} name={s.name} />}
+          </div>
         ))}
       </div>
     );

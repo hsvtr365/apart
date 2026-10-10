@@ -1,4 +1,6 @@
 @import "tailwindcss";
+.institution-instagram { min-height:120px; margin:8px 0 16px; overflow:hidden; }
+.institution-instagram .instagram-media { width:100% !important; min-width:0 !important; max-width:540px !important; margin:0 !important; }
 .loading-mask { display:flex; align-items:center; justify-content:center; min-height:160px; background:rgba(255,255,255,.85); color:var(--color-brand); }
 .loading-mask-overlay { position:absolute; inset:0; z-index:30; min-height:0; }
 .content-scroll { position:relative; }
