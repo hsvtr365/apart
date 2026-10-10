@@ -15,6 +15,11 @@ export const sources = [
     description: "도서관센터 통합 SNS · 강연·체험·교육",
   },
   {
+    url: "https://www.goyanglib.or.kr/MH/index.do",
+    name: "행신어린이도서관",
+    description: "공식 홈페이지 · 어린이·가족 행사",
+  },
+  {
     url: "https://www.instagram.com/goyangcity/",
     name: "고양특례시청",
     description: "@goyangcity · 행사·모집·시정 소식",
