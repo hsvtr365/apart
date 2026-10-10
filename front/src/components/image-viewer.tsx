@@ -13,7 +13,17 @@ export function ImageViewer({ src, alt }: { src: string; alt: string }) {
     if (!open) return;
     const element = dialog.current;
     if (element && !element.open) element.showModal();
-    return () => element?.close();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      element?.close();
+    };
   }, [open]);
 
   return (
@@ -40,9 +50,9 @@ export function ImageViewer({ src, alt }: { src: string; alt: string }) {
             }}
             onCancel={(event) => {
               event.preventDefault();
+              event.stopPropagation();
               setOpen(false);
             }}
-            onClose={() => setOpen(false)}
           >
             <button
               type="button"

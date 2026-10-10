@@ -145,15 +145,16 @@ export function PostCard({
           onDoubleClick={(event) => {
             if (
               !imageDoubleClickLike ||
-              post.liked ||
               doubleLikePending.current ||
               !(event.target instanceof HTMLImageElement)
             ) return;
             event.preventDefault();
             doubleLikePending.current = true;
-            setHeartBurst(true);
-            window.setTimeout(() => setHeartBurst(false), 700);
-            void act("like", post.id, { liked: true })
+            if (!post.liked) {
+              setHeartBurst(true);
+              window.setTimeout(() => setHeartBurst(false), 700);
+            }
+            void act("like", post.id, { liked: !post.liked })
               .catch((e) => notify(e.message))
               .finally(() => { doubleLikePending.current = false; });
           }}
