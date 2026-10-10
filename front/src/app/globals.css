@@ -7,12 +7,10 @@
   --color-brand: #206444;
   --color-soft: #e8f2ec;
   --color-neutral: #f3f5f4;
-  --color-secondary: #e6edf3;
-  --color-secondary-ink: #3f566b;
-  --color-secondary-line: #bbcbd8;
-  --color-secondary-selected: #d2dfe9;
-  --color-secondary-selected-ink: #263f54;
-  --color-secondary-selected-line: #809baf;
+  --color-secondary: #f0f3f0;
+  --color-secondary-ink: #46574b;
+  --color-secondary-selected: #dff1e4;
+  --color-secondary-selected-ink: #206444;
   --color-disabled: #f3f5f4;
   --color-disabled-ink: #9ca49f;
   --color-disabled-line: #e2e6e3;
@@ -720,14 +718,13 @@ header a:first-child {
 #report-form .time-picker-list button {
   background: var(--color-secondary);
   color: var(--color-secondary-ink);
-  border-color: var(--color-secondary-line);
+  border: 0;
 }
 #report-form .choice-chip input:checked + span,
 #report-form .time-picker-fields button[aria-pressed="true"],
 #report-form .time-picker-list button[aria-pressed="true"] {
   background: var(--color-secondary-selected);
   color: var(--color-secondary-selected-ink);
-  border-color: var(--color-secondary-selected-line);
 }
 #report-form .time-picker-fields small { color: inherit; }
 #report-form .time-picker-footer button { color: var(--color-secondary-ink); }
@@ -780,6 +777,35 @@ header a:first-child {
 }
 .time-picker-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
 .time-picker-footer button { min-height:36px; padding:0 8px; color:var(--color-brand); font-size:12px; }
+.btn-secondary,
+.choice-chip span,
+.time-picker-fields button,
+.time-picker-list button { border: 0; }
+.map-zoom {
+  position: absolute;
+  bottom: 36px;
+  left: 8px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-page);
+  color: var(--color-brand);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px #20272224;
+}
+.map-zoom button { width: 44px; height: 44px; border: 0; font-size: 24px; }
+.map-zoom input[type="range"] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 24px;
+  height: 104px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--color-brand);
+}
 .post-image-gallery { position:relative; }
 .photo-counter { position:absolute; left:8px; top:8px; padding:3px 7px; color:white; background:#172b21b8; font-size:12px; border-radius:4px; }
 .photo-prev, .photo-next { position:absolute; top:50%; transform:translateY(-50%); z-index:1; width:44px; height:44px; color:white; background:#172b2180; font-size:30px; }

@@ -169,10 +169,6 @@ export function KakaoMap({
           center,
           level: 3,
         });
-        instance.addControl(
-          new kakao.maps.ZoomControl(),
-          kakao.maps.ControlPosition.BOTTOMLEFT,
-        );
         kakao.maps.event.addListener(
           instance,
           "click",
@@ -268,6 +264,13 @@ export function KakaoMap({
               zoomed={level <= 3}
             />
           ))}
+      {map && (
+        <div className="map-zoom" aria-label="지도 크기 조절" onPointerDown={event => event.stopPropagation()}>
+          <button type="button" aria-label="지도 확대" disabled={level <= 1} onClick={() => map.setLevel(level - 1)}>+</button>
+          <input type="range" aria-label="지도 확대 수준" min={1} max={14} value={15 - level} onChange={event => map.setLevel(15 - Number(event.target.value))} />
+          <button type="button" aria-label="지도 축소" disabled={level >= 14} onClick={() => map.setLevel(level + 1)}>−</button>
+        </div>
+      )}
     </>
   );
 }
