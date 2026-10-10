@@ -905,6 +905,11 @@ header a:first-child {
   .page-wrap {
     padding: 0 16px 16px;
   }
+  .home-wrap .news-roller {
+    margin-inline: -16px;
+    padding-inline: 16px;
+    scroll-padding-inline: 16px;
+  }
   .map-view {
     height: 400px;
   }
