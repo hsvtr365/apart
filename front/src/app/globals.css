@@ -693,21 +693,21 @@ header a:first-child {
 .news-card-notice {
   flex-direction: row;
   align-items: center;
-  gap: 10px;
-  min-height: 104px;
-  padding: 8px;
+  gap: 8px;
+  min-height: 76px;
+  padding: 6px 8px;
 }
 .news-card:not(.news-card-notice) {
   min-height: 180px;
 }
 .notice-card-date {
   display: flex;
-  flex: 0 0 48px;
+  flex: 0 0 38px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1px;
-  min-height: 72px;
+  min-height: 52px;
   border-right: 2px solid #dcefe4;
   color: #66736b;
   line-height: 1.2;
