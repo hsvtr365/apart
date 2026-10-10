@@ -11,7 +11,7 @@ import {
 } from "@/lib/types";
 import { KakaoMap, type MapPoint } from "./kakao-map";
 import { TimePicker } from "./time-picker";
-import { Building2, Check, ImagePlus, ShoppingBasket, Store } from "lucide-react";
+import { Building2, Check, ImagePlus, ShoppingBasket, Square, SquareCheck, Store } from "lucide-react";
 export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
@@ -234,7 +234,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                     value={value}
                     defaultChecked={(post?.category ?? "FOOD") === value}
                   />
-                  <span><CategoryIcon className="category-icon" size={20} strokeWidth={1.8} aria-hidden="true" />{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
+                  <span><span className="category-state"><CategoryIcon className="category-icon" size={20} strokeWidth={1.8} aria-hidden="true" /><Check className="category-check" size={20} strokeWidth={2} aria-hidden="true" /></span>{label}</span>
                 </label>
                 );
               })}
@@ -307,7 +307,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                     checked={scheduleType === value}
                     onChange={() => setScheduleType(value)}
                   />
-                  <span>{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
+                  <span>{label}<Square className="choice-square" size={18} aria-hidden="true" /><SquareCheck className="choice-square-checked" size={18} aria-hidden="true" /></span>
                 </label>
               ))}
             </div>
@@ -324,7 +324,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                       value={day}
                       defaultChecked={post?.weekdays.includes(day)}
                     />
-                    <span>{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
+                    <span>{label}<Square className="choice-square" size={18} aria-hidden="true" /><SquareCheck className="choice-square-checked" size={18} aria-hidden="true" /></span>
                   </label>
                 ))}
               </div>
@@ -367,7 +367,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                       value={value}
                       defaultChecked={post?.seasons.includes(value)}
                     />
-                    <span>{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
+                    <span>{label}<Square className="choice-square" size={18} aria-hidden="true" /><SquareCheck className="choice-square-checked" size={18} aria-hidden="true" /></span>
                   </label>
                 ))}
               </div>

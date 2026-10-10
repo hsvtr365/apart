@@ -717,13 +717,21 @@ header a:first-child {
 .choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .choice-chip { position: relative; cursor: pointer; }
 .choice-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.choice-chip span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 8px 14px; border: 1px solid var(--color-line); border-radius: 24px; background: var(--color-neutral); font-weight: 600; }
+.choice-chip > input + span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 8px 14px; border: 1px solid var(--color-line); border-radius: 24px; background: var(--color-neutral); font-weight: 600; }
 .choice-chip input:checked + span { background: var(--color-brand); border-color: var(--color-brand); color: white; }
-.choice-chip .choice-check { display: none; flex: none; }
-.choice-chip input:checked + span .choice-check { display: inline-block; }
+.choice-chip .category-state { display: inline-grid; width: 20px; height: 20px; flex: none; place-items: center; }
+.choice-chip .category-icon { grid-area: 1 / 1; }
+.choice-chip .category-check { display: none; grid-area: 1 / 1; }
+.choice-chip input:checked + span .category-icon { display: none; }
+.choice-chip input:checked + span .category-check { display: block; }
+.choice-chip .choice-square,
+.choice-chip .choice-square-checked { flex: none; margin-left: auto; }
+.choice-chip .choice-square-checked { display: none; }
+.choice-chip input:checked + span .choice-square { display: none; }
+.choice-chip input:checked + span .choice-square-checked { display: block; }
 .category-icon { flex: none; }
 .choice-chip input:focus-visible + span { outline: 2px solid var(--color-brand); outline-offset: 3px; }
-#report-form .choice-chip span,
+#report-form .choice-chip > input + span,
 #report-form .time-picker-fields button,
 #report-form .time-picker-list button {
   background: var(--color-secondary);
@@ -798,7 +806,7 @@ header a:first-child {
 .time-picker-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
 .time-picker-footer button { min-height:36px; padding:0 8px; color:var(--color-brand); font-size:12px; }
 .btn-secondary,
-.choice-chip span,
+.choice-chip > input + span,
 .time-picker-fields button,
 .time-picker-list button { border: 0; }
 .map-zoom {
