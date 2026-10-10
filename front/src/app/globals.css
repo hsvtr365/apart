@@ -7,6 +7,15 @@
   --color-brand: #206444;
   --color-soft: #e8f2ec;
   --color-neutral: #f3f5f4;
+  --color-secondary: #e6edf3;
+  --color-secondary-ink: #3f566b;
+  --color-secondary-line: #bbcbd8;
+  --color-secondary-selected: #d2dfe9;
+  --color-secondary-selected-ink: #263f54;
+  --color-secondary-selected-line: #809baf;
+  --color-disabled: #f3f5f4;
+  --color-disabled-ink: #9ca49f;
+  --color-disabled-line: #e2e6e3;
   --radius-sm: 4px;
 }
 @layer base {
@@ -702,10 +711,32 @@ header a:first-child {
 .choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .choice-chip { position: relative; cursor: pointer; }
 .choice-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.choice-chip span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 8px 14px; border: 1px solid var(--color-line); border-radius: 24px; background: #f3f5f4; font-weight: 600; }
+.choice-chip span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 8px 14px; border: 1px solid var(--color-line); border-radius: 24px; background: var(--color-neutral); font-weight: 600; }
 .choice-chip input:checked + span { background: var(--color-brand); border-color: var(--color-brand); color: white; }
 .choice-chip input:checked + span::before { content: '✓'; }
 .choice-chip input:focus-visible + span { outline: 2px solid var(--color-brand); outline-offset: 3px; }
+#report-form .choice-chip span,
+#report-form .time-picker-fields button,
+#report-form .time-picker-list button {
+  background: var(--color-secondary);
+  color: var(--color-secondary-ink);
+  border-color: var(--color-secondary-line);
+}
+#report-form .choice-chip input:checked + span,
+#report-form .time-picker-fields button[aria-pressed="true"],
+#report-form .time-picker-list button[aria-pressed="true"] {
+  background: var(--color-secondary-selected);
+  color: var(--color-secondary-selected-ink);
+  border-color: var(--color-secondary-selected-line);
+}
+#report-form .time-picker-fields small { color: inherit; }
+#report-form .time-picker-footer button { color: var(--color-secondary-ink); }
+#report-form .choice-chip input:disabled + span,
+#report-form .time-picker button:disabled {
+  background: var(--color-disabled);
+  color: var(--color-disabled-ink);
+  border-color: var(--color-disabled-line);
+}
 .map-filters { position: absolute; top: 12px; left: 12px; z-index: 20; display: flex; gap: 6px; max-width: calc(100% - 24px); padding: 5px; border: 1px solid var(--color-line); border-radius: 28px; background: white; box-shadow: 0 2px 8px #2027221a; }
 .map-filters button { min-height: 40px; padding: 6px 14px; border-radius: 24px; background: #f3f5f4; white-space: nowrap; font-weight: 600; }
 .map-filters button[aria-pressed="true"] { background: var(--color-brand); color: white; }
