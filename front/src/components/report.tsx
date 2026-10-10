@@ -7,6 +7,7 @@ import { type MapPoint } from "./kakao-map";
 import { LifeReportFields } from "./report-life-fields";
 import { NoticeReportFields } from "./report-notice-fields";
 import {
+  ArrowLeft,
   Building2,
   Check,
   ImagePlus,
@@ -14,7 +15,7 @@ import {
   Store,
   X,
 } from "lucide-react";
-export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
+export function Report({ post, onDone, onCancel, onDelete }: { post?: Post; onDone?: () => void; onCancel?: () => void; onDelete?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
   const params = useSearchParams();
@@ -126,15 +127,9 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   return (
     <>
       <header className="report-header">
+        {onCancel && <button type="button" className="icon-btn" aria-label="수정 취소하고 상세로 돌아가기" disabled={busy || uploading} onClick={onCancel}><ArrowLeft size={20} /></button>}
         <h1>{post ? "게시물 수정" : "제보하기"}</h1>
-        {post && (
-          <button type="button" className="visibility-switch" role="switch"
-            aria-checked={hidden} aria-label="게시물 숨김" disabled={busy}
-            onClick={() => setHidden(!hidden)}>
-            <span className="visibility-track"><span /></span>
-            {hidden ? "숨김" : "보임"}
-          </button>
-        )}
+        {onDelete && <button type="button" className="icon-btn report-delete" disabled={busy || uploading} onClick={onDelete}>삭제</button>}
         {data?.user && (
           <button
             className="btn report-submit"
@@ -142,7 +137,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
             form="report-form"
             disabled={busy || uploading}
           >
-            {busy ? "저장 중…" : post ? "수정 저장" : "소식 올리기"}
+            {busy ? "저장 중…" : post ? "저장" : "소식 올리기"}
           </button>
         )}
       </header>
@@ -299,6 +294,17 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               geo={geo}
               onGeoChange={setGeo}
             />
+          )}
+          {post && (
+            <div className="report-visibility">
+              <span className="field">게시물 노출여부</span>
+              <button type="button" className="visibility-switch" role="switch"
+                aria-checked={!hidden} aria-label="게시물 노출" disabled={busy}
+                onClick={() => setHidden(!hidden)}>
+                <span className="visibility-track"><span /></span>
+                {hidden ? "숨김" : "노출"}
+              </button>
+            </div>
           )}
           {error && (
             <p role="alert" className="mt-3 text-red-700">

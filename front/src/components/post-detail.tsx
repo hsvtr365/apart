@@ -89,7 +89,7 @@ export function PostDetail({
         close.current();
       }}
     >
-      <div className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-line bg-white px-3">
+      {!editing && <div className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-line bg-white px-3">
         <b>{editing ? "게시물 수정" : "게시물"}</b>
         {post && !post.adminDeleted && (post.authorId === data?.user?.id || data?.user?.permission === 0) && (
           <div className="ml-auto flex items-center">
@@ -100,7 +100,7 @@ export function PostDetail({
             >
               {editing ? "수정 취소" : "수정"}
             </button>
-            {data?.user?.permission === 0 && (
+            {data?.user?.permission === 0 && post.authorId !== data.user.id && (
               <button className="icon-btn mr-2 text-red-700" disabled={busy}
                 onClick={() => void act("admin-delete-post", post.id)
                   .then(() => { setEditing(false); notify("관리자 삭제처리했습니다."); })
@@ -120,7 +120,7 @@ export function PostDetail({
         <button className="icon-btn" aria-label="상세 닫기" onClick={onClose}>
           <Icon name="close" />
         </button>
-      </div>
+      </div>}
       {post?.adminDeleted && <p role="status" className="px-3 py-2 text-red-700">관리자가 삭제처리한 게시물입니다. 상세 열람만 가능합니다.</p>}
       {error ? (
         <p role="alert" className="p-6">
@@ -130,7 +130,12 @@ export function PostDetail({
         <p className="p-6">소식을 불러오는 중…</p>
       ) : editing && (post.authorId === data?.user?.id || data?.user?.permission === 0) ? (
         <div className="p-4">
-          <Report key={post.id} post={post} onDone={() => setEditing(false)} />
+          <Report key={post.id} post={post} onDone={() => setEditing(false)} onCancel={() => setEditing(false)} onDelete={post.authorId === data?.user?.id ? () => {
+            if (!window.confirm("이 게시물을 삭제할까요? 삭제 후 공개 목록에서 사라집니다.")) return;
+            void act("delete-post", post.id)
+              .then(() => { notify("게시물을 삭제했습니다."); close.current(); })
+              .catch(e => notify(e.message));
+          } : undefined} />
         </div>
       ) : (
         <div className={post.imageUrl ? "detail-layout" : ""}>

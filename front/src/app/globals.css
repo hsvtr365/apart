@@ -722,6 +722,11 @@ header a:first-child {
 .visibility-track > span { display:block; width:14px; height:14px; border-radius:50%; background:white; transition:transform .15s; }
 .visibility-switch[aria-checked="true"] .visibility-track { background:var(--color-brand); }
 .visibility-switch[aria-checked="true"] .visibility-track > span { transform:translateX(14px); }
+.report-visibility { display:flex; align-items:center; justify-content:space-between; margin-top:20px; }
+.report-visibility .field { margin:0; }
+.visibility-switch[aria-checked="false"] { color:#94a3b8; }
+.report-header h1 { margin-right:auto; }
+.report-delete { color:#b91c1c; }
 .notice-card-date b { color:#263d50; font-size:20px; line-height:1.15; }
 .notice-card-date small { font-size:10px; }
 .notice-card-content { flex:1; min-width:0; }
