@@ -238,6 +238,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               accept="image/*"
               multiple
               disabled={uploading || images.length === 6}
+              onCancel={(e) => e.stopPropagation()}
               onChange={(e) => {
                 const selected = Array.from(e.target.files ?? []);
                 e.currentTarget.value = "";

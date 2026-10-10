@@ -83,6 +83,8 @@ export function PostDetail({
         backdropPressed.current = false;
       }}
       onCancel={(e) => {
+        // File-picker cancellation bubbles to the enclosing dialog in some browsers.
+        if (e.target !== e.currentTarget) return;
         e.preventDefault();
         close.current();
       }}
