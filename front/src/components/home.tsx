@@ -181,22 +181,14 @@ function HomeNewsSection({
             {p.category === "NOTICE" ? (
               <>
                 <div className="notice-card-date">
-                  {p.noticeStartDate &&
+                  {p.noticeEndDate &&
                     (() => {
-                      const date = new Date(`${p.noticeStartDate}T12:00:00`);
+                      const date = new Date(`${p.noticeEndDate}T12:00:00`);
                       return (
                         <>
                           <small>{date.getMonth() + 1}월</small>
                           <b>{date.getDate()}</b>
-                          <small>
-                            (
-                            {
-                              ["일", "월", "화", "수", "목", "금", "토"][
-                                date.getDay()
-                              ]
-                            }
-                            )
-                          </small>
+                          <small>까지</small>
                         </>
                       );
                     })()}
@@ -204,12 +196,6 @@ function HomeNewsSection({
                 <div className="notice-card-content">
                   <div className="notice-card-title-row">
                     <b className="news-card-title">{p.title}</b>
-                    {p.noticeEndDate && (
-                      <small className="notice-card-end">
-                        ~ {Number(p.noticeEndDate.slice(5, 7))}월{" "}
-                        {Number(p.noticeEndDate.slice(8, 10))}일
-                      </small>
-                    )}
                   </div>
                   <p className="news-card-body">{p.body}</p>
                 </div>
@@ -232,9 +218,10 @@ function HomeNewsSection({
                   className="news-card-image"
                   aria-hidden="true"
                   style={{
-                    backgroundImage: `linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.94) 48%, rgba(255,255,255,.14) 100%), url("${p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}")`,
+                    backgroundImage: `linear-gradient(180deg, #fff 0%, rgba(255,255,255,.94) 30%, rgba(255,255,255,0) 65%), url("${p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}")`,
                   }}
-                />              </>
+                />
+              </>
             )}
           </Link>
         ))}
