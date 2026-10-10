@@ -94,7 +94,7 @@
   }
   h1 {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 800;
   }
   h2 {
     font-size: 16px;
@@ -123,7 +123,7 @@
     background: var(--color-brand);
     color: white;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
   }
   .btn-secondary {
     background: var(--color-neutral);
@@ -169,7 +169,7 @@
   .tab[aria-pressed="true"] {
     border-color: var(--color-brand);
     color: var(--color-brand);
-    font-weight: 700;
+    font-weight: 800;
   }
   .field {
     display: flex;
@@ -300,7 +300,7 @@
   background: white;
   color: var(--color-ink);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   box-shadow: 0 3px 10px #20272226;
 }
 .map-marker.expanded .map-marker-button {
@@ -356,7 +356,7 @@
   border-radius: 12px;
   border: 2px solid white;
   box-shadow: 0 2px 6px #20272226;
-  font-weight: 600;
+  font-weight: 700;
 }
 .map-callout-actions .presence button:first-child {
   color: #206444;
@@ -396,7 +396,7 @@
 .map-pin button.title {
   display: block;
   min-height: 44px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   width: 100%;
   text-align: left;
@@ -657,14 +657,14 @@
 .bottom-nav a[aria-current="page"] {
   background: var(--color-soft);
   color: var(--color-brand);
-  font-weight: 700;
+  font-weight: 800;
 }
 .post h3,
 .post strong,
 .map-pin a,
 .news-card > div,
 header a:first-child {
-  font-weight: 700;
+  font-weight: 800;
 }
 .news-roller {
   display: flex;
@@ -786,7 +786,7 @@ header a:first-child {
   background: #e3f2e9;
   color: #145c3d;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
 }
 .news-card-category.news-food {
   background: var(--color-category-food-bg);
@@ -807,7 +807,7 @@ header a:first-child {
   padding: 3px 8px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.4;
   white-space: nowrap;
 }
@@ -828,7 +828,7 @@ header a:first-child {
   margin-top: 5px;
   color: #17221b;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.4;
 }
 .news-card-body {
@@ -870,7 +870,7 @@ header a:first-child {
   border-radius: 999px;
   background: #e8f3ec;
   color: #175b3d;
-  font-weight: 700;
+  font-weight: 800;
   white-space: nowrap;
 }
 .home-feed-filter.active {
@@ -977,7 +977,7 @@ header a:first-child {
   border: 1px solid var(--color-line);
   border-radius: 24px;
   background: var(--color-neutral);
-  font-weight: 600;
+  font-weight: 700;
 }
 .choice-chip input:checked + span {
   background: var(--color-brand);
@@ -1074,7 +1074,7 @@ header a:first-child {
   border-radius: 24px;
   background: #f3f5f4;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 700;
 }
 .map-filters button[aria-pressed="true"] {
   background: var(--color-brand);
@@ -1101,7 +1101,7 @@ header a:first-child {
 #report-form .field {
   color: var(--color-form-label);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
 }
 #report-form .field small {
   color: var(--color-secondary-ink);
@@ -1130,7 +1130,7 @@ header a:first-child {
   background: var(--color-secondary-selected);
   color: var(--color-secondary-selected-ink);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .report-photo-select svg {
   width: 22px;
@@ -1254,7 +1254,7 @@ header a:first-child {
   background: var(--color-kakao);
   color: var(--color-kakao-ink);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   flex: none;
 }
 .open-chat-link img {

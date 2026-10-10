@@ -81,7 +81,7 @@ export function VillageApp() {
       {section === "home" && (
         <header className="shrink-0 border-b border-line">
           <div className="mx-auto flex h-13 max-w-295 items-center justify-between px-4 md:px-8">
-            <Link href="/" className="font-semibold text-lg">
+            <Link href="/" className="font-bold text-lg">
               햇빛마을20단지
             </Link>
             <a href="https://open.kakao.com/o/gG05eXOi" className="open-chat-link" target="_blank" rel="noopener noreferrer">

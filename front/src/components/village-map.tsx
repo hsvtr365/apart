@@ -79,7 +79,7 @@ export function VillageMap({
             <small>{p.observedAt ? " · 방금 확인" : ""}</small>
             <Link
               href={"/post/" + p.id}
-              className="flex min-h-11 items-center font-semibold"
+              className="flex min-h-11 items-center font-bold"
             >
               {p.title}
             </Link>
