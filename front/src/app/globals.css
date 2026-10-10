@@ -850,7 +850,6 @@ header a:first-child {
   border-radius: inherit;
   background-position: center bottom;
   background-size: cover;
-  opacity: 0.62;
 }
 .home-feed-filters {
   display: flex;
