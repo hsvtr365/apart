@@ -1,4 +1,5 @@
 "use client";
+import { LoadingMask } from "./loading-mask";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -240,7 +241,7 @@ export function Account() {
           )}
           {error && <p role="alert">{error}</p>}
           {loading ? (
-            <p className="py-6 text-muted">불러오는 중…</p>
+            <LoadingMask />
           ) : tab === "received" ? (
             <>
               {data.notifications.map((n) => (

@@ -5,6 +5,7 @@ import { useVillage } from "./store";
 import { PostDetailBody } from "./post-detail-body";
 import { Icon } from "./icons";
 import { ImageViewer } from "./image-viewer";
+import { LoadingMask } from "./loading-mask";
 import type { Post } from "@/lib/types";
 export function PostDetail({
   id,
@@ -118,7 +119,7 @@ export function PostDetail({
           {error}
         </p>
       ) : !post ? (
-        <p className="p-6">소식을 불러오는 중…</p>
+        <LoadingMask />
       ) : editing && (post.authorId === data?.user?.id || data?.user?.permission === 0) ? (
         <div className="detail-edit">
           <Report key={post.id} post={post} onDone={() => setEditing(false)} onCancel={() => setEditing(false)} onDelete={post.authorId === data?.user?.id ? () => {

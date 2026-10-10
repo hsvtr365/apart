@@ -9,6 +9,7 @@ import { VillageMap } from "./village-map";
 import { Report } from "./report";
 import { Account } from "./account";
 import { PostDetail } from "./post-detail";
+import { LoadingMask } from "./loading-mask";
 import { Home as HomeIcon, Map, Newspaper, Plus, UserRound } from "lucide-react";
 export function VillageApp() {
   const { data, error, message, reload, more, notify } = useVillage();
@@ -109,9 +110,7 @@ export function VillageApp() {
             </button>
           </div>
         ) : !data ? (
-          <p className="p-6 text-center text-muted" role="status">
-            소식을 불러오는 중…
-          </p>
+          <LoadingMask overlay />
         ) : section === "map" ? (
           <VillageMap posts={data.posts} full selected={id} />
         ) : (

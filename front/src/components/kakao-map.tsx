@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
 import { Presence } from "./presence";
+import { LoadingMask } from "./loading-mask";
 import { Icon } from "./icons";
 import { ChevronRight, Minus, Plus } from "lucide-react";
 
@@ -234,9 +235,7 @@ export function KakaoMap({
         </p>
       )}
       {key && !map && !error && (
-        <p role="status" className="absolute left-3 top-20 bg-white p-3">
-          지도를 불러오는 중…
-        </p>
+        <LoadingMask overlay />
       )}
       {map &&
         posts

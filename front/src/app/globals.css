@@ -1,4 +1,10 @@
 @import "tailwindcss";
+.loading-mask { display:flex; align-items:center; justify-content:center; min-height:160px; background:rgba(255,255,255,.85); color:var(--color-brand); }
+.loading-mask-overlay { position:absolute; inset:0; z-index:30; min-height:0; }
+.content-scroll { position:relative; }
+.loading-progress { animation:loading-spin .9s linear infinite; }
+@keyframes loading-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) { .loading-progress { animation:none; } }
 @theme {
   --color-page: #ffffff;
   --color-ink: #202722;
