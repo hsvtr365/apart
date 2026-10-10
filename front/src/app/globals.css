@@ -25,6 +25,10 @@
   --color-category-food-bg: #fff0ee;
   --color-category-notice: #246baa;
   --color-category-notice-bg: #eaf4fc;
+  --color-author-name: #14532d;
+  --color-like: #d97979;
+  --color-like-active: #db6470;
+  --color-comment-delete: #c98282;
   --color-disabled: #f3f5f4;
   --color-disabled-ink: #9ca49f;
   --color-disabled-line: #e2e6e3;
@@ -483,6 +487,8 @@
   gap: 8px;
   min-height: 48px;
 }
+.post-actions > button[aria-label="좋아요"] { color:var(--color-like); }
+.post-actions > button[aria-label="좋아요"][aria-pressed="true"] { color:var(--color-like-active); }
 .post-media .post-actions {
   position: absolute;
   bottom: 0;
@@ -631,7 +637,9 @@
 .post-detail-title { flex:1; min-width:0; margin:0; font-size:16px; font-weight:800; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .post-detail-header > button,.post-detail-header > div { flex-shrink:0; }
 .post-detail-content { margin-bottom:12px; }
-.comment-delete { min-width:28px; min-height:28px; padding:4px; color:#dc2626; }
+.comment-delete { min-width:28px; min-height:28px; padding:4px; color:var(--color-comment-delete); }
+.post-author-name { color:var(--color-author-name); }
+.comment-author-name { color:var(--color-ink); }
 .detail-edit { padding:0 16px 16px; }
 .detail-body { padding:12px; }
 .bottom-nav {
