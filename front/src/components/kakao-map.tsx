@@ -268,18 +268,6 @@ export function KakaoMap({
               zoomed={level <= 3}
             />
           ))}
-      {map && onPick && (
-        <button
-          type="button"
-          className="btn btn-secondary absolute bottom-8 left-2 z-10"
-          onClick={() => {
-            const c = map.getCenter();
-            onPick({ latitude: c.getLat(), longitude: c.getLng() });
-          }}
-        >
-          지도 중심 선택
-        </button>
-      )}
     </>
   );
 }

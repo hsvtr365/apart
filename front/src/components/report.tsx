@@ -117,7 +117,14 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   }
   return (
     <>
-      <h1 className="page-title">{post ? "게시물 수정" : "제보하기"}</h1>
+      <header className="report-header">
+        <h1>{post ? "게시물 수정" : "제보하기"}</h1>
+        {data?.user && (
+          <button className="btn report-submit" type="submit" form="report-form" disabled={busy || uploading}>
+            {busy ? "저장 중…" : post ? "수정 저장" : "소식 올리기"}
+          </button>
+        )}
+      </header>
       {params.get("login") === "failed" && !data?.user && (
         <p role="alert" className="mb-3 text-red-700">
           로그인을 완료하지 못했어요. 다시 시도해주세요.
@@ -141,7 +148,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
           )}
         </div>
       ) : (
-        <form onSubmit={submit}>
+        <form id="report-form" onSubmit={submit}>
           <label className="field mt-0" htmlFor="report-title">
             제목 <small>{title.length}/15</small>
           </label>
@@ -352,18 +359,12 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               </div>
             </fieldset>
           )}
-          <small className="mt-2 block text-muted">
-            요일·시간·계절은 아는 정보만 선택해주세요. 실제 방문 일정은 달라질
-            수 있어요.
-          </small>
+          <small className="mt-2 block text-muted">요일·시간·계절은 아는 정보만 선택해주세요.</small>
           {error && (
             <p role="alert" className="mt-3 text-red-700">
               {error}
             </p>
           )}
-          <button className="btn mt-4 w-full" disabled={busy || uploading}>
-            {busy ? "저장 중…" : post ? "수정 저장" : "소식 올리기"}
-          </button>
         </form>
       )}
     </>
