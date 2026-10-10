@@ -84,9 +84,10 @@ export function VillageApp() {
             <Link href="/" className="font-semibold text-lg">
               햇빛마을20단지
             </Link>
-            <Link href="/report" className="hidden text-brand md:inline-flex">
-              ＋ 소식 제보
-            </Link>
+            <a href="https://open.kakao.com/o/gG05eXOi" className="open-chat-link" target="_blank" rel="noopener noreferrer">
+              <img src="/kakaotalk.png" width={24} height={24} alt="" />
+              단톡방
+            </a>
           </div>
         </header>
       )}

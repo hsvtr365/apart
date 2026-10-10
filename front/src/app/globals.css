@@ -5,6 +5,8 @@
   --color-muted: #626b65;
   --color-line: #dde2de;
   --color-brand: #206444;
+  --color-kakao: #FEE500;
+  --color-kakao-ink: #191919;
   --color-soft: #e8f2ec;
   --color-neutral: #f3f5f4;
   --color-input: #f3f5f4;
@@ -800,6 +802,8 @@ header a:first-child {
 }
 .report-header h1 { margin: 0; font-size: 18px; }
 .report-submit { min-height: 36px; padding: 4px 12px; }
+.open-chat-link { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 10px; border: 0; border-radius: 4px; background: var(--color-kakao); color: var(--color-kakao-ink); font-size: 14px; font-weight: 600; flex: none; }
+.open-chat-link img { width: 24px; height: 24px; }
 @container (min-width: 500px) {
   .time-picker-list { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
