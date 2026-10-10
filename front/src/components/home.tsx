@@ -285,7 +285,7 @@ export function Home() {
         emptyText="오늘 예정된 소식이 없어요."
       />
       <HomeNewsSection
-        title="관리사무소"
+        title="공고"
         icon={Bell}
         posts={notices}
         emptyText="진행 중인 공고가 없어요."
