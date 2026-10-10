@@ -141,7 +141,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
           )}
         </div>
       ) : (
-        <form className="panel" onSubmit={submit}>
+        <form onSubmit={submit}>
           <label className="field mt-0" htmlFor="report-title">
             제목 <small>{title.length}/15</small>
           </label>

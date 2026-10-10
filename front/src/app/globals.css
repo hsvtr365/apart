@@ -716,7 +716,7 @@ header a:first-child {
 .report-photo { position:relative; overflow:hidden; border-radius:4px; }
 .report-photo img { width:100%; height:110px; object-fit:cover; }
 .report-photo button { position:absolute; top:0; right:0; width:36px; height:36px; background:#172b21b8; color:white; font-size:24px; }
-.time-picker { margin-top:16px; padding:12px; border:1px solid var(--color-line); border-radius:4px; }
+.time-picker { margin-top:16px; container-type:inline-size; }
 .time-picker-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .time-picker-fields button { padding:8px 12px; text-align:left; border:1px solid var(--color-line); border-radius:4px; }
 .time-picker-fields button[aria-pressed="true"] { border-color:var(--color-brand); }
@@ -726,6 +726,12 @@ header a:first-child {
 .time-picker-list { position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:32px; gap:6px; height:184px; overflow-y:auto; overscroll-behavior:contain; }
 .time-picker-list button { height:32px; min-height:32px; padding:0; border:1px solid var(--color-line); border-radius:20px; font-size:13px; }
 .time-picker-list button[aria-pressed="true"] { color:white; background:var(--color-brand); border-color:var(--color-brand); }
+@container (min-width: 360px) {
+  .time-picker-list { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@container (min-width: 500px) {
+  .time-picker-list { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
 .time-picker-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
 .time-picker-footer button { min-height:36px; padding:0 8px; color:var(--color-brand); font-size:12px; }
 .post-image-gallery { position:relative; }

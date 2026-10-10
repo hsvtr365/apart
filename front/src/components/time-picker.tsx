@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 const times = Array.from(
   { length: 48 },
@@ -18,11 +18,13 @@ export function TimePicker({
     arrivalTime: arrival,
     departureTime: departure,
   });
-  const [active, setActive] = useState<"arrivalTime" | "departureTime">(
-    "arrivalTime",
+  const [active, setActive] = useState<"arrivalTime" | "departureTime" | null>(
+    null,
   );
+  const listId = useId();
   const list = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!active) return;
     const value = values[active] ?? "06:00";
     const target = list.current?.querySelector<HTMLButtonElement>(
       `[data-time="${value}"]`,
@@ -42,7 +44,9 @@ export function TimePicker({
             type="button"
             key={name}
             aria-pressed={active === name}
-            onClick={() => setActive(name)}
+            aria-expanded={active === name}
+            aria-controls={listId}
+            onClick={() => setActive(current => current === name ? null : name)}
           >
             <small>{label} · 선택</small>
             <strong>{values[name] ?? "선택 안 함"}</strong>
@@ -59,6 +63,7 @@ export function TimePicker({
         name="departureTime"
         value={values.departureTime ?? ""}
       />
+      {active && <div id={listId}>
       <div className="time-picker-heading">
         <b>{active === "arrivalTime" ? "오는 시간" : "가는 시간"} 선택</b>
         <small>30분 단위 · 위아래 스크롤</small>
@@ -104,6 +109,7 @@ export function TimePicker({
           초기화
         </button>
       </div>
+      </div>}
     </section>
   );
 }
