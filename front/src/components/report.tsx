@@ -127,19 +127,18 @@ export function Report({ post, onDone, onCancel, onDelete }: { post?: Post; onDo
   return (
     <>
       <header className="report-header">
-        {onCancel && <button type="button" className="icon-btn" aria-label="수정 취소하고 상세로 돌아가기" disabled={busy || uploading} onClick={onCancel}><ArrowLeft size={20} /></button>}
-        <h1>{post ? "게시물 수정" : "제보하기"}</h1>
-        {onDelete && <button type="button" className="icon-btn report-delete" disabled={busy || uploading} onClick={onDelete}>삭제</button>}
-        {data?.user && (
-          <button
-            className="btn report-submit"
-            type="submit"
-            form="report-form"
-            disabled={busy || uploading}
-          >
-            {busy ? "저장 중…" : post ? "저장" : "소식 올리기"}
-          </button>
-        )}
+        <div className="report-header-title">
+          {onCancel && <button type="button" className="icon-btn" aria-label="수정 취소하고 상세로 돌아가기" disabled={busy || uploading} onClick={onCancel}><ArrowLeft size={20} /></button>}
+          <h1>{post ? "게시물 수정" : "제보하기"}</h1>
+        </div>
+        <div className="report-header-actions">
+          {onDelete && <button type="button" className="icon-btn report-delete" disabled={busy || uploading} onClick={onDelete}>삭제</button>}
+          {data?.user && (
+            <button className="btn report-submit" type="submit" form="report-form" disabled={busy || uploading}>
+              {busy ? "저장 중…" : post ? "저장" : "소식 올리기"}
+            </button>
+          )}
+        </div>
       </header>
       {params.get("login") === "failed" && !data?.user && (
         <p role="alert" className="mb-3 text-red-700">
