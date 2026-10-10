@@ -721,7 +721,7 @@ header a:first-child {
 .choice-chip input:checked + span { background: var(--color-brand); border-color: var(--color-brand); color: white; }
 .choice-chip .choice-check { display: none; flex: none; }
 .choice-chip input:checked + span .choice-check { display: inline-block; }
-.category-art-icon { width: 28px; height: 28px; flex: none; object-fit: cover; border-radius: 50%; }
+.category-icon { flex: none; }
 .choice-chip input:focus-visible + span { outline: 2px solid var(--color-brand); outline-offset: 3px; }
 #report-form .choice-chip span,
 #report-form .time-picker-fields button,

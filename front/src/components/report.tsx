@@ -11,7 +11,7 @@ import {
 } from "@/lib/types";
 import { KakaoMap, type MapPoint } from "./kakao-map";
 import { TimePicker } from "./time-picker";
-import { Check, ImagePlus } from "lucide-react";
+import { Building2, Check, ImagePlus, ShoppingBasket, Store } from "lucide-react";
 export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
@@ -225,6 +225,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
             <legend className="field">카테고리</legend>
             <div className="choice-row">
               {Object.entries(categories).map(([value, label]) => {
+                const CategoryIcon = value === "FOOD" ? ShoppingBasket : value === "NOTICE" ? Building2 : Store;
                 return (
                 <label className="choice-chip" key={value}>
                   <input
@@ -233,7 +234,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                     value={value}
                     defaultChecked={(post?.category ?? "FOOD") === value}
                   />
-                  <span><img className="category-art-icon" src={value === "FOOD" ? "/food.svg" : value === "NOTICE" ? "/notice.svg" : "/market.svg"} alt="" />{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
+                  <span><CategoryIcon className="category-icon" size={20} strokeWidth={1.8} aria-hidden="true" />{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
                 </label>
                 );
               })}
