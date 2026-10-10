@@ -694,11 +694,11 @@ header a:first-child {
   flex-direction: row;
   align-items: flex-start;
   gap: 10px;
-  min-height: 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
+  min-height: 70px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #e8efea;
+  box-shadow: 0 3px 14px #183b2810;
 }
 .news-card:not(.news-card-notice) {
   min-height: 180px;
