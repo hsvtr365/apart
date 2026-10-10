@@ -676,13 +676,15 @@ header a:first-child {
   padding: 2px 2px 8px;
 }
 .news-card {
+  position: relative;
+  isolation: isolate;
   flex: 0 0 calc((100% - 24px) / 3);
   min-width: 240px;
   max-width: 360px;
   display: flex;
   flex-direction: column;
   padding: 8px;
-  background: linear-gradient(155deg, #ffffff 58%, #f7fbf8 100%);
+  background: #fff;
   border: 1px solid #e8efea;
   border-radius: 8px;
   box-shadow: 0 3px 14px #183b2810;
@@ -834,18 +836,18 @@ header a:first-child {
   font-size: 13px;
   line-height: 1.4;
   -webkit-box-orient: vertical;
-  min-height: 54px;
-  -webkit-line-clamp: 3;
+  min-height: 36.4px;
+  -webkit-line-clamp: 2;
 }
 .news-card-notice .news-card-body { min-height:0; -webkit-line-clamp:2; }
 .news-card-image {
-  display: block;
-  width: 100%;
-  height: 84px;
-  margin-top: auto;
-  padding-top: 6px;
-  border-radius: 6px;
-  object-fit: cover;
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background-position: center;
+  background-size: cover;
+  opacity: 0.62;
 }
 .home-feed-filters {
   display: flex;

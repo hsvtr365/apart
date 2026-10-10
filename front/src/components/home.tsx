@@ -228,18 +228,13 @@ function HomeNewsSection({
                 </span>
                 <b className="news-card-title">{p.title}</b>
                 <p className="news-card-body">{p.body}</p>
-                <img
+                <span
                   className="news-card-image"
-                  src={
-                    p.imageUrl ||
-                    (p.category === "MARKET" ? "/market.svg" : "/food.svg")
-                  }
-                  alt={
-                    p.imageUrl ? "" : `${categories[p.category]} 기본 이미지`
-                  }
-                  loading="lazy"
-                />
-              </>
+                  aria-hidden="true"
+                  style={{
+                    backgroundImage: `linear-gradient(180deg, rgba(255,255,255,.98) 0%, rgba(255,255,255,.94) 48%, rgba(255,255,255,.14) 100%), url("${p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}")`,
+                  }}
+                />              </>
             )}
           </Link>
         ))}
