@@ -42,6 +42,7 @@ export function VillageApp() {
       <h1 className="page-title">생활 피드</h1>
       <FeedTabs selected={id || "all"} />
       {data?.posts
+        .filter((p) => !p.hidden)
         .filter(
           (p) =>
             !id ||

@@ -79,7 +79,7 @@ async function handle(
       return json({
         mode: "live",
         user: user
-          ? { id: user.id, nickname: user.nickname, building: user.building }
+          ? { id: user.id, nickname: user.nickname, building: user.building, permission: user.permission }
           : null,
         ...(await getPosts(user?.id)),
         todayPosts: await getTodayPosts(user?.id),
@@ -217,8 +217,10 @@ async function handle(
           ),
         );
       if (resource === "posts" && id) {
-        const p = (await getPosts(user?.id, undefined, { id }, 1)).posts[0];
+        const p = (await getPosts(user?.id, undefined, { id }, 1, true)).posts[0];
         if (!p) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+        if (p.hidden && p.authorId !== user?.id && user?.permission !== 0)
+          throw new HttpError("숨겨진 글입니다.", 404);
         return json({
           ...p,
           ...(await comments(
@@ -240,6 +242,8 @@ async function handle(
           user.id,
           req.nextUrl.searchParams.get("cursor") ?? undefined,
           where,
+          30,
+          tab !== "liked" && tab !== "comments",
         );
         if (tab === "comments")
           for (const p of result.posts) {
@@ -269,7 +273,7 @@ async function handle(
       if (ip) limit("presence-ip:" + hash(ip), 300);
       const { state } = z.object({ state: z.enum(["ARRIVED", "GONE"]) }).parse(await body(req));
       const post = await db().post.findUnique({ where: { id } });
-      if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+      if (!post || post.hidden) throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
       if (post.category !== "FOOD") throw new HttpError("먹거리 소식만 현장 확인할 수 있습니다.");
       await db().$transaction(async tx => {
         // Serialize the visitor's requests so concurrent clicks cannot bypass the cooldown.
@@ -307,7 +311,7 @@ async function handle(
       const updated = await db().user.update({
         where: { id: user.id },
         data: input,
-        select: { id: true, nickname: true, building: true },
+        select: { id: true, nickname: true, building: true, permission: true },
       });
       return json(updated);
     }
@@ -359,7 +363,7 @@ async function handle(
         : null;
       if (id && !existing)
         throw new HttpError("삭제되었거나 없는 글입니다.", 404);
-      if (existing && existing.authorId !== user.id)
+      if (existing && existing.authorId !== user.id && user.permission !== 0)
         throw new HttpError("본인 글만 수정할 수 있어요.", 403);
       const input = postSchema.parse(await body(req));
       const { imageUrl, imageUrls, ...fields } = input;
@@ -386,6 +390,8 @@ async function handle(
     if (resource === "posts" && id) {
       const post = await db().post.findUnique({ where: { id } });
       if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+      if (post.hidden && post.authorId !== user.id && user.permission !== 0)
+        throw new HttpError("숨겨진 글입니다.", 404);
       if (action === "comments" && method === "POST") {
         const input = commentSchema.parse(await body(req));
         await db().$transaction(async (tx) => {

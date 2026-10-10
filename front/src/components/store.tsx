@@ -99,7 +99,7 @@ export function Provider({ children }: { children: ReactNode }) {
           p.observedAt = new Date().toISOString();
         }
         if (kind === "edit-post" && p) {
-          if (p.authorId !== next.user!.id)
+          if (p.authorId !== next.user!.id && next.user!.permission !== 0)
             throw new Error("본인 글만 수정할 수 있어요.");
           Object.assign(p, payload as PostInput);
         }

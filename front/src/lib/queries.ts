@@ -15,9 +15,10 @@ export async function getPosts(
   cursor?: string,
   where: Prisma.PostWhereInput = {},
   limit = 30,
+  includeHidden = false,
 ): Promise<{ posts: Post[]; nextCursor: string | null }> {
   const rows = await db().post.findMany({
-    where,
+    where: includeHidden ? where : { AND: [where, { hidden: false }] },
     include,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: limit + 1,
@@ -54,6 +55,7 @@ export async function getPosts(
     nextCursor: more ? page.at(-1)!.id : null,
     posts: page.map((p) => ({
       id: p.id,
+      hidden: p.hidden,
       title: p.title,
       body: p.body,
       category: p.category,
@@ -126,7 +128,7 @@ export async function getTodayPosts(userId?: string) {
 }
 export async function notifications(userId: string): Promise<Notice[]> {
   const items = await db().notification.findMany({
-    where: { userId },
+    where: { userId, post: { OR: [{ hidden: false }, { authorId: userId }] } },
     include: {
       post: { select: { title: true } },
       comment: { include: { author: { select: { nickname: true } } } },

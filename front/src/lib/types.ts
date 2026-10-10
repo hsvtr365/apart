@@ -6,7 +6,7 @@ export const categories = {
 export type Category = keyof typeof categories;
 export const weekdayLabels = ["월", "화", "수", "목", "금", "토", "일"];
 export const seasonLabels: Record<string, string> = { SPRING: "봄", SUMMER: "여름", AUTUMN: "가을", WINTER: "겨울" };
-export type User = { id: string; nickname: string; building: string | null };
+export type User = { id: string; nickname: string; building: string | null; permission?: number };
 export type Comment = {
   id: string;
   body: string;
@@ -15,6 +15,7 @@ export type Comment = {
   createdAt: string;
 };
 export type Post = {
+  hidden?: boolean;
   id: string;
   title: string;
   body: string;
@@ -65,6 +66,7 @@ export type Bootstrap = {
   nextCursor: string | null;
 };
 export type PostInput = {
+  hidden?: boolean;
   title: string;
   body: string;
   category: Category;

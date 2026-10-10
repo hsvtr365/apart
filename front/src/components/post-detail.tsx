@@ -91,7 +91,7 @@ export function PostDetail({
     >
       <div className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-line bg-white px-3">
         <b>{editing ? "게시물 수정" : "게시물"}</b>
-        {post && post.authorId === data?.user?.id && (
+        {post && (post.authorId === data?.user?.id || data?.user?.permission === 0) && (
           <button
             className="icon-btn ml-auto mr-2 text-brand"
             disabled={busy}

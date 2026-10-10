@@ -24,6 +24,7 @@ model User {
   nickname String @db.VarChar(12)
   building String? @db.VarChar(8)
   role Role @default(USER)
+  permission Int @default(1)
   createdAt DateTime @default(now())
   posts Post[]
   comments Comment[]
@@ -48,6 +49,7 @@ model Post {
   title String @db.VarChar(15)
   body String @db.VarChar(500)
   category Category
+  hidden Boolean @default(false)
   // Schematic coordinates are kept separate from real geographic coordinates.
   mapX Float?
   mapY Float?

@@ -281,7 +281,10 @@ export function Account() {
                     ))
                 ) : (
                   <Link className="row" key={p.id} href={"/post/" + p.id}>
-                    <b>{p.title}</b>
+                    <div className="flex items-center justify-between gap-2">
+                      <b>{p.title}</b>
+                      {p.hidden && <small className="shrink-0">숨김</small>}
+                    </div>
                     <p className="my-1 line-clamp-2">{p.body}</p>
                     <small>
                       {categories[p.category]} · 댓글{" "}

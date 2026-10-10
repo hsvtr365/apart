@@ -17,6 +17,7 @@ const calendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
 export const postSchema = z
   .object({
     title: text(15),
+    hidden: z.boolean().default(false),
     body: text(500),
     category: z.enum(["FOOD", "NOTICE", "MARKET"]),
     scheduleType: z.enum(["WEEKLY", "ONCE"]).default("WEEKLY"),

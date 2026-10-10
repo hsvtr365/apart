@@ -717,6 +717,11 @@ header a:first-child {
   color: var(--color-category-notice);
   line-height: 1.2;
 }
+.visibility-switch { display:inline-flex; align-items:center; gap:6px; margin-left:auto; padding:4px; font-size:13px; color:var(--color-muted); }
+.visibility-track { width:34px; height:20px; padding:3px; border-radius:20px; background:var(--color-line); }
+.visibility-track > span { display:block; width:14px; height:14px; border-radius:50%; background:white; transition:transform .15s; }
+.visibility-switch[aria-checked="true"] .visibility-track { background:var(--color-brand); }
+.visibility-switch[aria-checked="true"] .visibility-track > span { transform:translateX(14px); }
 .notice-card-date b { color:#263d50; font-size:20px; line-height:1.15; }
 .notice-card-date small { font-size:10px; }
 .notice-card-content { flex:1; min-width:0; }

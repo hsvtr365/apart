@@ -38,6 +38,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
     post?.category ?? "FOOD",
   );
   const file = useRef<HTMLInputElement>(null);
+  const [hidden, setHidden] = useState(post?.hidden ?? false);
   async function upload(files: File[]) {
     if (images.length + files.length > 6) {
       setError("사진은 최대 6장까지 첨부할 수 있어요.");
@@ -87,6 +88,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
     try {
       const input: PostInput = {
         title: title.trim(),
+        hidden,
         body: text.trim(),
         category: fields.get("category") as PostInput["category"],
         mapX: category !== "NOTICE" && data?.mode === "demo" ? point[0] : null,
@@ -125,6 +127,14 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
     <>
       <header className="report-header">
         <h1>{post ? "게시물 수정" : "제보하기"}</h1>
+        {post && (
+          <button type="button" className="visibility-switch" role="switch"
+            aria-checked={hidden} aria-label="게시물 숨김" disabled={busy}
+            onClick={() => setHidden(!hidden)}>
+            <span className="visibility-track"><span /></span>
+            {hidden ? "숨김" : "보임"}
+          </button>
+        )}
         {data?.user && (
           <button
             className="btn report-submit"
