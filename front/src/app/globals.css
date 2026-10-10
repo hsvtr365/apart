@@ -711,7 +711,8 @@ header a:first-child {
   justify-content: center;
   gap: 1px;
   min-height: 52px;
-  padding: 4px 2px;
+  padding: 6px 13px;
+  margin-top: 6px;
   border-radius: 5px;
   background: var(--color-category-notice-bg);
   color: var(--color-category-notice);
