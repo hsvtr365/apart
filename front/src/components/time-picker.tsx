@@ -66,7 +66,6 @@ export function TimePicker({
       {active && <div id={listId}>
       <div className="time-picker-heading">
         <b>{active === "arrivalTime" ? "오는 시간" : "가는 시간"} 선택</b>
-        <small>30분 단위 · 위아래 스크롤</small>
       </div>
       <div
         className="time-picker-list"

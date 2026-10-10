@@ -7,6 +7,8 @@
   --color-brand: #206444;
   --color-soft: #e8f2ec;
   --color-neutral: #f3f5f4;
+  --color-input: #f3f5f4;
+  --color-input-placeholder: #89938c;
   --color-secondary: #f0f3f0;
   --color-secondary-ink: #46574b;
   --color-secondary-selected: #dff1e4;
@@ -65,11 +67,13 @@
     width: 100%;
     min-height: 44px;
     padding: 8px 12px;
-    border: 1px solid var(--color-line);
+    border: 0;
     border-radius: 4px;
-    background: white;
+    background: var(--color-input);
     font-size: 16px;
   }
+  input::placeholder,
+  textarea::placeholder { color: var(--color-input-placeholder); opacity: 1; }
   textarea {
     resize: vertical;
   }
