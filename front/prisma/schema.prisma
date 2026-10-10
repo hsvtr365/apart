@@ -50,6 +50,7 @@ model Post {
   body String @db.VarChar(500)
   category Category
   hidden Boolean @default(false)
+  adminDeleted Boolean @default(false)
   // Schematic coordinates are kept separate from real geographic coordinates.
   mapX Float?
   mapY Float?

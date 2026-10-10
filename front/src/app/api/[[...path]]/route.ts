@@ -219,7 +219,7 @@ async function handle(
       if (resource === "posts" && id) {
         const p = (await getPosts(user?.id, undefined, { id }, 1, true)).posts[0];
         if (!p) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
-        if (p.hidden && p.authorId !== user?.id && user?.permission !== 0)
+        if ((p.hidden || p.adminDeleted) && p.authorId !== user?.id && user?.permission !== 0)
           throw new HttpError("숨겨진 글입니다.", 404);
         return json({
           ...p,
@@ -273,7 +273,7 @@ async function handle(
       if (ip) limit("presence-ip:" + hash(ip), 300);
       const { state } = z.object({ state: z.enum(["ARRIVED", "GONE"]) }).parse(await body(req));
       const post = await db().post.findUnique({ where: { id } });
-      if (!post || post.hidden) throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
+      if (!post || post.hidden || post.adminDeleted) throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
       if (post.category !== "FOOD") throw new HttpError("먹거리 소식만 현장 확인할 수 있습니다.");
       await db().$transaction(async tx => {
         // Serialize the visitor's requests so concurrent clicks cannot bypass the cooldown.
@@ -365,6 +365,8 @@ async function handle(
         throw new HttpError("삭제되었거나 없는 글입니다.", 404);
       if (existing && existing.authorId !== user.id && user.permission !== 0)
         throw new HttpError("본인 글만 수정할 수 있어요.", 403);
+      if (existing?.adminDeleted)
+        throw new HttpError("관리자가 삭제처리한 글은 수정할 수 없습니다.", 403);
       const input = postSchema.parse(await body(req));
       const { imageUrl, imageUrls, ...fields } = input;
       const urls = imageUrls ?? (imageUrl ? [imageUrl] : []);
@@ -390,6 +392,12 @@ async function handle(
     if (resource === "posts" && id) {
       const post = await db().post.findUnique({ where: { id } });
       if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+      if (action === "admin-delete" && method === "PATCH") {
+        if (user.permission !== 0) throw new HttpError("관리자 권한이 필요합니다.", 403);
+        await db().post.update({ where: { id }, data: { adminDeleted: true } });
+        return json({ ok: true });
+      }
+      if (post.adminDeleted) throw new HttpError("관리자가 삭제처리한 글은 변경할 수 없습니다.", 403);
       if (post.hidden && post.authorId !== user.id && user.permission !== 0)
         throw new HttpError("숨겨진 글입니다.", 404);
       if (action === "comments" && method === "POST") {
@@ -425,7 +433,7 @@ async function handle(
     }
     if (resource === "comments" && id && method === "DELETE") {
       const result = await db().comment.deleteMany({
-        where: { id, authorId: user.id },
+        where: { id, authorId: user.id, post: { adminDeleted: false } },
       });
       if (!result.count)
         throw new HttpError("본인의 댓글만 삭제할 수 있습니다.", 403);

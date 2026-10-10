@@ -18,7 +18,7 @@ export async function getPosts(
   includeHidden = false,
 ): Promise<{ posts: Post[]; nextCursor: string | null }> {
   const rows = await db().post.findMany({
-    where: includeHidden ? where : { AND: [where, { hidden: false }] },
+    where: includeHidden ? where : { AND: [where, { hidden: false, adminDeleted: false }] },
     include,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: limit + 1,
@@ -56,6 +56,7 @@ export async function getPosts(
     posts: page.map((p) => ({
       id: p.id,
       hidden: p.hidden,
+      adminDeleted: p.adminDeleted,
       title: p.title,
       body: p.body,
       category: p.category,
@@ -128,7 +129,7 @@ export async function getTodayPosts(userId?: string) {
 }
 export async function notifications(userId: string): Promise<Notice[]> {
   const items = await db().notification.findMany({
-    where: { userId, post: { OR: [{ hidden: false }, { authorId: userId }] } },
+    where: { userId, post: { OR: [{ hidden: false, adminDeleted: false }, { authorId: userId }] } },
     include: {
       post: { select: { title: true } },
       comment: { include: { author: { select: { nickname: true } } } },

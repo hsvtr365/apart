@@ -91,7 +91,7 @@ export function PostDetail({
     >
       <div className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-line bg-white px-3">
         <b>{editing ? "게시물 수정" : "게시물"}</b>
-        {post && (post.authorId === data?.user?.id || data?.user?.permission === 0) && (
+        {post && !post.adminDeleted && (post.authorId === data?.user?.id || data?.user?.permission === 0) && (
           <button
             className="icon-btn ml-auto mr-2 text-brand"
             disabled={busy}
@@ -104,6 +104,13 @@ export function PostDetail({
           <Icon name="close" />
         </button>
       </div>
+      {post?.adminDeleted && <p role="status" className="px-3 py-2 text-red-700">관리자가 삭제처리한 게시물입니다. 상세 열람만 가능합니다.</p>}
+      {post && !post.adminDeleted && data?.user?.permission === 0 && (
+        <button className="icon-btn px-3 text-red-700" disabled={busy}
+          onClick={() => void act("admin-delete-post", post.id)
+            .then(() => { setEditing(false); notify("관리자 삭제처리했습니다."); })
+            .catch(e => notify(e.message))}>관리자 삭제</button>
+      )}
       {error ? (
         <p role="alert" className="p-6">
           {error}
@@ -127,7 +134,7 @@ export function PostDetail({
               <div className="border-b border-line py-2" key={c.id}>
                 <b>{c.author}</b>
                 <p className="whitespace-pre-line break-words">{c.body}</p>
-                {c.authorId === data?.user?.id && (
+                {!post.adminDeleted && c.authorId === data?.user?.id && (
                   <button
                     className="icon-btn text-muted"
                     disabled={busy}
@@ -150,7 +157,7 @@ export function PostDetail({
                 댓글 더 불러오기
               </button>
             )}
-            {data?.user ? (
+            {!post.adminDeleted && (data?.user ? (
               <form
                 className="mt-3 flex items-end gap-2"
                 onSubmit={async (e) => {
@@ -181,7 +188,7 @@ export function PostDetail({
               <a href="/my" className="btn mt-3">
                 로그인하고 댓글 쓰기
               </a>
-            )}
+            ))}
           </div>
         </div>
       )}

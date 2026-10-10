@@ -16,6 +16,7 @@ export type Comment = {
 };
 export type Post = {
   hidden?: boolean;
+  adminDeleted?: boolean;
   id: string;
   title: string;
   body: string;

@@ -7,6 +7,7 @@ import { PostImages } from "./post-images";
 import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
 export function Presence({ post, map = false, onConfirmed }: { post: Post; map?: boolean; onConfirmed?: () => void }) {
   const { act, notify, busy } = useVillage();
+  if (post.adminDeleted) return null;
   if (map && post.presenceConfirmed) return null;
   return (
     <div className="presence">
@@ -64,7 +65,7 @@ export function PostCard({
         notify("링크를 복사하지 못했어요. 주소창의 링크를 사용해주세요.");
     }
   }
-  const actions = (
+  const actions = post.adminDeleted ? null : (
     <div className="post-actions">
       <button
         className="icon-btn"

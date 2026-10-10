@@ -282,8 +282,8 @@ export function Account() {
                 ) : (
                   <Link className="row" key={p.id} href={"/post/" + p.id}>
                     <div className="flex items-center justify-between gap-2">
-                      <b>{p.title}</b>
-                      {p.hidden && <small className="shrink-0">숨김</small>}
+                      <b>{p.adminDeleted && <span className="text-red-700">관리자가 삭제처리 · </span>}{p.title}</b>
+                      {p.hidden && !p.adminDeleted && <small className="shrink-0">숨김</small>}
                     </div>
                     <p className="my-1 line-clamp-2">{p.body}</p>
                     <small>

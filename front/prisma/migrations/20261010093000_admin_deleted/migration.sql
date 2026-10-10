@@ -1,0 +1,1 @@
+ALTER TABLE "Post" ADD COLUMN "adminDeleted" BOOLEAN NOT NULL DEFAULT false;

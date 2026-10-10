@@ -99,9 +99,14 @@ export function Provider({ children }: { children: ReactNode }) {
           p.observedAt = new Date().toISOString();
         }
         if (kind === "edit-post" && p) {
+          if (p.adminDeleted) throw new Error("관리자가 삭제처리한 글은 수정할 수 없습니다.");
           if (p.authorId !== next.user!.id && next.user!.permission !== 0)
             throw new Error("본인 글만 수정할 수 있어요.");
           Object.assign(p, payload as PostInput);
+        }
+        if (kind === "admin-delete-post" && p) {
+          if (next.user!.permission !== 0) throw new Error("관리자 권한이 필요합니다.");
+          p.adminDeleted = true;
         }
         if (kind === "comment" && p) {
           p.comments.push({
@@ -131,6 +136,7 @@ export function Provider({ children }: { children: ReactNode }) {
       const config: Record<string, [string, string, unknown]> = {
         profile: ["/api/profile", "PATCH", payload],
         "edit-post": [`/api/posts/${id}`, "PATCH", payload],
+        "admin-delete-post": [`/api/posts/${id}/admin-delete`, "PATCH", {}],
         like: [`/api/posts/${id}/like`, "PUT", payload],
         presence: [`/api/posts/${id}/presence`, "PUT", payload],
         comment: [`/api/posts/${id}/comments`, "POST", payload],
