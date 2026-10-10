@@ -92,32 +92,34 @@ export function PostDetail({
       <div className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-line bg-white px-3">
         <b>{editing ? "게시물 수정" : "게시물"}</b>
         {post && !post.adminDeleted && (post.authorId === data?.user?.id || data?.user?.permission === 0) && (
-          <button
-            className="icon-btn ml-auto mr-2 text-brand"
-            disabled={busy}
-            onClick={() => setEditing(!editing)}
-          >
-            {editing ? "수정 취소" : "수정"}
-          </button>
+          <div className="ml-auto flex items-center">
+            <button
+              className="icon-btn mr-2 text-brand"
+              disabled={busy}
+              onClick={() => setEditing(!editing)}
+            >
+              {editing ? "수정 취소" : "수정"}
+            </button>
+            {data?.user?.permission === 0 && (
+              <button className="icon-btn mr-2 text-red-700" disabled={busy}
+                onClick={() => void act("admin-delete-post", post.id)
+                  .then(() => { setEditing(false); notify("관리자 삭제처리했습니다."); })
+                  .catch(e => notify(e.message))}>관리자 삭제</button>
+            )}
+          </div>
         )}
         <button className="icon-btn" aria-label="상세 닫기" onClick={onClose}>
           <Icon name="close" />
         </button>
       </div>
       {post?.adminDeleted && <p role="status" className="px-3 py-2 text-red-700">관리자가 삭제처리한 게시물입니다. 상세 열람만 가능합니다.</p>}
-      {post && !post.adminDeleted && data?.user?.permission === 0 && (
-        <button className="icon-btn px-3 text-red-700" disabled={busy}
-          onClick={() => void act("admin-delete-post", post.id)
-            .then(() => { setEditing(false); notify("관리자 삭제처리했습니다."); })
-            .catch(e => notify(e.message))}>관리자 삭제</button>
-      )}
       {error ? (
         <p role="alert" className="p-6">
           {error}
         </p>
       ) : !post ? (
         <p className="p-6">소식을 불러오는 중…</p>
-      ) : editing && post.authorId === data?.user?.id ? (
+      ) : editing && (post.authorId === data?.user?.id || data?.user?.permission === 0) ? (
         <div className="p-4">
           <Report key={post.id} post={post} onDone={() => setEditing(false)} />
         </div>
