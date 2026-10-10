@@ -180,6 +180,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               id="report-images"
               ref={file}
               type="file"
+              hidden
               accept="image/*"
               multiple
               disabled={uploading || images.length === 6}
@@ -189,6 +190,15 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                 if (selected.length) void upload(selected);
               }}
             />
+            <button
+              type="button"
+              className="report-photo-select"
+              disabled={uploading || images.length === 6}
+              onClick={() => file.current?.click()}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8" cy="8" r="1.5" /><path d="m3 17 5-5 4 4 4-6 5 7" /></svg>
+              {uploading ? "업로드 중…" : images.length === 6 ? "사진 6장 첨부 완료" : "사진 선택"}
+            </button>
             {uploading && <small role="status">사진 업로드 중…</small>}
             <div className="report-photo-grid">
               {images.map((url, index) => (

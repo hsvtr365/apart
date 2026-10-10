@@ -9,6 +9,9 @@
   --color-neutral: #f3f5f4;
   --color-input: #f3f5f4;
   --color-input-placeholder: #89938c;
+  --color-form-label: #15212B;
+  --color-form-input: #F4F6F8;
+  --color-form-placeholder: #77828E;
   --color-secondary: #F3F5F7;
   --color-secondary-ink: #475569;
   --color-secondary-selected: #DDF5E6;
@@ -750,6 +753,12 @@ header a:first-child {
 @media (max-width: 360px) { .map-filters button { padding-inline: 10px; } }
 
 .report-photo-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:8px; }
+#report-form .field { color: var(--color-form-label); font-size: 16px; font-weight: 600; }
+#report-form .field small { color: var(--color-secondary-ink); font-size: 13px; font-weight: 400; }
+#report-title, #report-body { background: var(--color-form-input); color: var(--color-form-label); font-size: 16px; line-height: 1.5; }
+#report-title::placeholder, #report-body::placeholder { color: var(--color-form-placeholder); }
+.report-photo-select { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px; border: 0; border-radius: 4px; background: var(--color-secondary-selected); color: var(--color-secondary-selected-ink); font-size: 16px; font-weight: 600; }
+.report-photo-select svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .report-photo { position:relative; overflow:hidden; border-radius:4px; }
 .report-photo img { width:100%; height:110px; object-fit:cover; }
 .report-photo button { position:absolute; top:0; right:0; width:36px; height:36px; background:#172b21b8; color:white; font-size:24px; }
