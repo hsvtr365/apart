@@ -44,25 +44,29 @@ function HomeNewsSection({
   const roller = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
   const [canScroll, setCanScroll] = useState(false);
+  const [scrollEdges, setScrollEdges] = useState({ start: true, end: false });
   const interacting = useRef(false);
   useEffect(() => {
     const el = roller.current;
     if (!el) return;
-    const update = () => setCanScroll(el.scrollWidth > el.clientWidth + 1);
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setCanScroll(max > 1);
+      setScrollEdges({ start: el.scrollLeft <= 1, end: el.scrollLeft >= max - 1 });
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
     if (el.firstElementChild) observer.observe(el.firstElementChild);
     return () => observer.disconnect();
   }, [posts.length]);
-  function move(step: number) {
+  function move(step: number, automatic = false) {
     const el = roller.current;
     if (!el) return;
     const width = (el.firstElementChild as HTMLElement)?.offsetWidth || 250;
     const max = el.scrollWidth - el.clientWidth;
-    let next = el.scrollLeft + (width + 12) * step;
-    if (next > max + 4) next = 0;
-    if (next < 0) next = max;
+    let next = Math.max(0, Math.min(max, el.scrollLeft + (width + 12) * step));
+    if (automatic && step > 0 && el.scrollLeft >= max - 1) next = 0;
     el.scrollTo({
       left: next,
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -79,7 +83,7 @@ function HomeNewsSection({
         !document.hidden &&
         !matchMedia("(prefers-reduced-motion: reduce)").matches
       )
-        move(1);
+        move(1, true);
     }, 5500);
     return () => clearInterval(timer);
   }, [canScroll, paused]);
@@ -91,6 +95,7 @@ function HomeNewsSection({
           <button
             className="icon-btn"
             aria-label={`${title} 이전 소식`}
+            disabled={scrollEdges.start}
             onClick={() => move(-1)}
           >
             <ChevronLeft size={20} aria-hidden="true" />
@@ -109,6 +114,7 @@ function HomeNewsSection({
           <button
             className="icon-btn"
             aria-label={`${title} 다음 소식`}
+            disabled={scrollEdges.end}
             onClick={() => move(1)}
           >
             <ChevronRight size={20} aria-hidden="true" />
@@ -118,6 +124,12 @@ function HomeNewsSection({
       <div
         className="news-roller"
         ref={roller}
+        onScroll={() => {
+          const el = roller.current;
+          if (!el) return;
+          const max = el.scrollWidth - el.clientWidth;
+          setScrollEdges({ start: el.scrollLeft <= 1, end: el.scrollLeft >= max - 1 });
+        }}
         onPointerEnter={() => (interacting.current = true)}
         onPointerLeave={() => (interacting.current = false)}
         onFocus={() => (interacting.current = true)}
