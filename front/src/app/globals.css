@@ -585,3 +585,8 @@ header a:first-child {
 .choice-chip input:checked + span { background: var(--color-brand); border-color: var(--color-brand); color: white; }
 .choice-chip input:checked + span::before { content: '✓'; }
 .choice-chip input:focus-visible + span { outline: 2px solid var(--color-brand); outline-offset: 3px; }
+.map-filters { position: absolute; top: 12px; left: 12px; z-index: 20; display: flex; gap: 6px; max-width: calc(100% - 24px); padding: 5px; border: 1px solid var(--color-line); border-radius: 28px; background: white; box-shadow: 0 2px 8px #2027221a; }
+.map-filters button { min-height: 40px; padding: 6px 14px; border-radius: 24px; background: #f3f5f4; white-space: nowrap; font-weight: 600; }
+.map-filters button[aria-pressed="true"] { background: var(--color-brand); color: white; }
+.map-filter-period { display: flex; gap: 2px; padding-right: 6px; border-right: 1px solid var(--color-line); }
+@media (max-width: 360px) { .map-filters button { padding-inline: 10px; } }

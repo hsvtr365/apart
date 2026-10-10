@@ -1,4 +1,4 @@
-﻿/// <reference types="kakao.maps.d.ts" />
+/// <reference types="kakao.maps.d.ts" />
 "use client";
 import Script from "next/script";
 import Link from "next/link";
@@ -171,7 +171,7 @@ export function KakaoMap({
         });
         instance.addControl(
           new kakao.maps.ZoomControl(),
-          kakao.maps.ControlPosition.RIGHT,
+          kakao.maps.ControlPosition.BOTTOMLEFT,
         );
         kakao.maps.event.addListener(
           instance,

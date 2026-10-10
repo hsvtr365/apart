@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
+import { occursToday } from "@/lib/map-filter";
 import type { Post } from "@/lib/types";
 import { Presence } from "./post-card";
 import { KakaoMap } from "./kakao-map";
@@ -15,7 +17,15 @@ export function VillageMap({
 }) {
   const { data } = useVillage();
   const demo = data?.mode === "demo";
-  const points = posts.filter((p) => p.mapX !== null && p.mapY !== null);
+  const [todayOnly, setTodayOnly] = useState(!selected);
+  const [food, setFood] = useState(true);
+  const [market, setMarket] = useState(true);
+  const visible = posts.filter(p => {
+    if (!full) return p.category !== "MARKET" || p.scheduleType !== "WEEKLY" || (p.weekdays.length > 0 && occursToday(p));
+    if (p.category === "NOTICE" || (p.category === "FOOD" && !food) || (p.category === "MARKET" && !market)) return false;
+    return !todayOnly || occursToday(p);
+  });
+  const points = visible.filter((p) => p.mapX !== null && p.mapY !== null);
   const shown = selected
     ? [
         ...points.filter((p) => p.id === selected),
@@ -24,7 +34,17 @@ export function VillageMap({
     : points.slice(0, 4);
   return (
     <div className={"map-view " + (full ? "full" : "")}>
-      {!demo && <KakaoMap posts={posts} selected={selected} />}
+      {!demo && <KakaoMap posts={visible} selected={selected} />}
+      {full && (
+        <div className="map-filters" role="group" aria-label="지도 표시 조건">
+          <div className="map-filter-period">
+            <button aria-pressed={todayOnly} onClick={() => setTodayOnly(true)}>오늘</button>
+            <button aria-pressed={!todayOnly} onClick={() => setTodayOnly(false)}>모두</button>
+          </div>
+          <button aria-pressed={food} onClick={() => setFood(!food)}>먹거리</button>
+          <button aria-pressed={market} onClick={() => setMarket(!market)}>장터</button>
+        </div>
+      )}
       {demo && (
         <img className="map-art" src="/map.svg" alt="단지 배치 예시 지도" />
       )}
