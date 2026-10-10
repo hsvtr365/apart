@@ -36,18 +36,48 @@ export const sources = [
   },
   {
     url: "https://www.instagram.com/explore/tags/행신동/",
-    name: "행신동 소식",
-    description: "인스타그램 #행신동 게시물",
+    name: "행신동 · 동네 행사·소식",
+    description: "인스타그램 #행신동",
   },
   {
-    url: "https://www.instagram.com/explore/tags/덕양구/",
-    name: "덕양구 행사",
-    description: "인스타그램 #덕양구 게시물",
+    url: "https://www.google.com/search?q=site%3Ainstagram.com+행신동+플리마켓",
+    name: "행신동 · 플리마켓",
+    description: "인스타 게시물 검색",
   },
   {
-    url: "https://www.instagram.com/explore/tags/고양시축제/",
-    name: "고양시 축제",
-    description: "인스타그램 #고양시축제 게시물",
+    url: "https://www.google.com/search?q=site%3Ainstagram.com+서정마을+행사",
+    name: "행신동 · 서정마을 상권",
+    description: "인스타 게시물 검색",
+  },
+  {
+    url: "https://www.instagram.com/explore/tags/화정동/",
+    name: "화정동 · 지역 소식",
+    description: "인스타그램 #화정동",
+  },
+  {
+    url: "https://www.google.com/search?q=site%3Ainstagram.com+화정역+행사",
+    name: "화정동 · 화정역 상권·행사",
+    description: "인스타 게시물 검색",
+  },
+  {
+    url: "https://www.google.com/search?q=site%3Ainstagram.com+화정동+플리마켓",
+    name: "화정동 · 플리마켓·팝업",
+    description: "인스타 게시물 검색",
+  },
+  {
+    url: "https://www.instagram.com/explore/tags/능곡동/",
+    name: "능곡동 · 동네 소식",
+    description: "인스타그램 #능곡동",
+  },
+  {
+    url: "https://www.google.com/search?q=site%3Ainstagram.com+능곡시장",
+    name: "능곡동 · 능곡시장",
+    description: "인스타 게시물 검색",
+  },
+  {
+    url: "https://www.google.com/search?q=site%3Ainstagram.com+능곡동+축제",
+    name: "능곡동 · 지역 축제·행사",
+    description: "인스타 게시물 검색",
   },
   {
     url: "https://www.instagram.com/goyang_library/",

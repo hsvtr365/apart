@@ -271,7 +271,7 @@ export function Home() {
             </span>
             <ExternalLink size={18} aria-hidden="true" />
           </a>
-          {s.url.startsWith("https://www.instagram.com/") && <InstagramEmbed url={s.url} name={s.name} />}
+          {s.url.startsWith("https://www.instagram.com/") && !s.url.includes("/explore/tags/") && <InstagramEmbed url={s.url} name={s.name} />}
           </div>
         ))}
       </div>
@@ -331,7 +331,7 @@ export function Home() {
       {group(0, 4)}
       <details open>
         <summary className="min-h-11 cursor-pointer py-3">
-          고양시 기관·문화 채널 <small className="float-right">7곳</small>
+          고양시 기관·문화 채널 <small className="float-right">{sources.length - 4}곳</small>
         </summary>
         {group(4, sources.length)}
       </details>
