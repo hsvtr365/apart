@@ -392,6 +392,13 @@ async function handle(
     if (resource === "posts" && id) {
       const post = await db().post.findUnique({ where: { id } });
       if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+      if (method === "DELETE") {
+        if (post.authorId !== user.id) throw new HttpError("본인 글만 삭제할 수 있어요.", 403);
+        if (post.adminDeleted) throw new HttpError("관리자가 삭제처리한 글은 직접 삭제할 수 없습니다.", 403);
+        await db().post.update({ where: { id }, data: { userDeleted: true } });
+        return json({ ok: true });
+      }
+      if (post.userDeleted) throw new HttpError("이미 삭제한 글입니다.", 404);
       if (action === "admin-delete" && method === "PATCH") {
         if (user.permission !== 0) throw new HttpError("관리자 권한이 필요합니다.", 403);
         await db().post.update({ where: { id }, data: { adminDeleted: true } });

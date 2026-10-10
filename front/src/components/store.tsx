@@ -108,6 +108,10 @@ export function Provider({ children }: { children: ReactNode }) {
           if (next.user!.permission !== 0) throw new Error("관리자 권한이 필요합니다.");
           p.adminDeleted = true;
         }
+        if (kind === "delete-post" && p) {
+          if (p.authorId !== next.user!.id) throw new Error("본인 글만 삭제할 수 있어요.");
+          p.userDeleted = true;
+        }
         if (kind === "comment" && p) {
           p.comments.push({
             id: crypto.randomUUID(),
@@ -137,6 +141,7 @@ export function Provider({ children }: { children: ReactNode }) {
         profile: ["/api/profile", "PATCH", payload],
         "edit-post": [`/api/posts/${id}`, "PATCH", payload],
         "admin-delete-post": [`/api/posts/${id}/admin-delete`, "PATCH", {}],
+        "delete-post": [`/api/posts/${id}`, "DELETE", {}],
         like: [`/api/posts/${id}/like`, "PUT", payload],
         presence: [`/api/posts/${id}/presence`, "PUT", payload],
         comment: [`/api/posts/${id}/comments`, "POST", payload],

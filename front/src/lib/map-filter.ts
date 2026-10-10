@@ -47,7 +47,7 @@ export function occursToday(
 }
 
 export function isTodayNews(post: Post, now = new Date()) {
-  if (post.hidden || post.adminDeleted) return false;
+  if (post.hidden || post.adminDeleted || post.userDeleted) return false;
   if (post.category !== "NOTICE") return occursToday(post, now);
   const { today } = todayContext(now);
   return (

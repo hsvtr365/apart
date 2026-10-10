@@ -51,6 +51,7 @@ model Post {
   category Category
   hidden Boolean @default(false)
   adminDeleted Boolean @default(false)
+  userDeleted Boolean @default(false)
   // Schematic coordinates are kept separate from real geographic coordinates.
   mapX Float?
   mapY Float?

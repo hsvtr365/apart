@@ -106,6 +106,15 @@ export function PostDetail({
                   .then(() => { setEditing(false); notify("관리자 삭제처리했습니다."); })
                   .catch(e => notify(e.message))}>관리자 삭제</button>
             )}
+            {post.authorId === data?.user?.id && (
+              <button className="icon-btn mr-2 text-red-700" disabled={busy}
+                onClick={() => {
+                  if (!window.confirm("이 게시물을 삭제할까요? 삭제 후 공개 목록에서 사라집니다.")) return;
+                  void act("delete-post", post.id)
+                    .then(() => { notify("게시물을 삭제했습니다."); close.current(); })
+                    .catch(e => notify(e.message));
+                }}>삭제</button>
+            )}
           </div>
         )}
         <button className="icon-btn" aria-label="상세 닫기" onClick={onClose}>
