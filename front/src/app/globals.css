@@ -633,7 +633,7 @@ header a:first-child {
 }
 .news-roller {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -643,10 +643,10 @@ header a:first-child {
 .news-card {
   flex: 0 0 calc((100% - 24px) / 3);
   min-width: 240px;
-  padding: 14px;
+  padding: 8px;
   background: linear-gradient(155deg, #ffffff 58%, #f7fbf8 100%);
   border: 1px solid #e8efea;
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 3px 14px #183b2810;
   scroll-snap-align: start;
 }
@@ -655,48 +655,48 @@ header a:first-child {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin: 24px 0 10px;
+  margin: 18px 0 6px;
 }
 .home-section-heading h2 {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
   margin: 0;
   color: #17251e;
-  font-size: 21px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 700;
   letter-spacing: -0.035em;
 }
-.home-section-heading h2 > svg { color: var(--color-brand); }
+.home-section-heading h2 > svg { width: 20px; height: 20px; color: var(--color-brand); }
 .news-card-category {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 4px 11px;
+  gap: 4px;
+  min-height: 24px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: #e3f2e9;
   color: #145c3d;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 .news-card-category.news-food { background: #fff0dc; color: #b95b08; }
 .news-card-category.news-notice { background: #e7f2eb; color: #145c3d; }
 .news-card-title {
   display: block;
-  margin-top: 10px;
+  margin-top: 5px;
   color: #17221b;
-  font-size: 17px;
-  font-weight: 750;
+  font-size: 15px;
+  font-weight: 700;
   line-height: 1.4;
 }
 .news-card-body {
   display: -webkit-box;
   overflow: hidden;
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   color: #626b65;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.4;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -704,8 +704,8 @@ header a:first-child {
   display: block;
   width: 100%;
   height: 112px;
-  margin-top: 12px;
-  border-radius: 9px;
+  margin-top: 6px;
+  border-radius: 6px;
   object-fit: cover;
 }
 .home-feed-filters {
@@ -795,9 +795,7 @@ header a:first-child {
     flex-basis: 88%;
     min-width: 0;
   }
-  .news-card-image { height: 150px; }
-  .home-section-heading { margin-top: 22px; }
-  .home-section-heading h2 { font-size: 19px; }
+  .news-card-image { height: 112px; }
   .tab {
     font-size: 12px;
   }

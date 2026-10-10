@@ -165,7 +165,14 @@ function HomeNewsSection({
             </span>
             <b className="news-card-title">{p.title}</b>
             <p className="news-card-body">{p.body}</p>
-            {p.imageUrl && <img className="news-card-image" src={p.imageUrl} alt="" loading="lazy" />}
+            {(p.imageUrl || p.category !== "NOTICE") && (
+              <img
+                className="news-card-image"
+                src={p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}
+                alt={p.imageUrl ? "" : `${categories[p.category]} 기본 이미지`}
+                loading="lazy"
+              />
+            )}
           </Link>
         ))}
       </div>
