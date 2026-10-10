@@ -10,34 +10,9 @@ export const sources = [
     description: "공식 홈페이지 · 지역축제·주민 프로그램·복지행사",
   },
   {
-    url: "https://www.instagram.com/goyang_library/",
-    name: "행신도서관",
-    description: "도서관센터 통합 SNS · 강연·체험·교육",
-  },
-  {
     url: "https://www.goyanglib.or.kr/MH/index.do",
     name: "행신어린이도서관",
     description: "공식 홈페이지 · 어린이·가족 행사",
-  },
-  {
-    url: "https://www.instagram.com/goyangcity/",
-    name: "고양특례시청",
-    description: "@goyangcity · 행사·모집·시정 소식",
-  },
-  {
-    url: "https://www.instagram.com/flowerex/",
-    name: "고양국제꽃박람회",
-    description: "@flowerex · 꽃박람회·호수공원 행사",
-  },
-  {
-    url: "https://www.instagram.com/goyangcvb/",
-    name: "고양컨벤션뷰로",
-    description: "@goyangcvb · 전시·컨벤션·지역 행사",
-  },
-  {
-    url: "https://www.instagram.com/explore/tags/행신동/",
-    name: "행신동 · 동네 행사·소식",
-    description: "인스타그램 #행신동",
   },
   {
     url: "https://www.google.com/search?q=site%3Ainstagram.com+행신동+플리마켓",
@@ -50,11 +25,6 @@ export const sources = [
     description: "인스타 게시물 검색",
   },
   {
-    url: "https://www.instagram.com/explore/tags/화정동/",
-    name: "화정동 · 지역 소식",
-    description: "인스타그램 #화정동",
-  },
-  {
     url: "https://www.google.com/search?q=site%3Ainstagram.com+화정역+행사",
     name: "화정동 · 화정역 상권·행사",
     description: "인스타 게시물 검색",
@@ -65,11 +35,6 @@ export const sources = [
     description: "인스타 게시물 검색",
   },
   {
-    url: "https://www.instagram.com/explore/tags/능곡동/",
-    name: "능곡동 · 동네 소식",
-    description: "인스타그램 #능곡동",
-  },
-  {
     url: "https://www.google.com/search?q=site%3Ainstagram.com+능곡시장",
     name: "능곡동 · 능곡시장",
     description: "인스타 게시물 검색",
@@ -78,11 +43,6 @@ export const sources = [
     url: "https://www.google.com/search?q=site%3Ainstagram.com+능곡동+축제",
     name: "능곡동 · 지역 축제·행사",
     description: "인스타 게시물 검색",
-  },
-  {
-    url: "https://www.instagram.com/goyang_library/",
-    name: "고양시 도서관센터",
-    description: "@goyang_library · 강연·독서·체험",
   },
   {
     url: "https://www.goyang.go.kr/resve/",
