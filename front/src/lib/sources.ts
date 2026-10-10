@@ -30,6 +30,26 @@ export const sources = [
     description: "@flowerex · 꽃박람회·호수공원 행사",
   },
   {
+    url: "https://www.instagram.com/goyangcvb/",
+    name: "고양컨벤션뷰로",
+    description: "@goyangcvb · 전시·컨벤션·지역 행사",
+  },
+  {
+    url: "https://www.instagram.com/explore/tags/행신동/",
+    name: "행신동 소식",
+    description: "인스타그램 #행신동 게시물",
+  },
+  {
+    url: "https://www.instagram.com/explore/tags/덕양구/",
+    name: "덕양구 행사",
+    description: "인스타그램 #덕양구 게시물",
+  },
+  {
+    url: "https://www.instagram.com/explore/tags/고양시축제/",
+    name: "고양시 축제",
+    description: "인스타그램 #고양시축제 게시물",
+  },
+  {
     url: "https://www.instagram.com/goyang_library/",
     name: "고양시 도서관센터",
     description: "@goyang_library · 강연·독서·체험",
