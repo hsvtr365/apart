@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { occursToday } from "@/lib/map-filter";
 import type { Post } from "@/lib/types";
-import { Presence } from "./post-card";
+import { Presence } from "./presence";
 import { KakaoMap } from "./kakao-map";
 import { useVillage } from "./store";
 import { Expand } from "lucide-react";

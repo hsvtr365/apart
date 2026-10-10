@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Report } from "./report";
 import { useVillage } from "./store";
-import { PostCard } from "./post-card";
+import { PostDetailBody } from "./post-detail-body";
 import { Icon } from "./icons";
 import { ImageViewer } from "./image-viewer";
 import type { Post } from "@/lib/types";
@@ -89,8 +89,8 @@ export function PostDetail({
         close.current();
       }}
     >
-      {!editing && <div className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-line bg-white px-3">
-        <b>{editing ? "게시물 수정" : "게시물"}</b>
+      {!editing && <div className="post-detail-header">
+        <h1 className="post-detail-title">{post?.title}</h1>
         {post && !post.adminDeleted && (post.authorId === data?.user?.id || data?.user?.permission === 0) && (
           <div className="ml-auto flex items-center">
             <button
@@ -105,15 +105,6 @@ export function PostDetail({
                 onClick={() => void act("admin-delete-post", post.id)
                   .then(() => { setEditing(false); notify("관리자 삭제처리했습니다."); })
                   .catch(e => notify(e.message))}>관리자 삭제</button>
-            )}
-            {post.authorId === data?.user?.id && (
-              <button className="icon-btn mr-2 text-red-700" disabled={busy}
-                onClick={() => {
-                  if (!window.confirm("이 게시물을 삭제할까요? 삭제 후 공개 목록에서 사라집니다.")) return;
-                  void act("delete-post", post.id)
-                    .then(() => { notify("게시물을 삭제했습니다."); close.current(); })
-                    .catch(e => notify(e.message));
-                }}>삭제</button>
             )}
           </div>
         )}
@@ -141,7 +132,7 @@ export function PostDetail({
         <div className={post.imageUrl ? "detail-layout" : ""}>
           {post.imageUrl && <ImageViewer src={post.imageUrl} sources={post.imageUrls} alt={post.title} />}
           <div className="detail-body">
-            <PostCard post={post} full hideImage />
+            <PostDetailBody post={post} />
             <h2 className="mb-2">댓글 {post.commentCount}</h2>
             {!post.comments.length && (
               <p className="py-3 text-muted">첫 댓글을 남겨주세요.</p>

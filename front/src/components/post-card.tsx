@@ -3,104 +3,28 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
+import { Presence } from "./presence";
+import { PostActions } from "./post-actions";
 import { PostImages } from "./post-images";
 import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
-export function Presence({ post, map = false, onConfirmed }: { post: Post; map?: boolean; onConfirmed?: () => void }) {
-  const { act, notify, busy } = useVillage();
-  if (post.adminDeleted) return null;
-  if (map && post.presenceConfirmed) return null;
-  return (
-    <div className="presence">
-      {(["ARRIVED", "GONE"] as const).map((state) => (
-        <button
-          key={state}
-          aria-pressed={post.presence === state}
-          disabled={busy}
-          onClick={() =>
-            void act("presence", post.id, { state })
-              .then(() => {
-                onConfirmed?.();
-                notify("현장 상태를 반영했어요.");
-              })
-              .catch((e) => notify(e.message))
-          }
-        >
-          {map && (
-            <Icon
-              name={state === "ARRIVED" ? "check" : "close"}
-              strokeWidth="2.5"
-            />
-          )}
-          {state === "ARRIVED" ? (map ? "있어요" : "왔어요") : "갔어요"}
-        </button>
-      ))}
-    </div>
-  );
-}
 export function PostCard({
   post,
-  full = false,
-  hideImage = false,
   imageDoubleClickLike = false,
 }: {
   post: Post;
-  full?: boolean;
-  hideImage?: boolean;
   imageDoubleClickLike?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false),
     [heartBurst, setHeartBurst] = useState(false);
   const doubleLikePending = useRef(false);
-  const { act, notify, busy } = useVillage();
-  async function share() {
-    try {
-      const url = location.origin + "/post/" + post.id;
-      if (navigator.share) await navigator.share({ title: post.title, url });
-      else {
-        await navigator.clipboard.writeText(url);
-        notify("소식 링크를 복사했어요.");
-      }
-    } catch (e) {
-      if ((e as Error).name !== "AbortError")
-        notify("링크를 복사하지 못했어요. 주소창의 링크를 사용해주세요.");
-    }
-  }
-  const actions = post.adminDeleted ? null : (
-    <div className="post-actions">
-      <button
-        className="icon-btn"
-        aria-label="좋아요"
-        aria-pressed={post.liked}
-        disabled={busy}
-        onClick={() =>
-          void act("like", post.id, { liked: !post.liked }).catch((e) =>
-            notify(e.message),
-          )
-        }
-      >
-        <Icon name="heart" fill={post.liked ? "currentColor" : "none"} />
-        <span>{post.likes}</span>
-      </button>
-      <Link
-        href={"/post/" + post.id}
-        className="icon-btn"
-        aria-label="댓글 보기"
-      >
-        <Icon name="comment" />
-        <span>{post.commentCount}</span>
-      </Link>
-      <button className="icon-btn ml-auto" onClick={share} aria-label="공유" title="공유">
-        <Icon name="share" />
-      </button>
-    </div>
-  );
+  const { act, notify } = useVillage();
   const content = (
     <>
       <h3 className="mb-1">{post.title}</h3>
       <p
         className={
           "whitespace-pre-line break-words " +
-          (!full && !expanded ? "line-clamp-2" : "")
+          (!expanded ? "line-clamp-2" : "")
         }
       >
         {post.body}
@@ -108,8 +32,8 @@ export function PostCard({
     </>
   );
   return (
-    <article className={full ? "post post-full" : "post"}>
-      <div className={"flex items-center justify-between gap-2 " + (full ? "pb-2" : "py-2")}>
+    <article className="post">
+      <div className="flex items-center justify-between gap-2 py-2">
         <div className="flex flex-wrap items-center gap-x-2">
           <b>{post.author}</b>
           {post.authorBuilding && <small>{post.authorBuilding}</small>}
@@ -123,18 +47,14 @@ export function PostCard({
           {categories[post.category]}
         </span>
       </div>
-      {full ? (
-        content
-      ) : (
-        <Link
+              <Link
           href={"/post/" + post.id}
           className="block"
           aria-label={post.title + " 상세 보기"}
         >
           {content}
         </Link>
-      )}
-      {!full && post.body.length > 70 && (
+      {post.body.length > 70 && (
         <button
           className="icon-btn text-brand"
           aria-expanded={expanded}
@@ -143,7 +63,7 @@ export function PostCard({
           {expanded ? "접기" : "더보기"}
         </button>
       )}
-      {post.imageUrl && !hideImage ? (
+      {post.imageUrl ? (
         <div
           className={"post-media" + (imageDoubleClickLike ? " post-media-double-like" : "")}
           onDoubleClick={(event) => {
@@ -179,7 +99,7 @@ export function PostCard({
               <Presence post={post} />
             </div>
           )}
-          {actions}
+          <PostActions post={post} />
         </div>
       ) : (
         <>
@@ -195,7 +115,7 @@ export function PostCard({
             )}
             {post.category === "FOOD" && <Presence post={post} />}
           </div>
-          {actions}
+          <PostActions post={post} />
         </>
       )}
       {post.category === "NOTICE" && post.noticeStartDate && post.noticeEndDate && (

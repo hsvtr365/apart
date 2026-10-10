@@ -627,13 +627,12 @@
   width: 28px;
   height: 28px;
 }
-.detail-layout .post {
-  margin: 0;
-  border: 0;
-}
+.post-detail-header { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:8px; min-height:48px; padding:8px 12px; border-bottom:1px solid var(--color-line); background:white; }
+.post-detail-title { flex:1; min-width:0; margin:0; font-size:16px; font-weight:800; line-height:1.35; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; }
+.post-detail-header > button,.post-detail-header > div { flex-shrink:0; }
+.post-detail-content { margin-bottom:12px; }
 .detail-edit { padding:0 16px 16px; }
 .detail-body { padding:12px; }
-.post.post-full { padding:0; margin:0 0 12px; border:0; }
 .bottom-nav {
   display: flex;
   flex-shrink: 0;

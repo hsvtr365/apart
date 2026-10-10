@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
-import { Presence } from "./post-card";
+import { Presence } from "./presence";
 import { Icon } from "./icons";
 import { ChevronRight, Minus, Plus } from "lucide-react";
 
