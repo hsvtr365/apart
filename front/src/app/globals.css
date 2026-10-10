@@ -697,6 +697,9 @@ header a:first-child {
   min-height: 104px;
   padding: 8px;
 }
+.news-card:not(.news-card-notice) {
+  min-height: 180px;
+}
 .notice-card-date {
   display: flex;
   flex: 0 0 48px;
@@ -845,7 +848,7 @@ header a:first-child {
   z-index: -1;
   inset: 0;
   border-radius: inherit;
-  background-position: center;
+  background-position: center bottom;
   background-size: cover;
   opacity: 0.62;
 }
