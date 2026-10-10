@@ -56,6 +56,7 @@ function HomeNewsSection({
   const [paused, setPaused] = useState(false);
   const [canScroll, setCanScroll] = useState(false);
   const [scrollEdges, setScrollEdges] = useState({ start: true, end: false });
+  const [currentIndex, setCurrentIndex] = useState(0);
   const interacting = useRef(false);
   useEffect(() => {
     const el = roller.current;
@@ -63,7 +64,10 @@ function HomeNewsSection({
     const update = () => {
       const max = el.scrollWidth - el.clientWidth;
       setCanScroll(max > 1);
-      setScrollEdges({ start: el.scrollLeft <= 1, end: el.scrollLeft >= max - 1 });
+      setScrollEdges({
+        start: el.scrollLeft <= 1,
+        end: el.scrollLeft >= max - 1,
+      });
     };
     update();
     const observer = new ResizeObserver(update);
@@ -101,36 +105,44 @@ function HomeNewsSection({
   return (
     <>
       <div className="home-section-heading">
-        <h2><SectionIcon size={23} strokeWidth={2.5} aria-hidden="true" />{title}</h2>
-        {canScroll && <div className="flex">
-          <button
-            className="icon-btn"
-            aria-label={`${title} 이전 소식`}
-            disabled={scrollEdges.start}
-            onClick={() => move(-1)}
-          >
-            <ChevronLeft size={20} aria-hidden="true" />
-          </button>
-          <button
-            className="icon-btn"
-            aria-label={paused ? "자동 넘김 재생" : "자동 넘김 일시정지"}
-            onClick={() => setPaused(!paused)}
-          >
-            {paused ? (
-              <Play size={18} aria-hidden="true" />
-            ) : (
-              <Pause size={18} aria-hidden="true" />
-            )}
-          </button>
-          <button
-            className="icon-btn"
-            aria-label={`${title} 다음 소식`}
-            disabled={scrollEdges.end}
-            onClick={() => move(1)}
-          >
-            <ChevronRight size={20} aria-hidden="true" />
-          </button>
-        </div>}
+        <h2>
+          <SectionIcon size={23} strokeWidth={2.5} aria-hidden="true" />
+          {title}
+        </h2>
+        {canScroll && (
+          <div className="news-controls">
+            <button
+              className="carousel-arrow"
+              aria-label={`${title} 이전 소식`}
+              disabled={scrollEdges.start}
+              onClick={() => move(-1)}
+            >
+              <ChevronLeft size={20} aria-hidden="true" />
+            </button>
+            <span className="carousel-count" aria-live="polite">
+              {currentIndex + 1} / {posts.length}
+            </span>
+            <button
+              className="carousel-arrow"
+              aria-label={`${title} 다음 소식`}
+              disabled={scrollEdges.end}
+              onClick={() => move(1)}
+            >
+              <ChevronRight size={20} aria-hidden="true" />
+            </button>
+            <button
+              className="carousel-toggle"
+              aria-label={paused ? "자동 넘김 재생" : "자동 넘김 멈춤"}
+              onClick={() => setPaused(!paused)}
+            >
+              {paused ? (
+                <Play size={17} aria-hidden="true" />
+              ) : (
+                <Pause size={17} aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        )}
       </div>
       <div
         className="news-roller"
@@ -139,7 +151,15 @@ function HomeNewsSection({
           const el = roller.current;
           if (!el) return;
           const max = el.scrollWidth - el.clientWidth;
-          setScrollEdges({ start: el.scrollLeft <= 1, end: el.scrollLeft >= max - 1 });
+          setScrollEdges({
+            start: el.scrollLeft <= 1,
+            end: el.scrollLeft >= max - 1,
+          });
+          const step =
+            ((el.firstElementChild as HTMLElement)?.offsetWidth || 250) + 12;
+          setCurrentIndex(
+            Math.min(posts.length - 1, Math.round(el.scrollLeft / step)),
+          );
         }}
         onPointerEnter={() => (interacting.current = true)}
         onPointerLeave={() => (interacting.current = false)}
@@ -157,8 +177,16 @@ function HomeNewsSection({
             className="news-card"
             key={p.id}
           >
-            <span className={`news-card-category news-${p.category.toLowerCase()}`}>
-              {p.category === "NOTICE" ? <CalendarDays size={15} aria-hidden="true" /> : p.category === "FOOD" ? <ShoppingBasket size={15} aria-hidden="true" /> : <Store size={15} aria-hidden="true" />}
+            <span
+              className={`news-card-category news-${p.category.toLowerCase()}`}
+            >
+              {p.category === "NOTICE" ? (
+                <CalendarDays size={15} aria-hidden="true" />
+              ) : p.category === "FOOD" ? (
+                <ShoppingBasket size={15} aria-hidden="true" />
+              ) : (
+                <Store size={15} aria-hidden="true" />
+              )}
               {p.category === "NOTICE" && p.noticeEndDate
                 ? `~ ${Number(p.noticeEndDate.slice(5, 7))}월 ${Number(p.noticeEndDate.slice(8, 10))}일`
                 : categories[p.category]}
@@ -168,7 +196,10 @@ function HomeNewsSection({
             {(p.imageUrl || p.category !== "NOTICE") && (
               <img
                 className="news-card-image"
-                src={p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}
+                src={
+                  p.imageUrl ||
+                  (p.category === "MARKET" ? "/market.svg" : "/food.svg")
+                }
                 alt={p.imageUrl ? "" : `${categories[p.category]} 기본 이미지`}
                 loading="lazy"
               />
@@ -235,7 +266,10 @@ export function Home() {
         emptyText="진행 중인 공고가 없어요."
       />
       <div className="home-section-heading">
-        <h2><TrendingUp size={23} strokeWidth={2.5} aria-hidden="true" />생활 피드</h2>
+        <h2>
+          <TrendingUp size={23} strokeWidth={2.5} aria-hidden="true" />
+          생활 피드
+        </h2>
       </div>
       <div className="home-feed-filters">
         {[["all", "전체"], ...Object.entries(categories)].map(
@@ -245,14 +279,25 @@ export function Home() {
               href={key === "all" ? "/feed" : "/feed/" + key.toLowerCase()}
               className={"home-feed-filter" + (key === "all" ? " active" : "")}
             >
-              {key === "all" ? <LayoutGrid size={19} aria-hidden="true" /> : key === "FOOD" ? <ShoppingBasket size={19} aria-hidden="true" /> : key === "NOTICE" ? <Building2 size={19} aria-hidden="true" /> : <Store size={19} aria-hidden="true" />}
+              {key === "all" ? (
+                <LayoutGrid size={19} aria-hidden="true" />
+              ) : key === "FOOD" ? (
+                <ShoppingBasket size={19} aria-hidden="true" />
+              ) : key === "NOTICE" ? (
+                <Building2 size={19} aria-hidden="true" />
+              ) : (
+                <Store size={19} aria-hidden="true" />
+              )}
               {label}
             </Link>
           ),
         )}
       </div>
       <div className="home-section-heading">
-        <h2><MapPin size={23} strokeWidth={2.5} aria-hidden="true" />우리 동네 기관</h2>
+        <h2>
+          <MapPin size={23} strokeWidth={2.5} aria-hidden="true" />
+          우리 동네 기관
+        </h2>
       </div>
       {group(0, 4)}
       <details>
