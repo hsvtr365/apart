@@ -98,12 +98,12 @@
   }
   h2 {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
   }
   h3,
   strong,
   b {
-    font-weight: 700;
+    font-weight: 800;
   }
   small {
     font-size: 12px;
@@ -765,8 +765,8 @@ header a:first-child {
   gap: 7px;
   margin: 0;
   color: #17251e;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   letter-spacing: -0.035em;
 }
 .home-section-heading h2 > svg {
