@@ -329,7 +329,7 @@ export function Home() {
         </h2>
       </div>
       {group(0, 4)}
-      <details>
+      <details open>
         <summary className="min-h-11 cursor-pointer py-3">
           고양시 기관·문화 채널 <small className="float-right">7곳</small>
         </summary>

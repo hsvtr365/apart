@@ -15,11 +15,6 @@ export const sources = [
     description: "도서관센터 통합 SNS · 강연·체험·교육",
   },
   {
-    url: "https://www.instagram.com/goyang_library/",
-    name: "행신어린이도서관",
-    description: "도서관센터 통합 SNS · 어린이·가족 행사",
-  },
-  {
     url: "https://www.instagram.com/goyangcity/",
     name: "고양특례시청",
     description: "@goyangcity · 행사·모집·시정 소식",
@@ -30,28 +25,28 @@ export const sources = [
     description: "@flowerex · 꽃박람회·호수공원 행사",
   },
   {
-    url: "https://www.gcyf.or.kr/",
-    name: "고양시청소년재단",
-    description: "공식 홈페이지 · 청소년 행사·체험·모집",
-  },
-  {
-    url: "https://www.instagram.com/choralegoyang/",
-    name: "고양시립합창단",
-    description: "@choralegoyang · 공연·문화행사",
-  },
-  {
     url: "https://www.instagram.com/goyang_library/",
     name: "고양시 도서관센터",
     description: "@goyang_library · 강연·독서·체험",
   },
   {
-    url: "https://www.artgy.or.kr/",
-    name: "고양문화재단",
-    description: "공식 홈페이지 · 공연·전시·축제",
-  },
-  {
     url: "https://www.goyang.go.kr/resve/",
     name: "고양시 통합예약",
     description: "통합예약 · 교육·체험·시설 프로그램",
+  },
+  {
+    url: "https://www.gcyf.or.kr/",
+    name: "고양시청소년재단",
+    description: "공식 홈페이지 · 청소년 행사·체험·모집",
+  },
+  {
+    url: "https://www.goyang.go.kr/www/www03/www03_11/www03_11_9/www03_11_9_tab1.jsp",
+    name: "고양시립합창단",
+    description: "고양특례시 공식 안내 · 공연·문화행사",
+  },
+  {
+    url: "https://www.artgy.or.kr/",
+    name: "고양문화재단",
+    description: "공식 홈페이지 · 공연·전시·축제",
   },
 ] as const;
