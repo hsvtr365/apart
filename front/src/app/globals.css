@@ -942,9 +942,6 @@ header a:first-child {
     flex-basis: 88%;
     min-width: 0;
   }
-  .news-card-image {
-    height: 84px;
-  }
   .tab {
     font-size: 12px;
   }
