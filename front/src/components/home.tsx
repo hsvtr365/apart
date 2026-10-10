@@ -197,6 +197,7 @@ function HomeNewsSection({
                 <div className="notice-card-content">
                   <div className="notice-card-title-row">
                     <b className="news-card-title">{p.title}</b>
+                    <ChevronRight className="notice-card-arrow" size={16} aria-hidden="true" />
                   </div>
                   <p className="news-card-body">{p.body}</p>
                 </div>
