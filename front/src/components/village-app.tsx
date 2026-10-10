@@ -3,13 +3,13 @@ import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useVillage } from "./store";
-import { Icon } from "./icons";
 import { Home, FeedTabs } from "./home";
 import { PostCard } from "./post-card";
 import { VillageMap } from "./village-map";
 import { Report } from "./report";
 import { Account } from "./account";
 import { PostDetail } from "./post-detail";
+import { Home as HomeIcon, Map, Newspaper, Plus, UserRound } from "lucide-react";
 export function VillageApp() {
   const { data, error, message, reload, more, notify } = useVillage();
   const router = useRouter();
@@ -31,11 +31,11 @@ export function VillageApp() {
     }
   }, [path]);
   const links = [
-    ["/", "home", "홈"],
-    ["/map", "map", "지도"],
-    ["/report", "plus", "제보"],
-    ["/feed", "feed", "피드"],
-    ["/my", "user", "내 정보"],
+    ["/", HomeIcon, "홈"],
+    ["/map", Map, "지도"],
+    ["/report", Plus, "제보"],
+    ["/feed", Newspaper, "피드"],
+    ["/my", UserRound, "내 정보"],
   ] as const;
   const feed = (
     <>
@@ -129,7 +129,7 @@ export function VillageApp() {
         )}
       </div>
       <nav className="bottom-nav" aria-label="하단 주요 메뉴">
-        {links.map(([href, icon, label]) => {
+        {links.map(([href, NavIcon, label]) => {
           const active =
             href === "/"
               ? section === "home"
@@ -140,7 +140,7 @@ export function VillageApp() {
               href={href}
               aria-current={active ? "page" : undefined}
             >
-              <Icon name={icon} />
+              <NavIcon size={22} strokeWidth={1.8} aria-hidden="true" />
               {label}
             </Link>
           );

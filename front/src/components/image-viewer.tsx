@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icons";
+import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 
 /** Clickable image preview with a reusable, full-screen viewer. */
 export function ImageViewer({
@@ -183,7 +184,7 @@ export function ImageViewer({
                   aria-label="이전 사진"
                   onClick={() => changePhoto(-1)}
                 >
-                  ‹
+                  <ChevronLeft size={28} aria-hidden="true" />
                 </button>
                 <button
                   type="button"
@@ -191,7 +192,7 @@ export function ImageViewer({
                   aria-label="다음 사진"
                   onClick={() => changePhoto(1)}
                 >
-                  ›
+                  <ChevronRight size={28} aria-hidden="true" />
                 </button>
               </>
             )}
@@ -202,7 +203,7 @@ export function ImageViewer({
                 disabled={view.scale === 1}
                 onClick={() => zoomAt(1 / 1.5)}
               >
-                −
+                <Minus size={18} aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -217,7 +218,7 @@ export function ImageViewer({
                 disabled={view.scale === 6}
                 onClick={() => zoomAt(1.5)}
               >
-                +
+                <Plus size={18} aria-hidden="true" />
               </button>
             </div>
           </dialog>,

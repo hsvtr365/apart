@@ -3,8 +3,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useVillage } from "./store";
 import { VillageMap } from "./village-map";
-import { categories, clock } from "@/lib/types";
+import { categories } from "@/lib/types";
 import { sources } from "@/lib/sources";
+import { ChevronLeft, ChevronRight, ExternalLink, Pause, Play } from "lucide-react";
 export function FeedTabs({ selected = "all" }: { selected?: string }) {
   return (
     <nav className="tabs" aria-label="피드 분류">
@@ -71,7 +72,7 @@ export function Home() {
               <b className="block">{s.name}</b>
               <small className="mt-1 block">{s.description}</small>
             </span>
-            <span aria-hidden="true">↗</span>
+            <ExternalLink size={18} aria-hidden="true" />
           </a>
         ))}
       </div>
@@ -90,21 +91,21 @@ export function Home() {
             aria-label="이전 소식"
             onClick={() => move(-1)}
           >
-            ‹
+            <ChevronLeft size={20} aria-hidden="true" />
           </button>
           <button
             className="icon-btn"
             aria-label={paused ? "자동 넘김 재생" : "자동 넘김 일시정지"}
             onClick={() => setPaused(!paused)}
           >
-            {paused ? "▷" : "Ⅱ"}
+            {paused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
           </button>
           <button
             className="icon-btn"
             aria-label="다음 소식"
             onClick={() => move(1)}
           >
-            ›
+            <ChevronRight size={20} aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -128,9 +129,6 @@ export function Home() {
           >
             <small>{categories[p.category]}</small>
             <b className="my-1 block">{p.title}</b>
-            <small>
-              {clock(p.createdAt)}
-            </small>
           </Link>
         ))}
       </div>
@@ -140,7 +138,7 @@ export function Home() {
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>생활 피드</h2>
         <Link href="/feed" className="icon-btn text-brand">
-          전체 보기 →
+          전체 보기 <ChevronRight size={16} aria-hidden="true" />
         </Link>
       </div>
       <div className="flex rounded-sm bg-soft">

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 export function PostImages({ urls, alt }: { urls: string[]; alt: string }) {
   const [index, setIndex] = useState(0);
   const current = Math.min(index, urls.length - 1);
@@ -17,7 +18,7 @@ export function PostImages({ urls, alt }: { urls: string[]; alt: string }) {
             aria-label="이전 사진"
             onClick={() => setIndex((current + urls.length - 1) % urls.length)}
           >
-            ‹
+            <ChevronLeft size={22} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -25,7 +26,7 @@ export function PostImages({ urls, alt }: { urls: string[]; alt: string }) {
             aria-label="다음 사진"
             onClick={() => setIndex((current + 1) % urls.length)}
           >
-            ›
+            <ChevronRight size={22} aria-hidden="true" />
           </button>
         </>
       )}

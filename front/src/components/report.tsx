@@ -11,7 +11,7 @@ import {
 } from "@/lib/types";
 import { KakaoMap, type MapPoint } from "./kakao-map";
 import { TimePicker } from "./time-picker";
-import { Building2, Check, ImagePlus, ShoppingBasket, Square, SquareCheck, Store } from "lucide-react";
+import { Building2, Check, ImagePlus, ShoppingBasket, Square, SquareCheck, Store, X } from "lucide-react";
 export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
@@ -215,7 +215,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                       )
                     }
                   >
-                    ×
+                    <X size={20} aria-hidden="true" />
                   </button>
                 </div>
               ))}
