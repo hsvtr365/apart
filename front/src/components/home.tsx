@@ -120,7 +120,11 @@ function HomeNewsSection({
             className="news-card"
             key={p.id}
           >
-            <small>{categories[p.category]}</small>
+            <small>
+              {p.category === "NOTICE" && p.noticeEndDate
+                ? `~ ${Number(p.noticeEndDate.slice(5, 7))}월 ${Number(p.noticeEndDate.slice(8, 10))}일`
+                : categories[p.category]}
+            </small>
             <b className="my-1 block">{p.title}</b>
           </Link>
         ))}
