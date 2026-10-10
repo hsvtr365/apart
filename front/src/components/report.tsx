@@ -11,6 +11,7 @@ import {
 } from "@/lib/types";
 import { KakaoMap, type MapPoint } from "./kakao-map";
 import { TimePicker } from "./time-picker";
+import { ImagePlus } from "lucide-react";
 export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
@@ -196,7 +197,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               disabled={uploading || images.length === 6}
               onClick={() => file.current?.click()}
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8" cy="8" r="1.5" /><path d="m3 17 5-5 4 4 4-6 5 7" /></svg>
+              <ImagePlus size={22} strokeWidth={1.8} aria-hidden="true" />
               {uploading ? "업로드 중…" : images.length === 6 ? "사진 6장 첨부 완료" : "사진 선택"}
             </button>
             {uploading && <small role="status">사진 업로드 중…</small>}

@@ -36,7 +36,7 @@ export function VillageApp() {
     ["/report", "plus", "제보"],
     ["/feed", "feed", "피드"],
     ["/my", "user", "내 정보"],
-  ];
+  ] as const;
   const feed = (
     <>
       <h1 className="page-title">생활 피드</h1>
