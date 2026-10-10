@@ -6,6 +6,7 @@ import type { Post } from "@/lib/types";
 import { Presence } from "./post-card";
 import { KakaoMap } from "./kakao-map";
 import { useVillage } from "./store";
+import { Expand } from "lucide-react";
 export function VillageMap({
   posts,
   full = false,
@@ -94,8 +95,10 @@ export function VillageMap({
         <Link
           href="/map"
           className="btn btn-secondary absolute right-2 top-2 z-10"
+          aria-label="지도 크게 보기"
+          title="지도 크게 보기"
         >
-          지도 크게 보기
+          <Expand size={20} aria-hidden="true" />
         </Link>
       )}
       {demo && (

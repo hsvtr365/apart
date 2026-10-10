@@ -9,6 +9,7 @@ import { isTodayNews } from "@/lib/map-filter";
 import {
   ChevronLeft,
   ChevronRight,
+  Expand,
   ExternalLink,
   Pause,
   Play,
@@ -42,7 +43,18 @@ function HomeNewsSection({
 }) {
   const roller = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
+  const [canScroll, setCanScroll] = useState(false);
   const interacting = useRef(false);
+  useEffect(() => {
+    const el = roller.current;
+    if (!el) return;
+    const update = () => setCanScroll(el.scrollWidth > el.clientWidth + 1);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => observer.disconnect();
+  }, [posts.length]);
   function move(step: number) {
     const el = roller.current;
     if (!el) return;
@@ -61,6 +73,7 @@ function HomeNewsSection({
   useEffect(() => {
     const timer = setInterval(() => {
       if (
+        canScroll &&
         !paused &&
         !interacting.current &&
         !document.hidden &&
@@ -69,12 +82,12 @@ function HomeNewsSection({
         move(1);
     }, 5500);
     return () => clearInterval(timer);
-  }, [paused]);
+  }, [canScroll, paused]);
   return (
     <>
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>{title}</h2>
-        <div className="flex">
+        {canScroll && <div className="flex">
           <button
             className="icon-btn"
             aria-label={`${title} 이전 소식`}
@@ -100,7 +113,7 @@ function HomeNewsSection({
           >
             <ChevronRight size={20} aria-hidden="true" />
           </button>
-        </div>
+        </div>}
       </div>
       <div
         className="news-roller"
@@ -113,6 +126,7 @@ function HomeNewsSection({
             interacting.current = false;
         }}
         onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setPaused(false)}
       >
         {posts.map((p) => (
           <Link
@@ -187,9 +201,6 @@ export function Home() {
       />
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>생활 피드</h2>
-        <Link href="/feed" className="icon-btn text-brand">
-          전체 보기 <ChevronRight size={16} aria-hidden="true" />
-        </Link>
       </div>
       <div className="flex rounded-sm bg-soft">
         {[["all", "전체"], ...Object.entries(categories)].map(
@@ -206,7 +217,6 @@ export function Home() {
       </div>
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>우리 동네 기관</h2>
-        <small>외부 링크 · 새 탭</small>
       </div>
       {group(0, 4)}
       <details>
