@@ -266,9 +266,9 @@ export function KakaoMap({
           ))}
       {map && (
         <div className="map-zoom" aria-label="지도 크기 조절" onPointerDown={event => event.stopPropagation()}>
-          <button type="button" aria-label="지도 확대" disabled={level <= 1} onClick={() => map.setLevel(level - 1)}>+</button>
+          <button type="button" aria-label="지도 확대" disabled={level <= 1} onClick={() => map.setLevel(level - 1)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14" /></svg></button>
           <input type="range" aria-label="지도 확대 수준" min={1} max={14} value={15 - level} onChange={event => map.setLevel(15 - Number(event.target.value))} />
-          <button type="button" aria-label="지도 축소" disabled={level >= 14} onClick={() => map.setLevel(level + 1)}>−</button>
+          <button type="button" aria-label="지도 축소" disabled={level >= 14} onClick={() => map.setLevel(level + 1)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg></button>
         </div>
       )}
     </>

@@ -798,18 +798,36 @@ header a:first-child {
   border-radius: 4px;
   box-shadow: 0 2px 8px #20272224;
 }
-.map-zoom button { width: 44px; height: 44px; border: 0; font-size: 24px; }
+.map-zoom button { position:relative; display:grid; place-items:center; width:36px; height:44px; border:0; }
+.map-zoom button::before { content:""; position:absolute; inset:0 -4px; }
+.map-zoom button svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; }
 .map-zoom input[type="range"] {
+  appearance: none;
   writing-mode: vertical-lr;
   direction: rtl;
-  width: 24px;
-  height: 104px;
+  width: 20px;
+  height: 88px;
   min-height: 0;
   padding: 0;
   border: 0;
   background: transparent;
   accent-color: var(--color-brand);
 }
+.map-zoom input[type="range"]::-webkit-slider-runnable-track {
+  width:3px;
+  border-radius:3px;
+  background:var(--color-soft);
+}
+.map-zoom input[type="range"]::-webkit-slider-thumb {
+  appearance:none;
+  width:12px;
+  height:12px;
+  margin-left:-4.5px;
+  border-radius:50%;
+  background:var(--color-brand);
+}
+.map-zoom input[type="range"]::-moz-range-track { width:3px; border-radius:3px; background:var(--color-soft); }
+.map-zoom input[type="range"]::-moz-range-thumb { width:12px; height:12px; border:0; border-radius:50%; background:var(--color-brand); }
 .post-image-gallery { position:relative; }
 .photo-counter { position:absolute; left:8px; top:8px; padding:3px 7px; color:white; background:#172b21b8; font-size:12px; border-radius:4px; }
 .photo-prev, .photo-next { position:absolute; top:50%; transform:translateY(-50%); z-index:1; width:44px; height:44px; color:white; background:#172b2180; font-size:30px; }
