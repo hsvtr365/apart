@@ -172,7 +172,8 @@ function HomeNewsSection({
       >
         {posts.map((p) => (
           <Link
-            href={"/feed/" + p.category.toLowerCase()}
+            href={"/post/" + p.id}
+            scroll={false}
             className={
               "news-card" + (p.category === "NOTICE" ? " news-card-notice" : "")
             }

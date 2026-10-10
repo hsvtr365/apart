@@ -832,6 +832,7 @@ header a:first-child {
   line-height: 1.4;
 }
 .news-card-body {
+  white-space: pre-line;
   display: -webkit-box;
   overflow: hidden;
   margin: 3px 0 0;
