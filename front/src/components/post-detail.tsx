@@ -94,7 +94,7 @@ export function PostDetail({
         {post && !post.adminDeleted && (post.authorId === data?.user?.id || data?.user?.permission === 0) && (
           <div className="ml-auto flex items-center">
             <button
-              className="icon-btn mr-2 text-brand"
+              className="icon-btn text-brand"
               disabled={busy}
               onClick={() => setEditing(!editing)}
             >
