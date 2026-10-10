@@ -40,7 +40,6 @@ export function VillageMap({
             }}
           >
             <small>
-              {p.place}
               {p.observedAt ? " · 방금 확인" : ""}
             </small>
             <Link

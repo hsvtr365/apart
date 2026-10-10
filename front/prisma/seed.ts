@@ -22,7 +22,6 @@ async function main() {
         title: p.title,
         body: p.body,
         category: p.category,
-        place: p.place,
         mapX: p.mapX,
         mapY: p.mapY,
         imageUrl: p.imageUrl,

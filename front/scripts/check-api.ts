@@ -87,8 +87,7 @@ try {
     latitude: 37.6,
     longitude: 126.8,
     imageUrl: null,
-    endDate: null,
-    endTime: null,
+    weekdays: [0, 4], seasons: ["WINTER"], arrivalTime: "15:00", departureTime: "20:00",
   };
   assert.equal(
     (
@@ -128,6 +127,12 @@ try {
     200,
   );
   const edited = (await call("posts/" + id)).data;
+  assert.deepEqual(edited.weekdays, [0,4]);
+  assert.deepEqual(edited.seasons, ["WINTER"]);
+  assert.equal(edited.arrivalTime, "15:00");
+  assert.equal(edited.departureTime, "20:00");
+  assert(!("place" in edited));
+  assert(!("endDate" in edited));
   assert.equal(edited.title, "수정된 소식");
   assert.equal(edited.createdAt, original.createdAt);
   assert.equal(

@@ -2,16 +2,8 @@
 import { useState, useRef, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVillage, request } from "./store";
-import { categories, type Post, type PostInput } from "@/lib/types";
-import { ending } from "@/lib/validation";
+import { categories, weekdayLabels, seasonLabels, type Post, type PostInput } from "@/lib/types";
 import { KakaoMap, type MapPoint } from "./kakao-map";
-const places: Record<string, [number, number]> = {
-  정문: [25, 60],
-  후문: [12, 25],
-  중앙광장: [55, 25],
-  "103동": [75, 65],
-  "관리사무소 앞": [65, 45],
-};
 export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
@@ -20,12 +12,10 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
     [text, setText] = useState(post?.body ?? ""),
     [image, setImage] = useState<string | null>(post?.imageUrl ?? null),
     [uploading, setUploading] = useState(false),
-    [place, setPlace] = useState(post?.place ?? "정문"),
     [point, setPoint] = useState<[number, number]>([
       post?.mapX ?? 25,
       post?.mapY ?? 60,
     ]),
-    [map, setMap] = useState(false),
     [geo, setGeo] = useState<MapPoint | null>(
       post?.latitude != null && post.longitude != null
         ? { latitude: post.latitude, longitude: post.longitude }
@@ -69,24 +59,19 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
     setError("");
     const fields = new FormData(e.currentTarget);
     try {
-      const endDate = String(fields.get("endDate") || "") || null;
-      const endTime = String(fields.get("endTime") || "") || null;
-      const end =
-        post && endDate === post.endDate && endTime === post.endTime
-          ? { endDate, endTime }
-          : ending(endDate, endTime);
       const input: PostInput = {
         title: title.trim(),
         body: text.trim(),
         category: fields.get("category") as PostInput["category"],
-        place,
         mapX: data?.mode === "demo" ? point[0] : null,
         mapY: data?.mode === "demo" ? point[1] : null,
         latitude: geo?.latitude ?? null,
         longitude: geo?.longitude ?? null,
         imageUrl: image,
-        endDate: end.endDate,
-        endTime: end.endTime,
+        weekdays: fields.getAll("weekdays").map(Number),
+        seasons: fields.getAll("seasons").map(String),
+        arrivalTime: String(fields.get("arrivalTime") || "") || null,
+        departureTime: String(fields.get("departureTime") || "") || null,
       };
       if (!input.title || !input.body)
         throw new Error("제목과 내용을 입력해주세요.");
@@ -198,32 +183,8 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                 ))}
               </select>
             </label>
-            <label>
-              <span className="field">장소</span>
-              <select
-                value={place}
-                onChange={(e) => {
-                  setPlace(e.target.value);
-                  setPoint(places[e.target.value] || point);
-                  setGeo(null);
-                }}
-              >
-                {Object.keys(places).map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-                {!places[place] && <option>{place}</option>}
-              </select>
-            </label>
           </div>
-          <button
-            className="btn btn-secondary mt-3"
-            type="button"
-            aria-expanded={map}
-            onClick={() => setMap(!map)}
-          >
-            지도에서 위치 지정
-          </button>
-          {map && data?.mode !== "demo" && (
+          {data?.mode !== "demo" && (
             <>
               <div className="location-picker mt-2">
                 <KakaoMap point={geo} onPick={setGeo} />
@@ -231,11 +192,11 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               <small className="mt-1 block">
                 {geo
                   ? "지도 위치를 선택했어요."
-                  : "지도를 눌러 정확한 위치를 선택해주세요. 위치 없이 장소명만 등록할 수도 있어요."}
+                  : "지도를 눌러 위치를 선택해주세요."}
               </small>
             </>
           )}
-          {map && data?.mode === "demo" && (
+          {data?.mode === "demo" && (
             <div
               className="location-picker mt-2"
               tabIndex={0}
@@ -247,7 +208,6 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                   ((e.clientX - box.left) / box.width) * 100,
                   ((e.clientY - box.top) / box.height) * 100,
                 ]);
-                setPlace("지도 지정 위치");
               }}
               onKeyDown={(e) => {
                 const d: Record<string, [number, number]> = {
@@ -262,7 +222,6 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                     Math.max(0, Math.min(100, point[0] + d[e.key][0])),
                     Math.max(0, Math.min(100, point[1] + d[e.key][1])),
                   ]);
-                  setPlace("지도 지정 위치");
                 }
               }}
             >
@@ -275,29 +234,31 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               </span>
             </div>
           )}
+          <fieldset className="mt-3">
+            <legend className="field">오는 요일 · 선택</legend>
+            <div className="flex flex-wrap gap-2">
+              {weekdayLabels.map((label, day) => (
+                <label key={day} className="flex min-h-11 items-center gap-1 border border-line px-3">
+                  <input className="!w-auto" type="checkbox" name="weekdays" value={day} defaultChecked={post?.weekdays.includes(day)} />{label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <div className="grid grid-cols-2 gap-3">
-            <label className="min-w-0">
-              <span className="field">종료일 · 선택</span>
-              <input
-                className="min-w-0"
-                type="date"
-                name="endDate"
-                defaultValue={post?.endDate ?? ""}
-              />
-            </label>
-            <label className="min-w-0">
-              <span className="field">종료시간 · 선택</span>
-              <input
-                className="min-w-0"
-                type="time"
-                name="endTime"
-                defaultValue={post?.endTime ?? ""}
-              />
-            </label>
+            <label><span className="field">오는 시간 · 선택</span><input aria-label="오는 시간" type="time" name="arrivalTime" defaultValue={post?.arrivalTime ?? ""} /></label>
+            <label><span className="field">가는 시간 · 선택</span><input aria-label="가는 시간" type="time" name="departureTime" defaultValue={post?.departureTime ?? ""} /></label>
           </div>
-          <small className="mt-2 block">
-            등록시간은 자동 기록됩니다. 종료일·시간은 예정 정보입니다.
-          </small>
+          <fieldset className="mt-3">
+            <legend className="field">오는 계절 · 선택</legend>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(seasonLabels).map(([value, label]) => (
+                <label key={value} className="flex min-h-11 items-center gap-1 border border-line px-3">
+                  <input className="!w-auto" type="checkbox" name="seasons" value={value} defaultChecked={post?.seasons.includes(value)} />{label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <small className="mt-2 block text-muted">요일·시간·계절은 아는 정보만 선택해주세요. 실제 방문 일정은 달라질 수 있어요.</small>
           {error && (
             <p role="alert" className="mt-3 text-red-700">
               {error}

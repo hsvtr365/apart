@@ -48,16 +48,16 @@ model Post {
   title String @db.VarChar(15)
   body String @db.VarChar(500)
   category Category
-  place String @db.VarChar(40)
   // Schematic coordinates are kept separate from real geographic coordinates.
   mapX Float?
   mapY Float?
   latitude Float?
   longitude Float?
+  weekdays Int[] @default([])
+  seasons String[] @default([])
+  arrivalTime String? @db.VarChar(5)
+  departureTime String? @db.VarChar(5)
   imageUrl String?
-  endDate String? @db.VarChar(10)
-  endTime String? @db.VarChar(5)
-  endsAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   comments Comment[]

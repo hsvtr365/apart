@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
-import { categories, clock, type Post } from "@/lib/types";
+import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
 export function Presence({ post, map = false, onConfirmed }: { post: Post; map?: boolean; onConfirmed?: () => void }) {
   const { act, notify, busy } = useVillage();
   if (map && post.presenceConfirmed) return null;
@@ -110,7 +110,7 @@ export function PostCard({
           <small
             title={post.observedAt ? "마지막 현장 관찰 시각" : "등록 시각"}
           >
-            {post.place} · {clock(post.observedAt || post.createdAt)}
+            {clock(post.observedAt || post.createdAt)}
           </small>
         </div>
         <small className="shrink-0">{categories[post.category]}</small>
@@ -171,10 +171,13 @@ export function PostCard({
           {actions}
         </>
       )}
-      {full && post.endDate && (
-        <small>
-          종료 예정 · {post.endDate} {post.endTime || "시간 미정"}
-        </small>
+      {(post.weekdays?.length > 0 || post.seasons?.length > 0 || post.arrivalTime || post.departureTime) && (
+        <p className="text-xs text-muted mt-2">
+          {[post.weekdays?.map(day => weekdayLabels[day]).join("·"),
+            post.arrivalTime ? `${post.arrivalTime} 도착 예정` : "",
+            post.departureTime ? `${post.departureTime} 출발 예정` : "",
+            post.seasons?.map(season => seasonLabels[season]).join("·")].filter(Boolean).join(" / ")}
+        </p>
       )}
     </article>
   );

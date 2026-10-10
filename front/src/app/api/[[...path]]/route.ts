@@ -17,7 +17,6 @@ import {
   postSchema,
   profileSchema,
   commentSchema,
-  ending,
 } from "@/lib/validation";
 import { getPosts, comments, notifications } from "@/lib/queries";
 import { demoData } from "@/lib/demo";
@@ -362,21 +361,6 @@ async function handle(
       if (existing && existing.authorId !== user.id)
         throw new HttpError("본인 글만 수정할 수 있어요.", 403);
       const input = postSchema.parse(await body(req));
-      let end;
-      try {
-        end =
-          existing &&
-          input.endDate === existing.endDate &&
-          input.endTime === existing.endTime
-            ? {
-                endDate: existing.endDate,
-                endTime: existing.endTime,
-                endsAt: existing.endsAt,
-              }
-            : ending(input.endDate, input.endTime);
-      } catch (e) {
-        throw new HttpError((e as Error).message);
-      }
       if (
         input.imageUrl &&
         input.imageUrl !== existing?.imageUrl &&
@@ -388,12 +372,12 @@ async function handle(
       if (existing) {
         await db().post.update({
           where: { id: existing.id },
-          data: { ...input, ...end },
+          data: { ...input },
         });
         return json({ id: existing.id });
       }
       const post = await db().post.create({
-        data: { ...input, ...end, authorId: user.id },
+        data: { ...input, authorId: user.id },
       });
       return json({ id: post.id }, 201);
     }

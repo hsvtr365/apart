@@ -129,7 +129,7 @@ export function Home() {
             <small>{categories[p.category]}</small>
             <b className="my-1 block">{p.title}</b>
             <small>
-              {p.place} · {clock(p.createdAt)}
+              {clock(p.createdAt)}
             </small>
           </Link>
         ))}

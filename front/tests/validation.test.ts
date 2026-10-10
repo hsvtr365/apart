@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { postSchema, profileSchema, ending } from "../src/lib/validation";
+import { postSchema, profileSchema } from "../src/lib/validation";
 test("building is optional and limited to the apartment's 17 buildings", () => {
   for (let i = 2001; i <= 2017; i++)
     assert(
@@ -38,13 +38,14 @@ test("title limits and unsafe image URLs are rejected", () => {
     !postSchema.safeParse({ ...valid, latitude: 91, longitude: 126.8 }).success,
   );
 });
-test("ending distinguishes unspecified time and rejects impossible dates", () => {
-  const now = new Date("2026-01-01T00:00:00Z");
-  assert.equal(ending("2026-01-02", null, now).endTime, null);
-  assert.equal(
-    ending("2026-01-02", null, now).endsAt?.toISOString(),
-    "2026-01-02T14:59:00.000Z",
-  );
-  assert.throws(() => ending("2026-02-30", null, now));
-  assert.throws(() => ending("2025-12-31", "12:00", now));
+test("optional recurring schedule validates values and supports overnight visits", () => {
+  const base = {title:"test",body:"test",category:"FOOD",mapX:null,mapY:null,imageUrl:null};
+  const empty = postSchema.parse(base);
+  assert.deepEqual(empty.weekdays, []);
+  assert.equal(empty.arrivalTime, null);
+  assert(postSchema.safeParse({...base, weekdays:[0,6],seasons:["WINTER"],arrivalTime:"22:00",departureTime:"01:00"}).success);
+  for (const patch of [{weekdays:[7]}, {weekdays:[1.5]}, {seasons:["bad"]}, {arrivalTime:"24:00"}, {departureTime:"12:60"}])
+    assert(!postSchema.safeParse({...base,...patch}).success);
+  assert.deepEqual(postSchema.parse({...base,weekdays:[1,1]}).weekdays,[1]);
+  assert(!("place" in postSchema.parse({...base,place:"old"})));
 });

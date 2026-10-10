@@ -4,6 +4,8 @@ export const categories = {
   MARKET: "장터",
 } as const;
 export type Category = keyof typeof categories;
+export const weekdayLabels = ["월", "화", "수", "목", "금", "토", "일"];
+export const seasonLabels: Record<string, string> = { SPRING: "봄", SUMMER: "여름", AUTUMN: "가을", WINTER: "겨울" };
 export type User = { id: string; nickname: string; building: string | null };
 export type Comment = {
   id: string;
@@ -17,15 +19,16 @@ export type Post = {
   title: string;
   body: string;
   category: Category;
-  place: string;
   mapX: number | null;
   mapY: number | null;
   latitude?: number | null;
   longitude?: number | null;
   imageUrl: string | null;
+  weekdays: number[];
+  seasons: string[];
+  arrivalTime: string | null;
+  departureTime: string | null;
   createdAt: string;
-  endDate: string | null;
-  endTime: string | null;
   authorId: string;
   author: string;
   likes: number;
@@ -58,14 +61,15 @@ export type PostInput = {
   title: string;
   body: string;
   category: Category;
-  place: string;
   mapX: number | null;
   mapY: number | null;
   latitude?: number | null;
   longitude?: number | null;
   imageUrl: string | null;
-  endDate: string | null;
-  endTime: string | null;
+  weekdays: number[];
+  seasons: string[];
+  arrivalTime: string | null;
+  departureTime: string | null;
 };
 export function clock(iso: string) {
   return new Intl.DateTimeFormat("ko-KR", {

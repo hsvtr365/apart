@@ -284,7 +284,7 @@ export function Account() {
                     <b>{p.title}</b>
                     <p className="my-1 line-clamp-2">{p.body}</p>
                     <small>
-                      {categories[p.category]} · {p.place} · 댓글{" "}
+                      {categories[p.category]} · 댓글{" "}
                       {p.commentCount}
                     </small>
                   </Link>
