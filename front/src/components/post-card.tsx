@@ -118,7 +118,9 @@ export function PostCard({
             {clock(post.observedAt || post.createdAt)}
           </small>
         </div>
-        <small className="shrink-0">{categories[post.category]}</small>
+        <span className={`category-tag category-${post.category.toLowerCase()}`}>
+          {categories[post.category]}
+        </span>
       </div>
       {full ? (
         content

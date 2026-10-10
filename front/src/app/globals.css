@@ -19,6 +19,12 @@
   --color-secondary-selected: #ddf5e6;
   --color-secondary-selected-ink: #075b3a;
   --color-secondary-soft: #edf8f1;
+  --color-category-market: #c77718;
+  --color-category-market-bg: #fff0dd;
+  --color-category-food: #d65b42;
+  --color-category-food-bg: #fff0eb;
+  --color-category-notice: #52758f;
+  --color-category-notice-bg: #eaf0f5;
   --color-disabled: #f3f5f4;
   --color-disabled-ink: #9ca49f;
   --color-disabled-line: #e2e6e3;
@@ -778,12 +784,39 @@ header a:first-child {
   font-weight: 700;
 }
 .news-card-category.news-food {
-  background: #fff0dc;
-  color: #b95b08;
+  background: var(--color-category-food-bg);
+  color: var(--color-category-food);
+}
+.news-card-category.news-market {
+  background: var(--color-category-market-bg);
+  color: var(--color-category-market);
 }
 .news-card-category.news-notice {
-  background: #e7f2eb;
-  color: #145c3d;
+  background: var(--color-category-notice-bg);
+  color: var(--color-category-notice);
+}
+.category-tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.category-tag.category-market {
+  background: var(--color-category-market-bg);
+  color: var(--color-category-market);
+}
+.category-tag.category-food {
+  background: var(--color-category-food-bg);
+  color: var(--color-category-food);
+}
+.category-tag.category-notice {
+  background: var(--color-category-notice-bg);
+  color: var(--color-category-notice);
 }
 .news-card-title {
   display: block;
