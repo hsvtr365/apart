@@ -133,27 +133,26 @@ export function PostDetail({
           {post.imageUrl && <ImageViewer src={post.imageUrl} sources={post.imageUrls} alt={post.title} />}
           <div className="detail-body">
             <PostDetailBody post={post} />
-            <h2 className="mb-2">댓글 {post.commentCount}</h2>
             {!post.comments.length && (
               <p className="py-3 text-muted">첫 댓글을 남겨주세요.</p>
             )}
             {post.comments.map((c) => (
               <div className="border-b border-line py-2" key={c.id}>
-                <b>{c.author}</b>
+                <div className="flex items-center justify-between gap-2">
+                  <b>{c.author}</b>
+                  {!post.adminDeleted && c.authorId === data?.user?.id && (
+                    <button
+                      className="icon-btn comment-delete"
+                      aria-label="댓글 삭제"
+                      title="댓글 삭제"
+                      disabled={busy}
+                      onClick={() => void act("delete-comment", c.id).catch((e) => notify(e.message))}
+                    >
+                      <Icon name="close" size={18} />
+                    </button>
+                  )}
+                </div>
                 <p className="whitespace-pre-line break-words">{c.body}</p>
-                {!post.adminDeleted && c.authorId === data?.user?.id && (
-                  <button
-                    className="icon-btn text-muted"
-                    disabled={busy}
-                    onClick={() =>
-                      void act("delete-comment", c.id).catch((e) =>
-                        notify(e.message),
-                      )
-                    }
-                  >
-                    삭제
-                  </button>
-                )}
               </div>
             ))}
             {next && (
