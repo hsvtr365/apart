@@ -8,7 +8,7 @@ export function PostDetailBody({ post }: { post: Post }) {
   return <article className="post-detail-content">
       <div className="flex items-center justify-between gap-2 pb-2">
         <div className="flex flex-wrap items-center gap-x-2">
-          <b>{post.author}</b>
+          <b className="post-author-name">{post.author}</b>
           {post.authorBuilding && <small>{post.authorBuilding}</small>}
           <small
             title={post.observedAt ? "마지막 현장 관찰 시각" : "등록 시각"}

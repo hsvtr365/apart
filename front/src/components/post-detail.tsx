@@ -139,7 +139,7 @@ export function PostDetail({
             {post.comments.map((c) => (
               <div className="border-b border-line py-2" key={c.id}>
                 <div className="flex items-center justify-between gap-2">
-                  <b>{c.author}</b>
+                  <b className="comment-author-name">{c.author}</b>
                   {!post.adminDeleted && c.authorId === data?.user?.id && (
                     <button
                       className="icon-btn comment-delete"
