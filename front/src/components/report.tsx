@@ -10,7 +10,7 @@ import {
   Building2,
   Check,
   ImagePlus,
-  ShoppingBasket,
+  Utensils,
   Store,
   X,
 } from "lucide-react";
@@ -166,12 +166,12 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               {Object.entries(categories).map(([value, label]) => {
                 const CategoryIcon =
                   value === "FOOD"
-                    ? ShoppingBasket
+                    ? Utensils
                     : value === "NOTICE"
                       ? Building2
                       : Store;
                 return (
-                  <label className="choice-chip" key={value}>
+                  <label className={`choice-chip category-${value.toLowerCase()}`} key={value}>
                     <input
                       type="radio"
                       name="category"

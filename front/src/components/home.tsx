@@ -18,7 +18,7 @@ import {
   Megaphone,
   Pause,
   Play,
-  ShoppingBasket,
+  Utensils,
   Store,
   TrendingUp,
 } from "lucide-react";
@@ -28,12 +28,16 @@ export function FeedTabs({ selected = "all" }: { selected?: string }) {
       {[["all", "전체"], ...Object.entries(categories)].map(([key, label]) => (
         <Link
           key={key}
-          className="tab"
+          className={`tab category-${key.toLowerCase()}`}
           href={key === "all" ? "/feed" : "/feed/" + key.toLowerCase()}
           aria-current={
             selected.toUpperCase() === key.toUpperCase() ? "page" : undefined
           }
         >
+          {key === "all" ? <LayoutGrid size={18} aria-hidden="true" /> :
+            key === "FOOD" ? <Utensils size={18} aria-hidden="true" /> :
+            key === "NOTICE" ? <Building2 size={18} aria-hidden="true" /> :
+            <Store size={18} aria-hidden="true" />}
           {label}
         </Link>
       ))}
@@ -208,7 +212,7 @@ function HomeNewsSection({
                   className={`news-card-category news-${p.category.toLowerCase()}`}
                 >
                   {p.category === "FOOD" ? (
-                    <ShoppingBasket size={15} aria-hidden="true" />
+                    <Utensils size={15} aria-hidden="true" />
                   ) : (
                     <Store size={15} aria-hidden="true" />
                   )}
@@ -298,12 +302,12 @@ export function Home() {
             <Link
               key={key}
               href={key === "all" ? "/feed" : "/feed/" + key.toLowerCase()}
-              className={"home-feed-filter" + (key === "all" ? " active" : "")}
+              className={`home-feed-filter category-${key.toLowerCase()}` + (key === "all" ? " active" : "")}
             >
               {key === "all" ? (
                 <LayoutGrid size={19} aria-hidden="true" />
               ) : key === "FOOD" ? (
-                <ShoppingBasket size={19} aria-hidden="true" />
+                <Utensils size={19} aria-hidden="true" />
               ) : key === "NOTICE" ? (
                 <Building2 size={19} aria-hidden="true" />
               ) : (

@@ -58,7 +58,7 @@ export function VillageMap({
             먹거리
           </button>
           <button aria-pressed={market} onClick={() => setMarket(!market)}>
-            장터
+            요일장
           </button>
         </div>
       )}

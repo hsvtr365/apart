@@ -1,7 +1,7 @@
 export const categories = {
   FOOD: "먹거리",
   NOTICE: "관리사무소",
-  MARKET: "장터",
+  MARKET: "요일장",
 } as const;
 export type Category = keyof typeof categories;
 export const weekdayLabels = ["월", "화", "수", "목", "금", "토", "일"];

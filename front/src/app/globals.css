@@ -19,12 +19,12 @@
   --color-secondary-selected: #ddf5e6;
   --color-secondary-selected-ink: #075b3a;
   --color-secondary-soft: #edf8f1;
-  --color-category-market: #c77718;
-  --color-category-market-bg: #fff0dd;
-  --color-category-food: #d65b42;
-  --color-category-food-bg: #fff0eb;
-  --color-category-notice: #52758f;
-  --color-category-notice-bg: #eaf0f5;
+  --color-category-market: #8048c6;
+  --color-category-market-bg: #f4edff;
+  --color-category-food: #ed5b58;
+  --color-category-food-bg: #fff0ee;
+  --color-category-notice: #246baa;
+  --color-category-notice-bg: #eaf4fc;
   --color-disabled: #f3f5f4;
   --color-disabled-ink: #9ca49f;
   --color-disabled-line: #e2e6e3;
@@ -828,6 +828,38 @@ header a:first-child {
 .category-tag.category-notice {
   background: var(--color-category-notice-bg);
   color: var(--color-category-notice);
+}
+.category-food {
+  --category-ink: var(--color-category-food);
+  --category-bg: var(--color-category-food-bg);
+}
+.category-market {
+  --category-ink: var(--color-category-market);
+  --category-bg: var(--color-category-market-bg);
+}
+.category-notice {
+  --category-ink: var(--color-category-notice);
+  --category-bg: var(--color-category-notice-bg);
+}
+.home-feed-filter[class*="category-"],
+.tab[class*="category-"]:not(.category-all) {
+  background: var(--category-bg);
+  color: var(--category-ink);
+}
+.home-feed-filter.category-all.active {
+  background: var(--color-brand);
+  color: white;
+}
+.tab[class*="category-"][aria-current="page"]:not(.category-all) {
+  border-color: var(--category-ink);
+}
+#report-form .choice-chip[class*="category-"] > input + span {
+  background: var(--category-bg);
+  color: var(--category-ink);
+}
+#report-form .choice-chip[class*="category-"] > input:checked + span {
+  background: color-mix(in srgb, var(--category-ink) 15%, var(--category-bg));
+  color: var(--category-ink);
 }
 .news-card-title {
   display: block;
