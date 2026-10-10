@@ -20,9 +20,14 @@ export function VillageMap({
   const [todayOnly, setTodayOnly] = useState(!selected);
   const [food, setFood] = useState(true);
   const [market, setMarket] = useState(true);
-  const visible = posts.filter(p => {
+  const visible = posts.filter((p) => {
     if (!full) return p.category !== "NOTICE" && occursToday(p);
-    if (p.category === "NOTICE" || (p.category === "FOOD" && !food) || (p.category === "MARKET" && !market)) return false;
+    if (
+      p.category === "NOTICE" ||
+      (p.category === "FOOD" && !food) ||
+      (p.category === "MARKET" && !market)
+    )
+      return false;
     return !todayOnly || occursToday(p);
   });
   const points = visible.filter((p) => p.mapX !== null && p.mapY !== null);
@@ -38,11 +43,22 @@ export function VillageMap({
       {full && (
         <div className="map-filters" role="group" aria-label="지도 표시 조건">
           <div className="map-filter-period">
-            <button aria-pressed={todayOnly} onClick={() => setTodayOnly(true)}>오늘</button>
-            <button aria-pressed={!todayOnly} onClick={() => setTodayOnly(false)}>모두</button>
+            <button aria-pressed={todayOnly} onClick={() => setTodayOnly(true)}>
+              오늘
+            </button>
+            <button
+              aria-pressed={!todayOnly}
+              onClick={() => setTodayOnly(false)}
+            >
+              모두
+            </button>
           </div>
-          <button aria-pressed={food} onClick={() => setFood(!food)}>먹거리</button>
-          <button aria-pressed={market} onClick={() => setMarket(!market)}>장터</button>
+          <button aria-pressed={food} onClick={() => setFood(!food)}>
+            먹거리
+          </button>
+          <button aria-pressed={market} onClick={() => setMarket(!market)}>
+            장터
+          </button>
         </div>
       )}
       {demo && (
@@ -59,9 +75,7 @@ export function VillageMap({
               zIndex: selected === p.id ? 2 : 1,
             }}
           >
-            <small>
-              {p.observedAt ? " · 방금 확인" : ""}
-            </small>
+            <small>{p.observedAt ? " · 방금 확인" : ""}</small>
             <Link
               href={"/post/" + p.id}
               className="flex min-h-11 items-center font-semibold"

@@ -26,16 +26,25 @@ export async function getPosts(
   const more = rows.length > limit;
   const page = rows.slice(0, limit);
   const visitor = await visitorHash();
-  const confirmations = visitor ? await db().visitorPresence.findMany({
-    where: { visitorHash: visitor, postId: { in: page.map(p => p.id) } },
-    select: { postId: true },
-  }) : [];
-  const memberConfirmations = userId ? await db().presence.findMany({
-    where: { userId, postId: { in: page.map(p => p.id) } }, select: { postId: true },
-  }) : [];
-  const confirmed = new Set([...confirmations, ...memberConfirmations].map(p => p.postId));
-  const latest = (p: typeof page[number]) => [...p.presences, ...p.visitorPresences]
-    .sort((a,b) => b.observedAt.getTime() - a.observedAt.getTime())[0];
+  const confirmations = visitor
+    ? await db().visitorPresence.findMany({
+        where: { visitorHash: visitor, postId: { in: page.map((p) => p.id) } },
+        select: { postId: true },
+      })
+    : [];
+  const memberConfirmations = userId
+    ? await db().presence.findMany({
+        where: { userId, postId: { in: page.map((p) => p.id) } },
+        select: { postId: true },
+      })
+    : [];
+  const confirmed = new Set(
+    [...confirmations, ...memberConfirmations].map((p) => p.postId),
+  );
+  const latest = (p: (typeof page)[number]) =>
+    [...p.presences, ...p.visitorPresences].sort(
+      (a, b) => b.observedAt.getTime() - a.observedAt.getTime(),
+    )[0];
   const likes = userId
     ? await db().like.findMany({
         where: { userId, postId: { in: page.map((p) => p.id) } },
@@ -53,10 +62,16 @@ export async function getPosts(
       latitude: p.latitude,
       longitude: p.longitude,
       imageUrl: p.images[0]?.url ?? null,
-      imageUrls: p.images.map(image => image.url),
-      scheduleType: p.scheduleType as "WEEKLY" | "ONCE", startDate: p.startDate, finishDate: p.finishDate,
-      noticeStartDate: p.noticeStartDate, noticeEndDate: p.noticeEndDate,
-      weekdays: p.weekdays, seasons: p.seasons, arrivalTime: p.arrivalTime, departureTime: p.departureTime,
+      imageUrls: p.images.map((image) => image.url),
+      scheduleType: p.scheduleType as "WEEKLY" | "ONCE",
+      startDate: p.startDate,
+      finishDate: p.finishDate,
+      noticeStartDate: p.noticeStartDate,
+      noticeEndDate: p.noticeEndDate,
+      weekdays: p.weekdays,
+      seasons: p.seasons,
+      arrivalTime: p.arrivalTime,
+      departureTime: p.departureTime,
       createdAt: p.createdAt.toISOString(),
       authorId: p.authorId,
       author: p.author.nickname,
@@ -73,16 +88,41 @@ export async function getPosts(
 }
 export async function getTodayPosts(userId?: string) {
   const { today, weekday, season } = todayContext();
-  const where: Prisma.PostWhereInput = {
-    OR: [
-      { category: "NOTICE", noticeStartDate: { lte: today }, noticeEndDate: { gte: today } },
-      { category: { in: ["FOOD", "MARKET"] }, scheduleType: "WEEKLY", weekdays: { has: weekday },
-        OR: [{ seasons: { isEmpty: true } }, { seasons: { has: season } }] },
-      { category: { in: ["FOOD", "MARKET"] }, scheduleType: "ONCE", startDate: { lte: today },
-        OR: [{ finishDate: { gte: today } }, { finishDate: null, startDate: today }] },
-    ],
-  };
-  return (await getPosts(userId, undefined, where, 8)).posts;
+  const foodOrMarket: Prisma.PostWhereInput[] = [
+    {
+      scheduleType: "WEEKLY",
+      OR: [{ weekdays: { isEmpty: true } }, { weekdays: { has: weekday } }],
+      AND: [
+        { OR: [{ seasons: { isEmpty: true } }, { seasons: { has: season } }] },
+      ],
+    },
+    {
+      scheduleType: "ONCE",
+      startDate: { lte: today },
+      OR: [
+        { finishDate: { gte: today } },
+        { finishDate: null, startDate: today },
+      ],
+    },
+  ];
+  const results = await Promise.all([
+    getPosts(
+      userId,
+      undefined,
+      {
+        category: "NOTICE",
+        noticeStartDate: { lte: today },
+        noticeEndDate: { gte: today },
+      },
+      8,
+    ),
+    ...(["FOOD", "MARKET"] as const).map((category) =>
+      getPosts(userId, undefined, { category, OR: foodOrMarket }, 8),
+    ),
+  ]);
+  return results
+    .flatMap((result) => result.posts)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 export async function notifications(userId: string): Promise<Notice[]> {
   const items = await db().notification.findMany({

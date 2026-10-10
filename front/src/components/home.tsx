@@ -3,10 +3,16 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useVillage } from "./store";
 import { VillageMap } from "./village-map";
-import { categories } from "@/lib/types";
+import { categories, type Category } from "@/lib/types";
 import { sources } from "@/lib/sources";
 import { isTodayNews } from "@/lib/map-filter";
-import { ChevronLeft, ChevronRight, ExternalLink, Pause, Play } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Pause,
+  Play,
+} from "lucide-react";
 export function FeedTabs({ selected = "all" }: { selected?: string }) {
   return (
     <nav className="tabs" aria-label="피드 분류">
@@ -29,6 +35,7 @@ export function Home() {
   const { data } = useVillage();
   const roller = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
+  const [todayCategory, setTodayCategory] = useState<Category | "ALL">("ALL");
   const interacting = useRef(false);
   function move(step: number) {
     const el = roller.current;
@@ -58,7 +65,15 @@ export function Home() {
     return () => clearInterval(timer);
   }, [paused]);
   if (!data) return null;
-  const todayPosts = data.mode === "demo" ? data.posts.filter(p => isTodayNews(p)).slice(0, 8) : data.todayPosts ?? [];
+  const todayEligible =
+    data.mode === "demo"
+      ? data.posts.filter((p) => isTodayNews(p))
+      : (data.todayPosts ?? []);
+  const mapPosts =
+    data.mode === "demo" ? todayEligible : (data.todayPosts ?? []);
+  const todayPosts = todayEligible
+    .filter((p) => todayCategory === "ALL" || p.category === todayCategory)
+    .slice(0, 8);
   function group(start: number, end: number) {
     return (
       <div className="grid md:grid-cols-2 md:gap-x-6">
@@ -83,7 +98,7 @@ export function Home() {
   return (
     <>
       <div className="pt-3">
-        <VillageMap posts={data.posts} />
+        <VillageMap posts={mapPosts} />
       </div>
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>오늘의 소식</h2>
@@ -100,7 +115,11 @@ export function Home() {
             aria-label={paused ? "자동 넘김 재생" : "자동 넘김 일시정지"}
             onClick={() => setPaused(!paused)}
           >
-            {paused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
+            {paused ? (
+              <Play size={18} aria-hidden="true" />
+            ) : (
+              <Pause size={18} aria-hidden="true" />
+            )}
           </button>
           <button
             className="icon-btn"
@@ -111,6 +130,20 @@ export function Home() {
           </button>
         </div>
       </div>
+      <nav className="tabs" aria-label="오늘의 소식 분류">
+        {(
+          [["ALL", "전체"], ...Object.entries(categories)] as [string, string][]
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            className="tab"
+            aria-pressed={todayCategory === key}
+            onClick={() => setTodayCategory(key as Category | "ALL")}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
       <div
         className="news-roller"
         ref={roller}
@@ -135,7 +168,11 @@ export function Home() {
         ))}
       </div>
       {!todayPosts.length && (
-        <div className="empty">오늘 예정된 소식이 없어요.</div>
+        <div className="empty">
+          {todayCategory === "ALL"
+            ? "오늘 예정된 소식이 없어요."
+            : `오늘 ${categories[todayCategory]} 소식이 없어요.`}
+        </div>
       )}
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>생활 피드</h2>
