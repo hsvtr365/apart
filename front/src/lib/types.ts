@@ -24,6 +24,7 @@ export type Post = {
   latitude?: number | null;
   longitude?: number | null;
   imageUrl: string | null;
+  imageUrls?: string[];
   scheduleType: "WEEKLY" | "ONCE";
   startDate: string | null;
   finishDate: string | null;
@@ -69,6 +70,7 @@ export type PostInput = {
   latitude?: number | null;
   longitude?: number | null;
   imageUrl: string | null;
+  imageUrls?: string[];
   scheduleType: "WEEKLY" | "ONCE";
   startDate: string | null;
   finishDate: string | null;

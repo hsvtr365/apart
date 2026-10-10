@@ -409,12 +409,13 @@
   overflow: hidden;
   margin-top: 8px;
 }
-.post-media > img {
+.post-media > img,
+.post-image-gallery > img {
   width: 100%;
   height: 260px;
   object-fit: cover;
 }
-.post-media-double-like > img {
+.post-media-double-like img {
   cursor: pointer;
 }
 .double-like-heart {
@@ -664,7 +665,8 @@ header a:first-child {
   .map-pin {
     width: 136px;
   }
-  .post-media > img {
+  .post-media > img,
+.post-image-gallery > img {
     height: 210px;
   }
   .bottom-nav {
@@ -709,3 +711,25 @@ header a:first-child {
 .map-filters button[aria-pressed="true"] { background: var(--color-brand); color: white; }
 .map-filter-period { display: flex; gap: 2px; padding-right: 6px; border-right: 1px solid var(--color-line); }
 @media (max-width: 360px) { .map-filters button { padding-inline: 10px; } }
+
+.report-photo-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:8px; }
+.report-photo { position:relative; overflow:hidden; border-radius:4px; }
+.report-photo img { width:100%; height:110px; object-fit:cover; }
+.report-photo button { position:absolute; top:0; right:0; width:36px; height:36px; background:#172b21b8; color:white; font-size:24px; }
+.time-picker { margin-top:16px; padding:12px; border:1px solid var(--color-line); border-radius:4px; }
+.time-picker-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.time-picker-fields button { padding:8px 12px; text-align:left; border:1px solid var(--color-line); border-radius:4px; }
+.time-picker-fields button[aria-pressed="true"] { border-color:var(--color-brand); }
+.time-picker-fields small, .time-picker-fields strong { display:block; }
+.time-picker-fields strong { margin-top:4px; font-size:15px; }
+.time-picker-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:12px 0 8px; }
+.time-picker-list { position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; height:184px; overflow-y:auto; overscroll-behavior:contain; }
+.time-picker-list button { min-height:32px; border:1px solid var(--color-line); border-radius:20px; font-size:13px; }
+.time-picker-list button[aria-pressed="true"] { color:white; background:var(--color-brand); border-color:var(--color-brand); }
+.time-picker-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; }
+.time-picker-footer button { min-height:36px; padding:0 8px; color:var(--color-brand); font-size:12px; }
+.post-image-gallery { position:relative; }
+.photo-counter { position:absolute; left:8px; top:8px; padding:3px 7px; color:white; background:#172b21b8; font-size:12px; border-radius:4px; }
+.photo-prev, .photo-next { position:absolute; top:50%; transform:translateY(-50%); z-index:1; width:44px; height:44px; color:white; background:#172b2180; font-size:30px; }
+.photo-prev { left:0; } .photo-next { right:0; }
+.viewer-photo-counter { position:absolute; top:20px; left:50%; transform:translateX(-50%); color:white; z-index:1; font-size:13px; }

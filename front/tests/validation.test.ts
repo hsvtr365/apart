@@ -1,6 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { postSchema, profileSchema } from "../src/lib/validation";
+test("post photos accept six owned-upload paths and reject duplicates or unsafe paths", () => {
+  const base = { title: "test", body: "test", category: "FOOD", mapX: null, mapY: null };
+  const urls = Array.from({length: 7}, (_, i) => `/api/uploads/${i}.webp`);
+  assert(postSchema.safeParse({...base, imageUrls: urls.slice(0, 6)}).success);
+  assert(!postSchema.safeParse({...base, imageUrls: urls}).success);
+  assert(!postSchema.safeParse({...base, imageUrls: [urls[0], urls[0]]}).success);
+  assert(!postSchema.safeParse({...base, imageUrls: ["https://example.com/a.webp"]}).success);
+  const empty = postSchema.parse({...base, imageUrls: []});
+  assert.equal(empty.arrivalTime, null);
+  assert.equal(empty.departureTime, null);
+});
 test("building is optional and limited to the apartment's 17 buildings", () => {
   for (let i = 2001; i <= 2017; i++)
     assert(

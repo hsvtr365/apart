@@ -354,30 +354,31 @@ async function handle(
       ((!id && method === "POST") || (id && !action && method === "PATCH"))
     ) {
       const existing = id
-        ? await db().post.findUnique({ where: { id } })
+        ? await db().post.findUnique({ where: { id }, include: { images: true } })
         : null;
       if (id && !existing)
         throw new HttpError("삭제되었거나 없는 글입니다.", 404);
       if (existing && existing.authorId !== user.id)
         throw new HttpError("본인 글만 수정할 수 있어요.", 403);
       const input = postSchema.parse(await body(req));
-      if (
-        input.imageUrl &&
-        input.imageUrl !== existing?.imageUrl &&
-        !(await db().upload.findFirst({
-          where: { id: input.imageUrl.split("/").at(-1), userId: user.id },
-        }))
-      )
+      const { imageUrl, imageUrls, ...fields } = input;
+      const urls = imageUrls ?? (imageUrl ? [imageUrl] : []);
+      const added = urls.filter(url => !existing?.images.some(image => image.url === url));
+      const uploads = await db().upload.findMany({
+        where: { id: { in: added.map(url => url.split("/").at(-1)!) }, userId: user.id },
+        select: { id: true },
+      });
+      if (uploads.length !== added.length)
         throw new HttpError("직접 업로드한 사진을 선택해주세요.");
       if (existing) {
         await db().post.update({
           where: { id: existing.id },
-          data: { ...input },
+          data: { ...fields, images: { deleteMany: {}, create: urls.map((url, position) => ({ url, position })) } },
         });
         return json({ id: existing.id });
       }
       const post = await db().post.create({
-        data: { ...input, authorId: user.id },
+        data: { ...fields, authorId: user.id, images: { create: urls.map((url, position) => ({ url, position })) } },
       });
       return json({ id: post.id }, 201);
     }

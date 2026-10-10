@@ -114,7 +114,7 @@ export function PostDetail({
         </div>
       ) : (
         <div className={post.imageUrl ? "detail-layout" : ""}>
-          {post.imageUrl && <ImageViewer src={post.imageUrl} alt={post.title} />}
+          {post.imageUrl && <ImageViewer src={post.imageUrl} sources={post.imageUrls} alt={post.title} />}
           <div className="p-4">
             <PostCard post={post} full hideImage />
             <h2 className="mb-2">댓글 {post.commentCount}</h2>

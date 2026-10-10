@@ -3,6 +3,7 @@ import { visitorHash } from "./visitor";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Post, Notice } from "./types";
 const include = {
+  images: { orderBy: { position: "asc" as const } },
   author: { select: { id: true, nickname: true, building: true } },
   _count: { select: { likes: true, comments: true } },
   presences: { orderBy: { observedAt: "desc" as const }, take: 1 },
@@ -50,7 +51,8 @@ export async function getPosts(
       mapY: p.mapY,
       latitude: p.latitude,
       longitude: p.longitude,
-      imageUrl: p.imageUrl,
+      imageUrl: p.images[0]?.url ?? null,
+      imageUrls: p.images.map(image => image.url),
       scheduleType: p.scheduleType as "WEEKLY" | "ONCE", startDate: p.startDate, finishDate: p.finishDate,
       weekdays: p.weekdays, seasons: p.seasons, arrivalTime: p.arrivalTime, departureTime: p.departureTime,
       createdAt: p.createdAt.toISOString(),

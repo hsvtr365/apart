@@ -24,7 +24,7 @@ async function main() {
         category: p.category,
         mapX: p.mapX,
         mapY: p.mapY,
-        imageUrl: p.imageUrl,
+        images: { create: p.imageUrl ? [{ url: p.imageUrl, position: 0 }] : [] },
       },
       update: {},
     });

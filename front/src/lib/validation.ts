@@ -29,7 +29,8 @@ export const postSchema = z
     imageUrl: z
       .string()
       .regex(/^\/api\/uploads\/[a-f0-9-]+\.webp$/)
-      .nullable(),
+      .nullable().default(null),
+    imageUrls: z.array(z.string().regex(/^\/api\/uploads\/[a-f0-9-]+\.webp$/)).max(6, "사진은 최대 6장까지 첨부할 수 있어요.").refine(v => new Set(v).size === v.length, "같은 사진은 한 번만 첨부해주세요.").optional(),
     weekdays: z.array(z.number().int().min(0).max(6)).max(7).default([]).transform(v => [...new Set(v)].sort()),
     seasons: z.array(z.enum(["SPRING", "SUMMER", "AUTUMN", "WINTER"])).max(4).default([]).transform(v => [...new Set(v)]),
     arrivalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().default(null),

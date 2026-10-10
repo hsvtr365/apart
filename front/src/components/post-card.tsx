@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
+import { PostImages } from "./post-images";
 import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
 export function Presence({ post, map = false, onConfirmed }: { post: Post; map?: boolean; onConfirmed?: () => void }) {
   const { act, notify, busy } = useVillage();
@@ -159,7 +160,7 @@ export function PostCard({
               .finally(() => { doubleLikePending.current = false; });
           }}
         >
-          <img src={post.imageUrl} alt={post.title} />
+          <PostImages urls={post.imageUrls?.length ? post.imageUrls : [post.imageUrl]} alt={post.title} />
           {heartBurst && <span className="double-like-heart" aria-hidden="true"><Icon name="heart" fill="currentColor" /></span>}
           {post.category !== "NOTICE" && (
             <Link

@@ -2,15 +2,24 @@
 import { useState, useRef, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useVillage, request } from "./store";
-import { categories, weekdayLabels, seasonLabels, type Post, type PostInput } from "@/lib/types";
+import {
+  categories,
+  weekdayLabels,
+  seasonLabels,
+  type Post,
+  type PostInput,
+} from "@/lib/types";
 import { KakaoMap, type MapPoint } from "./kakao-map";
+import { TimePicker } from "./time-picker";
 export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
   const params = useSearchParams();
   const [title, setTitle] = useState(post?.title ?? ""),
     [text, setText] = useState(post?.body ?? ""),
-    [image, setImage] = useState<string | null>(post?.imageUrl ?? null),
+    [images, setImages] = useState<string[]>(
+      post?.imageUrls ?? (post?.imageUrl ? [post.imageUrl] : []),
+    ),
     [uploading, setUploading] = useState(false),
     [point, setPoint] = useState<[number, number]>([
       post?.mapX ?? 25,
@@ -22,37 +31,50 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
         : null,
     ),
     [error, setError] = useState("");
-  const [scheduleType, setScheduleType] = useState<"WEEKLY" | "ONCE">(post?.scheduleType ?? "WEEKLY");
+  const [scheduleType, setScheduleType] = useState<"WEEKLY" | "ONCE">(
+    post?.scheduleType ?? "WEEKLY",
+  );
   const file = useRef<HTMLInputElement>(null);
-  async function upload(f: File) {
-    if (!f.type.startsWith("image/") || f.size > 8 * 1024 * 1024) {
+  async function upload(files: File[]) {
+    if (images.length + files.length > 6) {
+      setError("사진은 최대 6장까지 첨부할 수 있어요.");
+      return;
+    }
+    if (
+      files.some(
+        (f) => !f.type.startsWith("image/") || f.size > 8 * 1024 * 1024,
+      )
+    ) {
       setError("8MB 이하의 사진을 선택해주세요.");
       return;
     }
     setUploading(true);
     setError("");
     try {
-      if (data?.mode === "demo") {
-        const url = await new Promise<string>((res, rej) => {
-          const reader = new FileReader();
-          reader.onload = () => res(String(reader.result));
-          reader.onerror = rej;
-          reader.readAsDataURL(f);
-        });
-        setImage(url);
-      } else {
-        const form = new FormData();
-        form.set("file", f);
-        const result = await request<{ url: string }>("/api/uploads", {
-          method: "POST",
-          body: form,
-        });
-        setImage(result.url);
+      for (const f of files) {
+        if (data?.mode === "demo") {
+          const url = await new Promise<string>((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = () => res(String(reader.result));
+            reader.onerror = rej;
+            reader.readAsDataURL(f);
+          });
+          setImages((current) => [...current, url]);
+        } else {
+          const form = new FormData();
+          form.set("file", f);
+          const result = await request<{ url: string }>("/api/uploads", {
+            method: "POST",
+            body: form,
+          });
+          setImages((current) => [...current, result.url]);
+        }
       }
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setUploading(false);
+      if (file.current) file.current.value = "";
     }
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -68,7 +90,8 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
         mapY: data?.mode === "demo" ? point[1] : null,
         latitude: geo?.latitude ?? null,
         longitude: geo?.longitude ?? null,
-        imageUrl: image,
+        imageUrl: images[0] ?? null,
+        imageUrls: images,
         scheduleType,
         startDate: String(fields.get("startDate") || "") || null,
         finishDate: String(fields.get("finishDate") || "") || null,
@@ -142,46 +165,55 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
             onChange={(e) => setText(e.target.value)}
             placeholder="어디서 무슨 일이 있었나요?"
           />
-          <label className="my-3 flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-sm border border-dashed border-line bg-soft p-3">
-            <span>{uploading ? "사진 업로드 중…" : "사진 추가 · 선택"}</span>
-            <small>8MB 이하</small>
+          <div className="report-photos">
+            <label className="field" htmlFor="report-images">
+              사진 · 선택 <small>{images.length}/6 · 장당 8MB 이하</small>
+            </label>
             <input
+              id="report-images"
               ref={file}
-              className="mt-2 max-w-full text-xs"
               type="file"
               accept="image/*"
-              disabled={uploading}
+              multiple
+              disabled={uploading || images.length === 6}
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void upload(f);
+                const selected = Array.from(e.target.files ?? []);
+                e.currentTarget.value = "";
+                if (selected.length) void upload(selected);
               }}
             />
-            {image && (
-              <img
-                className="mt-2 max-h-44 object-contain"
-                src={image}
-                alt="첨부 사진 미리보기"
-              />
-            )}
-          </label>
-          {image && (
-            <button
-              className="btn btn-secondary"
-              type="button"
-              onClick={() => {
-                setImage(null);
-                if (file.current) file.current.value = "";
-              }}
-            >
-              사진 제거
-            </button>
-          )}
+            {uploading && <small role="status">사진 업로드 중…</small>}
+            <div className="report-photo-grid">
+              {images.map((url, index) => (
+                <div className="report-photo" key={url}>
+                  <img src={url} alt={`첨부 사진 ${index + 1}`} />
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    aria-label={`사진 ${index + 1} 삭제`}
+                    onClick={() =>
+                      setImages((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
           <fieldset className="mt-3">
             <legend className="field">카테고리</legend>
             <div className="choice-row">
               {Object.entries(categories).map(([value, label]) => (
                 <label className="choice-chip" key={value}>
-                  <input type="radio" name="category" value={value} defaultChecked={(post?.category ?? "FOOD") === value} />
+                  <input
+                    type="radio"
+                    name="category"
+                    value={value}
+                    defaultChecked={(post?.category ?? "FOOD") === value}
+                  />
                   <span>{label}</span>
                 </label>
               ))}
@@ -240,49 +272,90 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
           <fieldset className="mt-3">
             <legend className="field">방문 일정</legend>
             <div className="choice-row">
-              {([['WEEKLY', '매주'], ['ONCE', '1회']] as const).map(([value, label]) => (
+              {(
+                [
+                  ["WEEKLY", "매주"],
+                  ["ONCE", "1회"],
+                ] as const
+              ).map(([value, label]) => (
                 <label className="choice-chip" key={value}>
-                  <input type="radio" name="scheduleType" value={value} checked={scheduleType === value} onChange={() => setScheduleType(value)} />
+                  <input
+                    type="radio"
+                    name="scheduleType"
+                    value={value}
+                    checked={scheduleType === value}
+                    onChange={() => setScheduleType(value)}
+                  />
                   <span>{label}</span>
                 </label>
               ))}
             </div>
           </fieldset>
           {scheduleType === "WEEKLY" && (
-          <fieldset className="mt-3">
-            <legend className="field">오는 요일 · 선택</legend>
-            <div className="choice-row">
-              {weekdayLabels.map((label, day) => (
-                <label key={day} className="choice-chip">
-                  <input type="checkbox" name="weekdays" value={day} defaultChecked={post?.weekdays.includes(day)} /><span>{label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+            <fieldset className="mt-3">
+              <legend className="field">오는 요일 · 선택</legend>
+              <div className="choice-row">
+                {weekdayLabels.map((label, day) => (
+                  <label key={day} className="choice-chip">
+                    <input
+                      type="checkbox"
+                      name="weekdays"
+                      value={day}
+                      defaultChecked={post?.weekdays.includes(day)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           )}
           {scheduleType === "ONCE" && (
             <div className="grid grid-cols-2 gap-3">
-              <label><span className="field">열리는 날</span><input type="date" name="startDate" required defaultValue={post?.startDate ?? ""} /></label>
-              <label><span className="field">가는 날 · 선택</span><input type="date" name="finishDate" defaultValue={post?.finishDate ?? ""} /></label>
+              <label>
+                <span className="field">열리는 날</span>
+                <input
+                  type="date"
+                  name="startDate"
+                  required
+                  defaultValue={post?.startDate ?? ""}
+                />
+              </label>
+              <label>
+                <span className="field">가는 날 · 선택</span>
+                <input
+                  type="date"
+                  name="finishDate"
+                  defaultValue={post?.finishDate ?? ""}
+                />
+              </label>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <label><span className="field">오는 시간 · 선택</span><input aria-label="오는 시간" type="time" name="arrivalTime" defaultValue={post?.arrivalTime ?? ""} /></label>
-            <label><span className="field">가는 시간 · 선택</span><input aria-label="가는 시간" type="time" name="departureTime" defaultValue={post?.departureTime ?? ""} /></label>
-          </div>
+          <TimePicker
+            arrival={post?.arrivalTime ?? null}
+            departure={post?.departureTime ?? null}
+          />
           {scheduleType === "WEEKLY" && (
-          <fieldset className="mt-3">
-            <legend className="field">오는 계절 · 선택</legend>
-            <div className="choice-row">
-              {Object.entries(seasonLabels).map(([value, label]) => (
-                <label key={value} className="choice-chip">
-                  <input type="checkbox" name="seasons" value={value} defaultChecked={post?.seasons.includes(value)} /><span>{label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+            <fieldset className="mt-3">
+              <legend className="field">오는 계절 · 선택</legend>
+              <div className="choice-row">
+                {Object.entries(seasonLabels).map(([value, label]) => (
+                  <label key={value} className="choice-chip">
+                    <input
+                      type="checkbox"
+                      name="seasons"
+                      value={value}
+                      defaultChecked={post?.seasons.includes(value)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           )}
-          <small className="mt-2 block text-muted">요일·시간·계절은 아는 정보만 선택해주세요. 실제 방문 일정은 달라질 수 있어요.</small>
+          <small className="mt-2 block text-muted">
+            요일·시간·계절은 아는 정보만 선택해주세요. 실제 방문 일정은 달라질
+            수 있어요.
+          </small>
           {error && (
             <p role="alert" className="mt-3 text-red-700">
               {error}
