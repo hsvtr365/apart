@@ -11,7 +11,7 @@ import {
 } from "@/lib/types";
 import { KakaoMap, type MapPoint } from "./kakao-map";
 import { TimePicker } from "./time-picker";
-import { ImagePlus } from "lucide-react";
+import { Building2, Check, ImagePlus, ShoppingBasket, Store } from "lucide-react";
 export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
   const { data, create, act, notify, busy } = useVillage();
   const router = useRouter();
@@ -224,7 +224,9 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
           <fieldset className="mt-3">
             <legend className="field">카테고리</legend>
             <div className="choice-row">
-              {Object.entries(categories).map(([value, label]) => (
+              {Object.entries(categories).map(([value, label]) => {
+                const CategoryIcon = value === "FOOD" ? ShoppingBasket : value === "NOTICE" ? Building2 : Store;
+                return (
                 <label className="choice-chip" key={value}>
                   <input
                     type="radio"
@@ -232,9 +234,10 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                     value={value}
                     defaultChecked={(post?.category ?? "FOOD") === value}
                   />
-                  <span>{label}</span>
+                  <span><CategoryIcon size={18} aria-hidden="true" />{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
                 </label>
-              ))}
+                );
+              })}
             </div>
           </fieldset>
           {data?.mode !== "demo" && (
@@ -304,7 +307,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                     checked={scheduleType === value}
                     onChange={() => setScheduleType(value)}
                   />
-                  <span>{label}</span>
+                  <span>{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
                 </label>
               ))}
             </div>
@@ -321,7 +324,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                       value={day}
                       defaultChecked={post?.weekdays.includes(day)}
                     />
-                    <span>{label}</span>
+                    <span>{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
                   </label>
                 ))}
               </div>
@@ -364,7 +367,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
                       value={value}
                       defaultChecked={post?.seasons.includes(value)}
                     />
-                    <span>{label}</span>
+                    <span>{label}<Check className="choice-check" size={16} aria-hidden="true" /></span>
                   </label>
                 ))}
               </div>

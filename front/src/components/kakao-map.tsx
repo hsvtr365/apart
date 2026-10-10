@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
 import { Presence } from "./post-card";
 import { Icon } from "./icons";
-import { Minus, Plus } from "lucide-react";
+import { ChevronRight, Minus, Plus } from "lucide-react";
 
 export type MapPoint = { latitude: number; longitude: number };
 function Pin({
@@ -107,17 +107,7 @@ function Pin({
             title={post.title}
           >
             <span>{post.title}</span>
-            <svg
-              width="16"
-              height="20"
-              viewBox="0 0 16 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path d="m5 4 6 6-6 6" />
-            </svg>
+            <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
           </Link>
           {post.category === "FOOD" && !confirmed && !post.presenceConfirmed && (
             <div className="map-callout-actions">
