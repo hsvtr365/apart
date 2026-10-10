@@ -9,6 +9,7 @@ import {
   MessageCircle,
   Newspaper,
   Plus,
+  Share2,
   UserRound,
   X,
   type LucideProps,
@@ -27,6 +28,7 @@ const icons = {
   check: Check,
   back: ArrowLeft,
   expand: Expand,
+  share: Share2,
 };
 
 export function Icon({ name, ...props }: LucideProps & { name: keyof typeof icons }) {

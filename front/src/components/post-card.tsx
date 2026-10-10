@@ -88,8 +88,8 @@ export function PostCard({
         <Icon name="comment" />
         <span>{post.commentCount}</span>
       </Link>
-      <button className="icon-btn ml-auto" onClick={share}>
-        공유
+      <button className="icon-btn ml-auto" onClick={share} aria-label="공유" title="공유">
+        <Icon name="share" />
       </button>
     </div>
   );
