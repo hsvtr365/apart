@@ -526,9 +526,12 @@
   padding: 0;
   border: 0;
   background: #080b09f2;
+  overflow: hidden;
 }
 .image-viewer-overlay[open] {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
 }
 .image-viewer-overlay > img {
@@ -538,7 +541,23 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  touch-action: none;
+  user-select: none;
 }
+.image-viewer-zoom {
+  position: absolute;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  color: white;
+  background: #080b09b8;
+  border-radius: 4px;
+}
+.image-viewer-zoom button { min-width: 44px; height: 44px; padding: 0 10px; }
+.image-viewer-zoom button:disabled { opacity: .35; }
 .image-viewer-close {
   position: absolute;
   top: max(12px, env(safe-area-inset-top));
