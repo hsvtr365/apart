@@ -22,6 +22,7 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
         : null,
     ),
     [error, setError] = useState("");
+  const [scheduleType, setScheduleType] = useState<"WEEKLY" | "ONCE">(post?.scheduleType ?? "WEEKLY");
   const file = useRef<HTMLInputElement>(null);
   async function upload(f: File) {
     if (!f.type.startsWith("image/") || f.size > 8 * 1024 * 1024) {
@@ -68,6 +69,9 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
         latitude: geo?.latitude ?? null,
         longitude: geo?.longitude ?? null,
         imageUrl: image,
+        scheduleType,
+        startDate: String(fields.get("startDate") || "") || null,
+        finishDate: String(fields.get("finishDate") || "") || null,
         weekdays: fields.getAll("weekdays").map(Number),
         seasons: fields.getAll("seasons").map(String),
         arrivalTime: String(fields.get("arrivalTime") || "") || null,
@@ -172,18 +176,17 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
               사진 제거
             </button>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <label>
-              <span className="field">카테고리</span>
-              <select name="category" defaultValue={post?.category ?? "FOOD"}>
-                {Object.entries(categories).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <fieldset className="mt-3">
+            <legend className="field">카테고리</legend>
+            <div className="choice-row">
+              {Object.entries(categories).map(([value, label]) => (
+                <label className="choice-chip" key={value}>
+                  <input type="radio" name="category" value={value} defaultChecked={(post?.category ?? "FOOD") === value} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
           {data?.mode !== "demo" && (
             <>
               <div className="location-picker mt-2">
@@ -235,29 +238,50 @@ export function Report({ post, onDone }: { post?: Post; onDone?: () => void }) {
             </div>
           )}
           <fieldset className="mt-3">
-            <legend className="field">오는 요일 · 선택</legend>
-            <div className="flex flex-wrap gap-2">
-              {weekdayLabels.map((label, day) => (
-                <label key={day} className="flex min-h-11 items-center gap-1 border border-line px-3">
-                  <input className="!w-auto" type="checkbox" name="weekdays" value={day} defaultChecked={post?.weekdays.includes(day)} />{label}
+            <legend className="field">방문 일정</legend>
+            <div className="choice-row">
+              {([['WEEKLY', '매주'], ['ONCE', '1회']] as const).map(([value, label]) => (
+                <label className="choice-chip" key={value}>
+                  <input type="radio" name="scheduleType" value={value} checked={scheduleType === value} onChange={() => setScheduleType(value)} />
+                  <span>{label}</span>
                 </label>
               ))}
             </div>
           </fieldset>
+          {scheduleType === "WEEKLY" && (
+          <fieldset className="mt-3">
+            <legend className="field">오는 요일 · 선택</legend>
+            <div className="choice-row">
+              {weekdayLabels.map((label, day) => (
+                <label key={day} className="choice-chip">
+                  <input type="checkbox" name="weekdays" value={day} defaultChecked={post?.weekdays.includes(day)} /><span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          )}
+          {scheduleType === "ONCE" && (
+            <div className="grid grid-cols-2 gap-3">
+              <label><span className="field">열리는 날</span><input type="date" name="startDate" required defaultValue={post?.startDate ?? ""} /></label>
+              <label><span className="field">가는 날 · 선택</span><input type="date" name="finishDate" defaultValue={post?.finishDate ?? ""} /></label>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <label><span className="field">오는 시간 · 선택</span><input aria-label="오는 시간" type="time" name="arrivalTime" defaultValue={post?.arrivalTime ?? ""} /></label>
             <label><span className="field">가는 시간 · 선택</span><input aria-label="가는 시간" type="time" name="departureTime" defaultValue={post?.departureTime ?? ""} /></label>
           </div>
+          {scheduleType === "WEEKLY" && (
           <fieldset className="mt-3">
             <legend className="field">오는 계절 · 선택</legend>
-            <div className="flex flex-wrap gap-2">
+            <div className="choice-row">
               {Object.entries(seasonLabels).map(([value, label]) => (
-                <label key={value} className="flex min-h-11 items-center gap-1 border border-line px-3">
-                  <input className="!w-auto" type="checkbox" name="seasons" value={value} defaultChecked={post?.seasons.includes(value)} />{label}
+                <label key={value} className="choice-chip">
+                  <input type="checkbox" name="seasons" value={value} defaultChecked={post?.seasons.includes(value)} /><span>{label}</span>
                 </label>
               ))}
             </div>
           </fieldset>
+          )}
           <small className="mt-2 block text-muted">요일·시간·계절은 아는 정보만 선택해주세요. 실제 방문 일정은 달라질 수 있어요.</small>
           {error && (
             <p role="alert" className="mt-3 text-red-700">

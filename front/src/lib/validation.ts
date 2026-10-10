@@ -10,11 +10,18 @@ export const profileSchema = z.object({
   building: z.string().regex(/^20(0[1-9]|1[0-7])동$/, "2001동부터 2017동까지 선택해주세요.").nullable(),
 });
 export const commentSchema = z.object({ body: text(500) });
+const calendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
+  const date = new Date(value + "T00:00:00Z");
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}, "올바른 날짜를 선택해주세요.").nullable().default(null);
 export const postSchema = z
   .object({
     title: text(15),
     body: text(500),
     category: z.enum(["FOOD", "NOTICE", "MARKET"]),
+    scheduleType: z.enum(["WEEKLY", "ONCE"]).default("WEEKLY"),
+    startDate: calendarDate,
+    finishDate: calendarDate,
     mapX: z.number().min(0).max(100).nullable(),
     mapY: z.number().min(0).max(100).nullable(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
@@ -28,6 +35,9 @@ export const postSchema = z
     arrivalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().default(null),
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().default(null),
   })
+  .refine(v => v.scheduleType !== "ONCE" || !!v.startDate, "1회 일정의 열리는 날을 선택해주세요.")
+  .refine(v => v.scheduleType !== "ONCE" || !v.finishDate || !v.startDate || v.finishDate >= v.startDate, "가는 날은 열리는 날 이후로 선택해주세요.")
+  .transform(v => v.scheduleType === "WEEKLY" ? {...v, startDate: null, finishDate: null} : {...v, weekdays: [], seasons: []})
   .refine(
     (v) => (v.latitude == null) === (v.longitude == null),
     "지도 위치를 다시 선택해주세요.",

@@ -171,9 +171,9 @@ export function PostCard({
           {actions}
         </>
       )}
-      {(post.weekdays?.length > 0 || post.seasons?.length > 0 || post.arrivalTime || post.departureTime) && (
+      {(post.startDate || post.weekdays?.length > 0 || post.seasons?.length > 0 || post.arrivalTime || post.departureTime) && (
         <p className="text-xs text-muted mt-2">
-          {[post.weekdays?.map(day => weekdayLabels[day]).join("·"),
+          {[post.scheduleType === "ONCE" ? `1회 · ${post.startDate ?? "날짜 미정"}${post.finishDate ? ` ~ ${post.finishDate}` : ""}` : `매주 ${post.weekdays?.map(day => weekdayLabels[day]).join("·") || "요일 미정"}`,
             post.arrivalTime ? `${post.arrivalTime} 도착 예정` : "",
             post.departureTime ? `${post.departureTime} 출발 예정` : "",
             post.seasons?.map(season => seasonLabels[season]).join("·")].filter(Boolean).join(" / ")}

@@ -49,3 +49,15 @@ test("optional recurring schedule validates values and supports overnight visits
   assert.deepEqual(postSchema.parse({...base,weekdays:[1,1]}).weekdays,[1]);
   assert(!("place" in postSchema.parse({...base,place:"old"})));
 });
+test("weekly and one-time schedules keep only their own fields", () => {
+  const base = {title:"test",body:"test",category:"FOOD",mapX:null,mapY:null,imageUrl:null};
+  assert.equal(postSchema.parse(base).scheduleType, "WEEKLY");
+  assert.equal(postSchema.parse({...base,startDate:"2026-10-10"}).startDate,null);
+  assert(!postSchema.safeParse({...base,scheduleType:"ONCE"}).success);
+  assert(!postSchema.safeParse({...base,scheduleType:"ONCE",startDate:"2026-02-30"}).success);
+  assert(!postSchema.safeParse({...base,scheduleType:"ONCE",startDate:"2026-10-10",finishDate:"2026-10-09"}).success);
+  const once = postSchema.parse({...base,scheduleType:"ONCE",startDate:"2026-10-10",finishDate:"2026-10-10",weekdays:[1],seasons:["WINTER"]});
+  assert.deepEqual(once.weekdays,[]);
+  assert.deepEqual(once.seasons,[]);
+  assert.equal(once.finishDate,"2026-10-10");
+});

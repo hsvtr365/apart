@@ -20,6 +20,7 @@ const make = (
   author: authorId === "demo" ? "행복한 이웃" : "동네 이웃",
   authorBuilding: authorId === "demo" ? "2001동" : null,
   imageUrl: "/" + category.toLowerCase() + ".svg",
+  scheduleType: "WEEKLY", startDate: null, finishDate: null,
   weekdays: [], seasons: [], arrivalTime: null, departureTime: null,
   createdAt: now,
   likes: 0,

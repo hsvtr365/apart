@@ -51,6 +51,7 @@ export async function getPosts(
       latitude: p.latitude,
       longitude: p.longitude,
       imageUrl: p.imageUrl,
+      scheduleType: p.scheduleType as "WEEKLY" | "ONCE", startDate: p.startDate, finishDate: p.finishDate,
       weekdays: p.weekdays, seasons: p.seasons, arrivalTime: p.arrivalTime, departureTime: p.departureTime,
       createdAt: p.createdAt.toISOString(),
       authorId: p.authorId,

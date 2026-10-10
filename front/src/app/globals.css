@@ -578,3 +578,10 @@ header a:first-child {
     font-size: 12px;
   }
 }
+.choice-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice-chip { position: relative; cursor: pointer; }
+.choice-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.choice-chip span { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; min-width: 44px; padding: 8px 14px; border: 1px solid var(--color-line); border-radius: 24px; background: #f3f5f4; font-weight: 600; }
+.choice-chip input:checked + span { background: var(--color-brand); border-color: var(--color-brand); color: white; }
+.choice-chip input:checked + span::before { content: '✓'; }
+.choice-chip input:focus-visible + span { outline: 2px solid var(--color-brand); outline-offset: 3px; }
