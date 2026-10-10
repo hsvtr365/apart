@@ -5,6 +5,7 @@ import { useVillage } from "./store";
 import { VillageMap } from "./village-map";
 import { categories } from "@/lib/types";
 import { sources } from "@/lib/sources";
+import { isTodayNews } from "@/lib/map-filter";
 import { ChevronLeft, ChevronRight, ExternalLink, Pause, Play } from "lucide-react";
 export function FeedTabs({ selected = "all" }: { selected?: string }) {
   return (
@@ -57,6 +58,7 @@ export function Home() {
     return () => clearInterval(timer);
   }, [paused]);
   if (!data) return null;
+  const todayPosts = data.mode === "demo" ? data.posts.filter(p => isTodayNews(p)).slice(0, 8) : data.todayPosts ?? [];
   function group(start: number, end: number) {
     return (
       <div className="grid md:grid-cols-2 md:gap-x-6">
@@ -121,7 +123,7 @@ export function Home() {
         }}
         onTouchStart={() => setPaused(true)}
       >
-        {data.posts.slice(0, 8).map((p) => (
+        {todayPosts.map((p) => (
           <Link
             href={"/feed/" + p.category.toLowerCase()}
             className="news-card"
@@ -132,8 +134,8 @@ export function Home() {
           </Link>
         ))}
       </div>
-      {!data.posts.length && (
-        <div className="empty">아직 등록된 소식이 없어요.</div>
+      {!todayPosts.length && (
+        <div className="empty">오늘 예정된 소식이 없어요.</div>
       )}
       <div className="mt-6 mb-2 flex items-center justify-between">
         <h2>생활 피드</h2>

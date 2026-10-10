@@ -195,7 +195,10 @@ export function PostCard({
           {actions}
         </>
       )}
-      {(post.startDate || post.weekdays?.length > 0 || post.seasons?.length > 0 || post.arrivalTime || post.departureTime) && (
+      {post.category === "NOTICE" && post.noticeStartDate && post.noticeEndDate && (
+        <p className="text-xs text-muted mt-2">공고 기간 · {post.noticeStartDate} ~ {post.noticeEndDate}</p>
+      )}
+      {post.category !== "NOTICE" && (post.startDate || post.weekdays?.length > 0 || post.seasons?.length > 0 || post.arrivalTime || post.departureTime) && (
         <p className="text-xs text-muted mt-2">
           {[post.scheduleType === "ONCE" ? `1회 · ${post.startDate ?? "날짜 미정"}${post.finishDate ? ` ~ ${post.finishDate}` : ""}` : `매주 ${post.weekdays?.map(day => weekdayLabels[day]).join("·") || "요일 미정"}`,
             post.arrivalTime ? `${post.arrivalTime} 도착 예정` : "",

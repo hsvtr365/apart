@@ -2,6 +2,7 @@ import { db } from "./db";
 import { visitorHash } from "./visitor";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Post, Notice } from "./types";
+import { todayContext } from "./map-filter";
 const include = {
   images: { orderBy: { position: "asc" as const } },
   author: { select: { id: true, nickname: true, building: true } },
@@ -54,6 +55,7 @@ export async function getPosts(
       imageUrl: p.images[0]?.url ?? null,
       imageUrls: p.images.map(image => image.url),
       scheduleType: p.scheduleType as "WEEKLY" | "ONCE", startDate: p.startDate, finishDate: p.finishDate,
+      noticeStartDate: p.noticeStartDate, noticeEndDate: p.noticeEndDate,
       weekdays: p.weekdays, seasons: p.seasons, arrivalTime: p.arrivalTime, departureTime: p.departureTime,
       createdAt: p.createdAt.toISOString(),
       authorId: p.authorId,
@@ -68,6 +70,19 @@ export async function getPosts(
       observedAt: latest(p)?.observedAt.toISOString() ?? null,
     })),
   };
+}
+export async function getTodayPosts(userId?: string) {
+  const { today, weekday, season } = todayContext();
+  const where: Prisma.PostWhereInput = {
+    OR: [
+      { category: "NOTICE", noticeStartDate: { lte: today }, noticeEndDate: { gte: today } },
+      { category: { in: ["FOOD", "MARKET"] }, scheduleType: "WEEKLY", weekdays: { has: weekday },
+        OR: [{ seasons: { isEmpty: true } }, { seasons: { has: season } }] },
+      { category: { in: ["FOOD", "MARKET"] }, scheduleType: "ONCE", startDate: { lte: today },
+        OR: [{ finishDate: { gte: today } }, { finishDate: null, startDate: today }] },
+    ],
+  };
+  return (await getPosts(userId, undefined, where, 8)).posts;
 }
 export async function notifications(userId: string): Promise<Notice[]> {
   const items = await db().notification.findMany({

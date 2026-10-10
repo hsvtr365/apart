@@ -1,5 +1,7 @@
 import type { Bootstrap, Post } from "./types";
+import { todayContext } from "./map-filter";
 const now = new Date().toISOString();
+const { today, weekday } = todayContext();
 const make = (
   id: string,
   title: string,
@@ -14,14 +16,16 @@ const make = (
   title,
   body,
   category,
-  mapX,
-  mapY,
+  mapX: category === "NOTICE" ? null : mapX,
+  mapY: category === "NOTICE" ? null : mapY,
   authorId,
   author: authorId === "demo" ? "행복한 이웃" : "동네 이웃",
   authorBuilding: authorId === "demo" ? "2001동" : null,
   imageUrl: "/" + category.toLowerCase() + ".svg",
   scheduleType: "WEEKLY", startDate: null, finishDate: null,
-  weekdays: [], seasons: [], arrivalTime: null, departureTime: null,
+  noticeStartDate: category === "NOTICE" ? today : null,
+  noticeEndDate: category === "NOTICE" ? today : null,
+  weekdays: category === "NOTICE" ? [] : [weekday], seasons: [], arrivalTime: null, departureTime: null,
   createdAt: now,
   likes: 0,
   liked: false,

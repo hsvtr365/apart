@@ -18,7 +18,7 @@ import {
   profileSchema,
   commentSchema,
 } from "@/lib/validation";
-import { getPosts, comments, notifications } from "@/lib/queries";
+import { getPosts, getTodayPosts, comments, notifications } from "@/lib/queries";
 import { demoData } from "@/lib/demo";
 import { visitorHash } from "@/lib/visitor";
 export const runtime = "nodejs";
@@ -82,6 +82,7 @@ async function handle(
           ? { id: user.id, nickname: user.nickname, building: user.building }
           : null,
         ...(await getPosts(user?.id)),
+        todayPosts: await getTodayPosts(user?.id),
         notifications: user ? await notifications(user.id) : [],
         kakaoReady: !!process.env.KAKAO_CLIENT_ID,
       });

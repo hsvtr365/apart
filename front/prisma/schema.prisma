@@ -57,6 +57,8 @@ model Post {
   scheduleType String @default("WEEKLY")
   startDate String? @db.VarChar(10)
   finishDate String? @db.VarChar(10)
+  noticeStartDate String? @db.VarChar(10)
+  noticeEndDate String? @db.VarChar(10)
   seasons String[] @default([])
   arrivalTime String? @db.VarChar(5)
   departureTime String? @db.VarChar(5)

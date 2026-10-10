@@ -22,6 +22,8 @@ export const postSchema = z
     scheduleType: z.enum(["WEEKLY", "ONCE"]).default("WEEKLY"),
     startDate: calendarDate,
     finishDate: calendarDate,
+    noticeStartDate: calendarDate,
+    noticeEndDate: calendarDate,
     mapX: z.number().min(0).max(100).nullable(),
     mapY: z.number().min(0).max(100).nullable(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
@@ -36,9 +38,13 @@ export const postSchema = z
     arrivalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().default(null),
     departureTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().default(null),
   })
-  .refine(v => v.scheduleType !== "ONCE" || !!v.startDate, "1회 일정의 열리는 날을 선택해주세요.")
-  .refine(v => v.scheduleType !== "ONCE" || !v.finishDate || !v.startDate || v.finishDate >= v.startDate, "가는 날은 열리는 날 이후로 선택해주세요.")
-  .transform(v => v.scheduleType === "WEEKLY" ? {...v, startDate: null, finishDate: null} : {...v, weekdays: [], seasons: []})
+  .refine(v => v.category !== "NOTICE" || !!v.noticeStartDate && !!v.noticeEndDate, "공고 시작일과 종료일을 선택해주세요.")
+  .refine(v => v.category !== "NOTICE" || !v.noticeStartDate || !v.noticeEndDate || v.noticeEndDate >= v.noticeStartDate, "공고 종료일은 시작일 이후로 선택해주세요.")
+  .refine(v => v.category === "NOTICE" || v.scheduleType !== "ONCE" || !!v.startDate, "1회 일정의 열리는 날을 선택해주세요.")
+  .refine(v => v.category === "NOTICE" || v.scheduleType !== "ONCE" || !v.finishDate || !v.startDate || v.finishDate >= v.startDate, "가는 날은 열리는 날 이후로 선택해주세요.")
+  .transform(v => v.category === "NOTICE"
+    ? {...v, scheduleType: "WEEKLY" as const, startDate: null, finishDate: null, weekdays: [], seasons: [], arrivalTime: null, departureTime: null, mapX: null, mapY: null, latitude: null, longitude: null}
+    : {...v, noticeStartDate: null, noticeEndDate: null, ...(v.scheduleType === "WEEKLY" ? {startDate: null, finishDate: null} : {weekdays: [], seasons: []})})
   .refine(
     (v) => (v.latitude == null) === (v.longitude == null),
     "지도 위치를 다시 선택해주세요.",

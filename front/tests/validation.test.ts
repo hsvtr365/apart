@@ -1,6 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { postSchema, profileSchema } from "../src/lib/validation";
+test("notices require a valid announcement period and discard map and visit fields", () => {
+  const base = {title: "notice", body: "notice", category: "NOTICE", mapX: 25, mapY: 60, latitude: 37.6, longitude: 126.8, scheduleType: "ONCE", weekdays: [1], seasons: ["WINTER"], arrivalTime: "09:00"};
+  assert(!postSchema.safeParse(base).success);
+  assert(!postSchema.safeParse({...base, noticeStartDate: "2026-02-30", noticeEndDate: "2026-03-01"}).success);
+  assert(!postSchema.safeParse({...base, noticeStartDate: "2026-10-11", noticeEndDate: "2026-10-10"}).success);
+  const notice = postSchema.parse({...base, noticeStartDate: "2026-10-10", noticeEndDate: "2026-10-10"});
+  assert.equal(notice.noticeStartDate, "2026-10-10");
+  assert.equal(notice.mapX, null);
+  assert.equal(notice.latitude, null);
+  assert.equal(notice.arrivalTime, null);
+  assert.deepEqual(notice.weekdays, []);
+  const food = postSchema.parse({...base, category: "FOOD", scheduleType: "WEEKLY", noticeStartDate: "2026-10-10", noticeEndDate: "2026-10-11"});
+  assert.equal(food.noticeStartDate, null);
+  assert.equal(food.noticeEndDate, null);
+});
 test("post photos accept six owned-upload paths and reject duplicates or unsafe paths", () => {
   const base = { title: "test", body: "test", category: "FOOD", mapX: null, mapY: null };
   const urls = Array.from({length: 7}, (_, i) => `/api/uploads/${i}.webp`);

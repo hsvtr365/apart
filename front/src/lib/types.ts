@@ -28,6 +28,8 @@ export type Post = {
   scheduleType: "WEEKLY" | "ONCE";
   startDate: string | null;
   finishDate: string | null;
+  noticeStartDate?: string | null;
+  noticeEndDate?: string | null;
   weekdays: number[];
   seasons: string[];
   arrivalTime: string | null;
@@ -54,6 +56,7 @@ export type Notice = {
   readAt: string | null;
 };
 export type Bootstrap = {
+  todayPosts?: Post[];
   mode: "demo" | "live";
   user: User | null;
   posts: Post[];
@@ -74,6 +77,8 @@ export type PostInput = {
   scheduleType: "WEEKLY" | "ONCE";
   startDate: string | null;
   finishDate: string | null;
+  noticeStartDate?: string | null;
+  noticeEndDate?: string | null;
   weekdays: number[];
   seasons: string[];
   arrivalTime: string | null;

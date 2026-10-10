@@ -21,7 +21,7 @@ export function VillageMap({
   const [food, setFood] = useState(true);
   const [market, setMarket] = useState(true);
   const visible = posts.filter(p => {
-    if (!full) return p.category !== "MARKET" || p.scheduleType !== "WEEKLY" || (p.weekdays.length > 0 && occursToday(p));
+    if (!full) return p.category !== "NOTICE" && occursToday(p);
     if (p.category === "NOTICE" || (p.category === "FOOD" && !food) || (p.category === "MARKET" && !market)) return false;
     return !todayOnly || occursToday(p);
   });
