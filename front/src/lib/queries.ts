@@ -27,18 +27,19 @@ export async function getPosts(
   const more = rows.length > limit;
   const page = rows.slice(0, limit);
   const visitor = await visitorHash();
-  const confirmations = visitor
-    ? await db().visitorPresence.findMany({
-        where: { visitorHash: visitor, postId: { in: page.map((p) => p.id) } },
-        select: { postId: true },
-      })
-    : [];
-  const memberConfirmations = userId
-    ? await db().presence.findMany({
-        where: { userId, postId: { in: page.map((p) => p.id) } },
-        select: { postId: true },
-      })
-    : [];
+  const [confirmations, memberConfirmations, likes] = await Promise.all([
+    visitor ? db().visitorPresence.findMany({
+      where: { visitorHash: visitor, postId: { in: page.map((p) => p.id) } },
+      select: { postId: true },
+    }) : Promise.resolve([]),
+    userId ? db().presence.findMany({
+      where: { userId, postId: { in: page.map((p) => p.id) } },
+      select: { postId: true },
+    }) : Promise.resolve([]),
+    userId ? db().like.findMany({
+      where: { userId, postId: { in: page.map((p) => p.id) } },
+    }) : Promise.resolve([]),
+  ]);
   const confirmed = new Set(
     [...confirmations, ...memberConfirmations].map((p) => p.postId),
   );
@@ -46,11 +47,6 @@ export async function getPosts(
     [...p.presences, ...p.visitorPresences].sort(
       (a, b) => b.observedAt.getTime() - a.observedAt.getTime(),
     )[0];
-  const likes = userId
-    ? await db().like.findMany({
-        where: { userId, postId: { in: page.map((p) => p.id) } },
-      })
-    : [];
   return {
     nextCursor: more ? page.at(-1)!.id : null,
     posts: page.map((p) => ({

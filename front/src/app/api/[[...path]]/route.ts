@@ -76,14 +76,19 @@ async function handle(
       if (demo) return json(demoData());
       await visitorHash(true);
       const user = await currentUser();
+      const [feed, todayPosts, userNotifications] = await Promise.all([
+        getPosts(user?.id),
+        getTodayPosts(user?.id),
+        user ? notifications(user.id) : Promise.resolve([]),
+      ]);
       return json({
         mode: "live",
         user: user
           ? { id: user.id, nickname: user.nickname, building: user.building, permission: user.permission }
           : null,
-        ...(await getPosts(user?.id)),
-        todayPosts: await getTodayPosts(user?.id),
-        notifications: user ? await notifications(user.id) : [],
+        ...feed,
+        todayPosts,
+        notifications: userNotifications,
         kakaoReady: !!process.env.KAKAO_CLIENT_ID,
       });
     }
