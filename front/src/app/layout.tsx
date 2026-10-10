@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "우리 단지의 먹거리, 생활 소식과 이웃의 제보를 한눈에 확인하세요.",
   icons: {
     icon: [
-      { url: "/favicon.ico" },
+      { url: "/favicon.ico?v=2" },
       { url: "/brand/icon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/brand/icon-48.png", sizes: "48x48", type: "image/png" },
     ],
