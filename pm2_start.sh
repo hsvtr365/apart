@@ -7,13 +7,13 @@ LOCK_HASH=$(sha256sum front/package-lock.json | cut -d ' ' -f1)
 INSTALLED_HASH_FILE=front/node_modules/.package-lock.sha256
 if [ ! -d front/node_modules ] || [ ! -f "$INSTALLED_HASH_FILE" ] || [ "$(cat "$INSTALLED_HASH_FILE")" != "$LOCK_HASH" ]; then
   npm --prefix front ci
-  npm --prefix front exec prisma generate
+  npm --prefix front run db:generate
   printf '%s\n' "$LOCK_HASH" > "$INSTALLED_HASH_FILE"
 else
   echo "package-lock.json unchanged; skipping npm ci"
-  npm --prefix front exec prisma generate
+  npm --prefix front run db:generate
 fi
-npm --prefix front exec prisma migrate deploy
+npm --prefix front run db:migrate
 npm --prefix front run build
 pm2 startOrReload ecosystem.config.cjs --only apart
 pm2 save
