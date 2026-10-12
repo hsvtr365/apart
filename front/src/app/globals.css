@@ -1565,3 +1565,13 @@ header a:first-child {
   z-index: 1;
   font-size: 13px;
 }
+
+.refresh-news {
+  position: absolute; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 25; padding: 8px 12px; min-height: 44px; border: 1px solid var(--color-line);
+  border-radius: 20px; background: white; font-size: 12px; box-shadow: 0 2px 8px #0001;
+}
+.map-load-status {
+  position: absolute; left: 12px; right: 12px; bottom: 48px; z-index: 12;
+  background: white; padding: 10px; border-radius: 8px; font-size: 12px;
+}

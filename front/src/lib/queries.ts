@@ -123,7 +123,7 @@ export async function getPosts(
     })),
   };
 }
-export async function getTodayPosts(userId?: string) {
+export function todayPostWhere(): Prisma.PostWhereInput {
   const { today, weekday, season } = todayContext();
   const foodOrMarket: Prisma.PostWhereInput[] = [
     {
@@ -142,21 +142,19 @@ export async function getTodayPosts(userId?: string) {
       ],
     },
   ];
-  const results = await Promise.all([
-    getPosts(
-      userId,
-      undefined,
-      {
-        category: "NOTICE",
-        noticeStartDate: { lte: today },
-        noticeEndDate: { gte: today },
-      },
-      8,
+  return {
+    OR: [
+      { category: "NOTICE", noticeStartDate: { lte: today }, noticeEndDate: { gte: today } },
+      { category: { in: ["FOOD", "MARKET"] }, OR: foodOrMarket },
+    ],
+  };
+}
+export async function getTodayPosts(userId?: string) {
+  const results = await Promise.all(
+    (["NOTICE", "FOOD", "MARKET"] as const).map((category) =>
+      getPosts(userId, undefined, { AND: [{ category }, todayPostWhere()] }, 8),
     ),
-    ...(["FOOD", "MARKET"] as const).map((category) =>
-      getPosts(userId, undefined, { category, OR: foodOrMarket }, 8),
-    ),
-  ]);
+  );
   return results
     .flatMap((result) => result.posts)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

@@ -73,6 +73,7 @@ export type PresenceHistory = {
   occurrence: string;
 };
 export type Bootstrap = {
+  freshnessMinutes?: number;
   todayPosts?: Post[];
   mode: "demo" | "live";
   user: User | null;

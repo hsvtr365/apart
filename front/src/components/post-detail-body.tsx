@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { Icon } from "./icons";
+import { PostStatus } from "./post-status";
 import { Presence } from "./presence";
 import { PostActions } from "./post-actions";
 import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
@@ -11,9 +12,9 @@ export function PostDetailBody({ post }: { post: Post }) {
           <b className="post-author-name">{post.author}</b>
           {post.authorBuilding && <small>{post.authorBuilding}</small>}
           <small
-            title={post.observedAt ? "마지막 현장 관찰 시각" : "등록 시각"}
+            title="등록 시각"
           >
-            {clock(post.observedAt || post.createdAt)}
+            등록 · {clock(post.createdAt)}
           </small>
         </div>
         <span className={`category-tag category-${post.category.toLowerCase()}`}>
@@ -26,6 +27,7 @@ export function PostDetailBody({ post }: { post: Post }) {
         {post.category === "FOOD" && <Presence post={post} />}
       </div>
       <PostActions post={post} />
+      <PostStatus post={post} />
       {post.category === "NOTICE" && post.noticeStartDate && post.noticeEndDate && (
         <p className="text-xs text-muted mt-2">공고 기간 · {post.noticeStartDate} ~ {post.noticeEndDate}</p>
       )}

@@ -5,9 +5,11 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import type { Bootstrap, Post, PostInput, Comment } from "@/lib/types";
+import { todayContext } from "@/lib/map-filter";
 import { presenceOccurrence } from "@/lib/presence";
 export async function request<T>(
   url: string,
@@ -26,7 +28,12 @@ export async function request<T>(
   if (!res.ok) throw new Error(data.error || "요청을 처리하지 못했어요.");
   return data;
 }
+type Feed = { posts: Post[]; nextCursor: string | null; pages: number };
 type Store = {
+  feeds: Record<string, Feed>;
+  loadFeed: (category: string) => Promise<void>;
+  revision: number;
+  now: number;
   data: Bootstrap | null;
   error: string;
   message: string;
@@ -39,46 +46,100 @@ type Store = {
     id: string,
     cursor?: string,
   ) => Promise<{ post: Post; nextCursor: string | null }>;
-  more: () => Promise<void>;
+  more: (category?: string) => Promise<void>;
 };
+function feedUrl(category: string, cursor?: string) {
+  const params = new URLSearchParams();
+  if (category !== "all") params.set("category", category.toUpperCase());
+  if (cursor) params.set("cursor", cursor);
+  return "/api/posts?" + params;
+}
 const Context = createContext<Store | null>(null);
 export function Provider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Bootstrap | null>(null),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
-  const reload = useCallback(async () => {
+  const [feeds, setFeeds] = useState<Record<string, Feed>>({});
+  const [revision, setRevision] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const feedRef = useRef(feeds);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+  const refreshedDay = useRef(todayContext().today);
+  const lastRefresh = useRef(0);
+  // Serialize page loads and refreshes so older responses cannot replace newer actions.
+  const pending = useRef(Promise.resolve());
+  const enqueue = useCallback((work: () => Promise<void>) => {
+    const result = pending.current.then(work);
+    pending.current = result.catch(() => {});
+    return result;
+  }, []);
+  const saveFeeds = useCallback((value: Record<string, Feed>) => {
+    feedRef.current = value;
+    setFeeds(value);
+  }, []);
+  const reload = useCallback(() => enqueue(async () => {
     try {
+      const day = todayContext().today;
       const value = await request<Bootstrap>("/api/bootstrap");
-      setData(value);
+      if (value.mode === "demo") {
+        if (!dataRef.current) setData(value);
+        return;
+      }
+      const caches: Record<string, Feed> = {};
+      const keys = new Set(["all", ...Object.keys(feedRef.current)]);
+      for (const category of keys) {
+        const previous = feedRef.current[category];
+        const pages = previous?.pages ?? 1;
+        let page = category === "all" ? value : await request<Feed>("/api/posts?category=" + category.toUpperCase());
+        const posts = [...page.posts];
+        let loaded = 1;
+        while (loaded < pages && page.nextCursor) {
+          page = await request<Feed>(feedUrl(category, page.nextCursor));
+          posts.push(...page.posts.filter(p => !posts.some(existing => existing.id === p.id)));
+          loaded++;
+        }
+        caches[category] = { posts, nextCursor: page.nextCursor, pages: loaded };
+      }
+      saveFeeds(caches);
+      setData({ ...value, posts: caches.all.posts, nextCursor: caches.all.nextCursor });
+      refreshedDay.current = day;
+      lastRefresh.current = Date.now();
+      setNow(Date.now());
+      setRevision(value => value + 1);
       setError("");
     } catch (e) {
-      setError((e as Error).message);
+      if (dataRef.current) setMessage("새로고침 실패: " + (e as Error).message);
+      else setError((e as Error).message);
     }
-  }, []);
+  }), [enqueue, saveFeeds]);
+  const loadFeed = useCallback((category: string) => enqueue(async () => {
+    if (!dataRef.current || dataRef.current.mode === "demo" || feedRef.current[category]) return;
+    const page = await request<Feed>(feedUrl(category));
+    saveFeeds({ ...feedRef.current, [category]: { ...page, pages: 1 } });
+  }), [enqueue, saveFeeds]);
+  useEffect(() => { void reload(); }, [reload]);
   useEffect(() => {
-    void reload();
-  }, [reload]);
-  useEffect(() => {
-    if (data?.mode !== "live") return;
-    const refreshOccurrence = () => {
-      if (
-        !document.hidden &&
-        [...data.posts, ...(data.todayPosts ?? [])].some(
-          (post) =>
-            post.presenceOccurrence &&
-            post.presenceOccurrence !== presenceOccurrence(post),
-        )
-      )
+    const refresh = (reentry = false) => {
+      setNow(Date.now());
+      if (document.hidden || dataRef.current?.mode !== "live") return;
+      const posts = [...dataRef.current.posts, ...(dataRef.current.todayPosts ?? [])];
+      if (todayContext().today !== refreshedDay.current ||
+        (reentry && Date.now() - lastRefresh.current > 15_000) ||
+        posts.some(post => post.presenceOccurrence && post.presenceOccurrence !== presenceOccurrence(post)))
         void reload();
     };
-    const timer = setInterval(refreshOccurrence, 60_000);
-    document.addEventListener("visibilitychange", refreshOccurrence);
+    const onVisible = () => refresh(true);
+    const timer = setInterval(refresh, 60_000);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     return () => {
       clearInterval(timer);
-      document.removeEventListener("visibilitychange", refreshOccurrence);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
-  }, [data, reload]);
+  }, [reload]);
   useEffect(() => {
     if (!message) return;
     const t = setTimeout(() => setMessage(""), 3500);
@@ -232,24 +293,28 @@ export function Provider({ children }: { children: ReactNode }) {
     );
     return { post: p, nextCursor: p.nextCursor };
   }
-  async function more() {
-    if (!data?.nextCursor) return;
-    const result = await request<{ posts: Post[]; nextCursor: string | null }>(
-      "/api/posts?cursor=" + encodeURIComponent(data.nextCursor),
-    );
-    setData({
-      ...data,
-      posts: [
-        ...data.posts,
-        ...result.posts.filter((p) => !data.posts.some((x) => x.id === p.id)),
-      ],
-      nextCursor: result.nextCursor,
+  function more(category = "all") {
+    return enqueue(async () => {
+      const current = feedRef.current[category];
+      if (!current?.nextCursor) return;
+      const result = await request<Feed>(feedUrl(category, current.nextCursor));
+      const next = {
+        posts: [...current.posts, ...result.posts.filter(p => !current.posts.some(x => x.id === p.id))],
+        nextCursor: result.nextCursor,
+        pages: current.pages + 1,
+      };
+      saveFeeds({ ...feedRef.current, [category]: next });
+      if (category === "all") setData(value => value ? { ...value, posts: next.posts, nextCursor: next.nextCursor } : value);
     });
   }
   return (
     <Context.Provider
       value={{
         data,
+        feeds,
+        loadFeed,
+        revision,
+        now,
         error,
         message,
         busy,

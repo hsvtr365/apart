@@ -291,6 +291,11 @@ try {
     (await call(url + "/presence-history", memberCookie)).status,
     404,
   );
+  const adminDeletedBefore = await db().post.findUnique({ where: { id: post.id } });
+  assert.equal((await call(url, memberCookie, "PATCH", {})).status, 403);
+  assert.equal((await call(url + "/like", memberCookie, "PUT", { liked: true })).status, 403);
+  assert.equal((await call(url + "/comments", memberCookie, "POST", { body: "차단" })).status, 403);
+  assert.deepEqual(await db().post.findUnique({ where: { id: post.id } }), adminDeletedBefore);
   await db().post.update({
     where: { id: post.id },
     data: { adminDeleted: false, userDeleted: true },
@@ -305,6 +310,53 @@ try {
     404,
   );
   assert.equal((await call(url, memberCookie, "PATCH", {})).status, 404);
+  const deletedComment = await db().comment.create({ data: { postId: post.id, authorId: user.id, body: "삭제 차단 검사" } });
+  const before = await db().post.findUnique({ where: { id: post.id } });
+  const eventsBefore = await db().presenceEvent.count({ where: { postId: post.id } });
+  assert.equal((await call(url + "/like", memberCookie, "PUT", { liked: true })).status, 404);
+  assert.equal((await call(url + "/comments", memberCookie, "POST", { body: "차단" })).status, 404);
+  assert.equal((await call("comments/" + deletedComment.id, memberCookie, "DELETE")).status, 403);
+  assert.equal((await call(url, memberCookie, "DELETE")).status, 404);
+  assert.deepEqual(await db().post.findUnique({ where: { id: post.id } }), before);
+  assert.equal(await db().presenceEvent.count({ where: { postId: post.id } }), eventsBefore);
+  assert.equal(await db().comment.count({ where: { postId: post.id } }), 1);
+  assert.equal(await db().like.count({ where: { postId: post.id } }), 0);
+
+  const old = await db().post.create({ data: {
+    authorId: user.id, title: "오래된 오늘 장터", body: "최신 30개 밖의 유효 일정", category: "MARKET",
+    latitude: 37.64, longitude: 126.83, createdAt: new Date("2020-01-01"), weekdays: [],
+  } });
+  await db().post.createMany({ data: Array.from({ length: 35 }, (_, index) => ({
+    authorId: user.id, title: "새 공고 " + index, body: "분류 검사", category: "NOTICE" as const,
+  })) });
+  const bootstrap = (await call("bootstrap")).data;
+  assert.equal(bootstrap.posts.length, 30);
+  assert(!bootstrap.posts.some((p: { id: string }) => p.id === old.id));
+  assert.equal(bootstrap.freshnessMinutes, 120);
+  assert((await call("posts?category=MARKET")).data.posts.some((p: { id: string }) => p.id === old.id));
+  assert((await call("map-posts?today=true")).data.posts.some((p: { id: string }) => p.id === old.id));
+  assert.equal((await call("posts/" + old.id)).status, 200);
+  assert.equal((await call("posts?category=WRONG")).status, 400);
+  assert.equal((await call("map-posts?today=WRONG")).status, 400);
+  const notices = (await call("posts?category=NOTICE")).data;
+  const nextNotices = (await call("posts?category=NOTICE&cursor=" + notices.nextCursor)).data;
+  assert.equal(notices.posts.length, 30);
+  assert.equal(nextNotices.posts.length, 5);
+  assert.equal(nextNotices.nextCursor, null);
+  assert(nextNotices.posts.every((p: { category: string }) => p.category === "NOTICE"));
+  await db().post.createMany({ data: Array.from({ length: 105 }, (_, index) => ({
+    authorId: user.id, title: "지도 검사 " + index, body: "홈 카드 제한과 무관", category: "MARKET" as const,
+    latitude: 37.64, longitude: 126.83, weekdays: [],
+  })) });
+  const mapFirst = (await call("map-posts?category=MARKET&today=true")).data;
+  const mapNext = (await call("map-posts?category=MARKET&today=true&cursor=" + mapFirst.nextCursor)).data;
+  assert.equal(mapFirst.posts.length, 100);
+  assert.equal(mapNext.posts.length, 6);
+  assert.equal(mapNext.nextCursor, null);
+  assert.equal(new Set([...mapFirst.posts, ...mapNext.posts].map(p => p.id)).size, 106);
+  await db().post.update({ where: { id: old.id }, data: { hidden: true } });
+  assert(!(await call("map-posts?category=MARKET&cursor=" + mapFirst.nextCursor)).data.posts.some((p: { id: string }) => p.id === old.id));
+  console.log("PASS remaining section 3: deleted mutations unchanged, category cursors, old selected map post, 106 map entries independent of home cards");
   console.log(
     "PASS isolated DB/API: logs, guest aliases, member names, privacy, cooldown, visit reset, pagination, permissions",
   );

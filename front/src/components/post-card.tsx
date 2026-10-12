@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
+import { PostStatus } from "./post-status";
 import { Presence } from "./presence";
 import { PostActions } from "./post-actions";
 import { PostImages } from "./post-images";
@@ -38,9 +39,9 @@ export function PostCard({
           <b className="post-author-name">{post.author}</b>
           {post.authorBuilding && <small className="author-building-tag">{post.authorBuilding}</small>}
           <small
-            title={post.observedAt ? "마지막 현장 관찰 시각" : "등록 시각"}
+            title="등록 시각"
           >
-            {clock(post.observedAt || post.createdAt)}
+            등록 · {clock(post.createdAt)}
           </small>
         </div>
         <span className={`category-tag category-${post.category.toLowerCase()}`}>
@@ -118,6 +119,7 @@ export function PostCard({
           <PostActions post={post} />
         </>
       )}
+      <PostStatus post={post} />
       {post.category === "NOTICE" && post.noticeStartDate && post.noticeEndDate && (
         <p className="text-xs text-muted mt-2">공고 기간 · {post.noticeStartDate} ~ {post.noticeEndDate}</p>
       )}

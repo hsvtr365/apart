@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useVillage } from "./store";
@@ -12,7 +12,7 @@ import { PostDetail } from "./post-detail";
 import { LoadingMask } from "./loading-mask";
 import { Home as HomeIcon, Map, Newspaper, Plus, UserRound } from "lucide-react";
 export function VillageApp() {
-  const { data, error, message, reload, more, notify } = useVillage();
+  const { data, error, message, reload, more, notify, feeds, loadFeed } = useVillage();
   const router = useRouter();
   const path = usePathname();
   const postId = path.startsWith("/post/") ? path.split("/")[2] : undefined;
@@ -25,9 +25,17 @@ export function VillageApp() {
   const [section = "home", id] = background.current.split("/").filter(Boolean);
   const scroll = useRef<HTMLDivElement>(null);
   const previousBackground = useRef(background.current);
+  const positions = useRef<Record<string, number>>({});
+  const category = ["food", "notice", "market"].includes(id) ? id : "all";
+  const [feedError, setFeedError] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
   useEffect(() => {
+    setFeedError("");
+    if (section === "feed") void loadFeed(category).catch(e => setFeedError(e.message));
+  }, [section, category, loadFeed, data?.mode]);
+  useLayoutEffect(() => {
     if (previousBackground.current !== background.current) {
-      scroll.current?.scrollTo(0, 0);
+      scroll.current?.scrollTo(0, positions.current[background.current] ?? 0);
       previousBackground.current = background.current;
     }
   }, [path]);
@@ -38,44 +46,21 @@ export function VillageApp() {
     ["/feed", Newspaper, "피드"],
     ["/my", UserRound, "내 정보"],
   ] as const;
+  const currentFeed = data?.mode === "demo"
+    ? { posts: data.posts.filter(p => !p.hidden && !p.adminDeleted && !p.userDeleted && (category === "all" || p.category === category.toUpperCase())), nextCursor: null }
+    : feeds[category];
   const feed = (
     <>
       <h1 className="page-title">생활 피드</h1>
-      <FeedTabs selected={id || "all"} />
-      {data?.posts
-        .filter((p) => !p.hidden && !p.adminDeleted && !p.userDeleted)
-        .filter(
-          (p) =>
-            !id ||
-            id === "all" ||
-            p.category === id.toUpperCase(),
-        )
-        .map((p) => (
-          <PostCard
-            key={p.id}
-            post={p}
-            imageDoubleClickLike={section === "feed" && id === "food"}
-          />
-        ))}
-      {data &&
-        !data.posts.some(
-          (p) => !id || id === "all" || p.category === id.toUpperCase(),
-        ) && (
-          <div className="empty mt-3">
-            등록된 소식이 없어요.{" "}
-            <Link className="icon-btn text-brand" href="/report">
-              첫 소식 올리기
-            </Link>
-          </div>
-        )}
-      {data?.nextCursor && (
-        <button
-          className="btn btn-secondary w-full"
-          onClick={() => void more().catch((e) => notify(e.message))}
-        >
-          이전 소식 더 보기
-        </button>
-      )}
+      <FeedTabs selected={category} />
+      {feedError && <div role="alert">{feedError}<button className="btn" onClick={() => { setFeedError(""); void loadFeed(category).catch(e => setFeedError(e.message)); }}>다시 시도</button></div>}
+      {!currentFeed && !feedError && <p role="status">소식을 불러오는 중이에요.</p>}
+      {currentFeed?.posts.map(p => <PostCard key={p.id} post={p} imageDoubleClickLike={category === "food"} />)}
+      {currentFeed && !currentFeed.posts.length && <div className="empty mt-3">등록된 소식이 없어요. <Link className="icon-btn text-brand" href="/report">첫 소식 올리기</Link></div>}
+      {currentFeed?.nextCursor && <button className="btn btn-secondary w-full" disabled={loadingMore} onClick={() => {
+        setLoadingMore(true);
+        void more(category).catch(e => notify(e.message)).finally(() => setLoadingMore(false));
+      }}>{loadingMore ? "불러오는 중…" : "이전 소식 더 보기"}</button>}
     </>
   );
   return (
@@ -100,6 +85,7 @@ export function VillageApp() {
       )}
       <div
         ref={scroll}
+        onScroll={event => { positions.current[previousBackground.current] = event.currentTarget.scrollTop; }}
         className={"content-scroll " + (section === "map" ? "map-scroll" : "")}
       >
         {error ? (
@@ -129,6 +115,7 @@ export function VillageApp() {
           </main>
         )}
       </div>
+      {data && section !== "report" && section !== "my" && <button className="refresh-news" onClick={() => void reload()} aria-label="소식 새로고침">↻ 새로고침</button>}
       <nav className="bottom-nav" aria-label="하단 주요 메뉴">
         {links.map(([href, NavIcon, label]) => {
           const active =
@@ -138,6 +125,7 @@ export function VillageApp() {
           return (
             <Link
               key={href}
+              scroll={false}
               href={href}
               aria-current={active ? "page" : undefined}
             >

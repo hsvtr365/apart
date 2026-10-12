@@ -18,10 +18,11 @@ import {
   profileSchema,
   commentSchema,
 } from "@/lib/validation";
-import { getPosts, getTodayPosts, comments, notifications } from "@/lib/queries";
+import { getPosts, getTodayPosts, todayPostWhere, comments, notifications } from "@/lib/queries";
 import { demoData } from "@/lib/demo";
 import { visitorHash } from "@/lib/visitor";
 import { presenceOccurrence, visitorAlias } from "@/lib/presence";
+import { freshnessMinutes } from "@/lib/freshness";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (data: unknown, status = 200) =>
@@ -84,6 +85,7 @@ async function handle(
       ]);
       return json({
         mode: "live",
+        freshnessMinutes: freshnessMinutes(process.env.PRESENCE_FRESH_MINUTES),
         user: user
           ? { id: user.id, nickname: user.nickname, building: user.building, permission: user.permission }
           : null,
@@ -215,13 +217,24 @@ async function handle(
     }
     const user = await currentUser();
     if (method === "GET") {
-      if (resource === "posts" && !id)
-        return json(
-          await getPosts(
-            user?.id,
-            req.nextUrl.searchParams.get("cursor") ?? undefined,
-          ),
-        );
+      if ((resource === "posts" || resource === "map-posts") && !id) {
+        const params = req.nextUrl.searchParams;
+        const category = z.enum(["FOOD", "NOTICE", "MARKET"]).optional().parse(params.get("category") ?? undefined);
+        const today = z.enum(["true", "false"]).optional().parse(params.get("today") ?? undefined);
+        return json(await getPosts(
+          user?.id,
+          params.get("cursor") ?? undefined,
+          { AND: [
+            ...(category ? [{ category }] : []),
+            ...(resource === "map-posts" ? [{
+              category: { in: ["FOOD", "MARKET"] as ("FOOD" | "MARKET")[] },
+              latitude: { not: null }, longitude: { not: null },
+            }] : []),
+            ...(today === "true" ? [todayPostWhere()] : []),
+          ] },
+          resource === "map-posts" ? 100 : 30,
+        ));
+      }
       if (resource === "posts" && id) {
         if (action === "presence-history") {
           const post = await db().post.findUnique({ where: { id } });
@@ -490,19 +503,19 @@ async function handle(
     if (resource === "posts" && id) {
       const post = await db().post.findUnique({ where: { id } });
       if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+      if (post.userDeleted) throw new HttpError("이미 삭제한 글입니다.", 404);
       if (method === "DELETE") {
         if (post.authorId !== user.id) throw new HttpError("본인 글만 삭제할 수 있어요.", 403);
         if (post.adminDeleted) throw new HttpError("관리자가 삭제처리한 글은 직접 삭제할 수 없습니다.", 403);
         await db().post.update({ where: { id }, data: { userDeleted: true } });
         return json({ ok: true });
       }
-      if (post.userDeleted) throw new HttpError("이미 삭제한 글입니다.", 404);
+      if (post.adminDeleted) throw new HttpError("관리자가 삭제처리한 글은 변경할 수 없습니다.", 403);
       if (action === "admin-delete" && method === "PATCH") {
         if (user.permission !== 0) throw new HttpError("관리자 권한이 필요합니다.", 403);
         await db().post.update({ where: { id }, data: { adminDeleted: true } });
         return json({ ok: true });
       }
-      if (post.adminDeleted) throw new HttpError("관리자가 삭제처리한 글은 변경할 수 없습니다.", 403);
       if (post.hidden && post.authorId !== user.id && user.permission !== 0)
         throw new HttpError("숨겨진 글입니다.", 404);
       if (action === "comments" && method === "POST") {
@@ -538,7 +551,17 @@ async function handle(
     }
     if (resource === "comments" && id && method === "DELETE") {
       const result = await db().comment.deleteMany({
-        where: { id, authorId: user.id, post: { adminDeleted: false } },
+        where: {
+          id,
+          authorId: user.id,
+          post: {
+            adminDeleted: false,
+            userDeleted: false,
+            ...(user.permission === 0 ? {} : {
+              OR: [{ hidden: false }, { authorId: user.id }],
+            }),
+          },
+        },
       });
       if (!result.count)
         throw new HttpError("본인의 댓글만 삭제할 수 있습니다.", 403);
