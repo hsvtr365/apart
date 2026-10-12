@@ -15,6 +15,7 @@ export type Comment = {
   createdAt: string;
 };
 export type Post = {
+  lastPresenceReport?: { state: "ARRIVED" | "GONE"; observedAt: string } | null;
   presenceOccurrence?: string;
   presenceHistory?: PresenceLog[];
   hidden?: boolean;
@@ -73,7 +74,6 @@ export type PresenceHistory = {
   occurrence: string;
 };
 export type Bootstrap = {
-  freshnessMinutes?: number;
   todayPosts?: Post[];
   mode: "demo" | "live";
   user: User | null;

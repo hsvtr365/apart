@@ -75,8 +75,11 @@ export async function getPosts(
       })
       .map((p) => p.postId),
   );
-  const latest = (p: (typeof page)[number]) =>
+  const reports = (p: (typeof page)[number]) =>
     [...p.presences, ...p.visitorPresences, ...p.presenceEvents]
+      .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime());
+  const latest = (p: (typeof page)[number]) =>
+    reports(p)
       .filter(
         (event) =>
           (event.occurrence ?? presenceOccurrence(p, event.observedAt)) ===
@@ -118,6 +121,10 @@ export async function getPosts(
       comments: [],
       presenceConfirmed: confirmed.has(p.id),
       presenceOccurrence: occurrences.get(p.id),
+      lastPresenceReport: reports(p)[0] ? {
+        state: reports(p)[0].state,
+        observedAt: reports(p)[0].observedAt.toISOString(),
+      } : null,
       presence: latest(p)?.state ?? null,
       observedAt: latest(p)?.observedAt.toISOString() ?? null,
     })),

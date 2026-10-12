@@ -22,7 +22,6 @@ import { getPosts, getTodayPosts, todayPostWhere, comments, notifications } from
 import { demoData } from "@/lib/demo";
 import { visitorHash } from "@/lib/visitor";
 import { presenceOccurrence, visitorAlias } from "@/lib/presence";
-import { freshnessMinutes } from "@/lib/freshness";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (data: unknown, status = 200) =>
@@ -85,7 +84,6 @@ async function handle(
       ]);
       return json({
         mode: "live",
-        freshnessMinutes: freshnessMinutes(process.env.PRESENCE_FRESH_MINUTES),
         user: user
           ? { id: user.id, nickname: user.nickname, building: user.building, permission: user.permission }
           : null,

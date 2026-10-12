@@ -263,6 +263,7 @@ try {
   const changed = (await call("posts/" + oncePost.id, onceGuest)).data;
   assert.equal(changed.presenceConfirmed, false);
   assert.equal(changed.presence, null);
+  assert.equal(changed.lastPresenceReport.state, "ARRIVED");
   assert.equal(
     (await call("posts/" + oncePost.id + "/presence-history")).data.logs.length,
     0,
@@ -332,7 +333,6 @@ try {
   const bootstrap = (await call("bootstrap")).data;
   assert.equal(bootstrap.posts.length, 30);
   assert(!bootstrap.posts.some((p: { id: string }) => p.id === old.id));
-  assert.equal(bootstrap.freshnessMinutes, 120);
   assert((await call("posts?category=MARKET")).data.posts.some((p: { id: string }) => p.id === old.id));
   assert((await call("map-posts?today=true")).data.posts.some((p: { id: string }) => p.id === old.id));
   assert.equal((await call("posts/" + old.id)).status, 200);
