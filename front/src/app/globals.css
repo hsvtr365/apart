@@ -708,6 +708,7 @@ header a:first-child {
 .news-card {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   flex: 0 0 calc((100% - 24px) / 3);
   min-width: 240px;
   max-width: 360px;
