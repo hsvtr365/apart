@@ -1,23 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { useVillage } from "./store";
+import { useState } from "react";
 import { Icon } from "./icons";
 import { Presence } from "./presence";
 import { PostActions } from "./post-actions";
 import { PostImages } from "./post-images";
 import { categories, clock, type Post } from "@/lib/types";
-export function PostCard({
-  post,
-  imageDoubleClickLike = false,
-}: {
-  post: Post;
-  imageDoubleClickLike?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false),
-    [heartBurst, setHeartBurst] = useState(false);
-  const doubleLikePending = useRef(false);
-  const { act, notify } = useVillage();
+export function PostCard({ post }: { post: Post }) {
+  const [expanded, setExpanded] = useState(false);
+  const [photoIndex, setPhotoIndex] = useState(0);
   const content = (
     <>
       <h3 className="mb-1">{post.title}</h3>
@@ -64,27 +55,8 @@ export function PostCard({
         </button>
       )}
       {post.imageUrl ? (
-        <div
-          className={"post-media" + (imageDoubleClickLike ? " post-media-double-like" : "")}
-          onDoubleClick={(event) => {
-            if (
-              !imageDoubleClickLike ||
-              doubleLikePending.current ||
-              !(event.target instanceof HTMLImageElement)
-            ) return;
-            event.preventDefault();
-            doubleLikePending.current = true;
-            if (!post.liked) {
-              setHeartBurst(true);
-              window.setTimeout(() => setHeartBurst(false), 700);
-            }
-            void act("like", post.id, { liked: !post.liked })
-              .catch((e) => notify(e.message))
-              .finally(() => { doubleLikePending.current = false; });
-          }}
-        >
-          <PostImages urls={post.imageUrls?.length ? post.imageUrls : [post.imageUrl]} alt={post.title} />
-          {heartBurst && <span className="double-like-heart" aria-hidden="true"><Icon name="heart" fill="currentColor" /></span>}
+        <div className="post-media">
+          <PostImages urls={post.imageUrls?.length ? post.imageUrls : [post.imageUrl]} alt={post.title} href={"/post/" + post.id} onIndexChange={setPhotoIndex} />
           {post.category !== "NOTICE" && (
             <Link
               className="icon-btn absolute left-2 top-2 bg-white text-brand"
@@ -99,7 +71,7 @@ export function PostCard({
               <Presence post={post} />
             </div>
           )}
-          <PostActions post={post} />
+          <PostActions post={post} expandPhotoIndex={photoIndex} />
         </div>
       ) : (
         <>

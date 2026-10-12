@@ -10,10 +10,14 @@ export function ImageViewer({
   src,
   alt,
   sources,
+  buttonOnly = false,
+  initialIndex = 0,
 }: {
   src: string;
   alt: string;
   sources?: string[];
+  buttonOnly?: boolean;
+  initialIndex?: number;
 }) {
   const [open, setOpen] = useState(false);
   const photos = sources?.length ? sources : [src];
@@ -74,14 +78,16 @@ export function ImageViewer({
     <>
       <button
         type="button"
-        className="image-viewer-preview"
-        aria-label={`${alt} 크게 보기`}
+        className={buttonOnly ? "icon-btn" : "image-viewer-preview"}
+        aria-label={buttonOnly ? "사진 확대" : `${alt} 크게 보기`}
+        title={buttonOnly ? "사진 확대" : undefined}
         onClick={() => {
           setView({ scale: 1, x: 0, y: 0 });
-          setIndex(0);
+          setIndex(Math.max(0, Math.min(initialIndex, photos.length - 1)));
           setOpen(true);
         }}
       >
+        {buttonOnly ? <Icon name="expand" /> : <>
         <img src={src} alt={alt} />
         {photos.length > 1 && (
           <span className="photo-counter">사진 {photos.length}장</span>
@@ -89,6 +95,7 @@ export function ImageViewer({
         <span className="image-viewer-hint" aria-hidden="true">
           <Icon name="expand" /> 크게 보기
         </span>
+        </>}
       </button>
       {open &&
         typeof document !== "undefined" &&

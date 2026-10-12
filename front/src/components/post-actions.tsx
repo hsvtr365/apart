@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useVillage } from "./store";
+import { ImageViewer } from "./image-viewer";
 import { Icon } from "./icons";
 import type { Post } from "@/lib/types";
-export function PostActions({ post }: { post: Post }) {
+export function PostActions({ post, expandPhotoIndex }: { post: Post; expandPhotoIndex?: number }) {
   const { act, notify, busy } = useVillage();
   async function share() {
     try {
@@ -45,6 +46,7 @@ export function PostActions({ post }: { post: Post }) {
       <button className="icon-btn ml-auto" onClick={share} aria-label="공유" title="공유">
         <Icon name="share" />
       </button>
+      {post.imageUrl && expandPhotoIndex !== undefined && <ImageViewer src={post.imageUrl} sources={post.imageUrls} alt={post.title} buttonOnly initialIndex={expandPhotoIndex} />}
     </div>
   );
 }

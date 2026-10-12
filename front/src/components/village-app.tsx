@@ -55,7 +55,7 @@ export function VillageApp() {
       <FeedTabs selected={category} />
       {feedError && <div role="alert">{feedError}<button className="btn" onClick={() => { setFeedError(""); void loadFeed(category).catch(e => setFeedError(e.message)); }}>다시 시도</button></div>}
       {!currentFeed && !feedError && <p role="status">소식을 불러오는 중이에요.</p>}
-      {currentFeed?.posts.map(p => <PostCard key={p.id} post={p} imageDoubleClickLike={category === "food"} />)}
+      {currentFeed?.posts.map(p => <PostCard key={p.id} post={p} />)}
       {currentFeed && !currentFeed.posts.length && <div className="empty mt-3">등록된 소식이 없어요. <Link className="icon-btn text-brand" href="/report">첫 소식 올리기</Link></div>}
       {currentFeed?.nextCursor && <button className="btn btn-secondary w-full" disabled={loadingMore} onClick={() => {
         setLoadingMore(true);
