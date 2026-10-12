@@ -225,7 +225,7 @@ function HomeNewsSection({
                   className="news-card-image"
                   aria-hidden="true"
                   style={{
-                    backgroundImage: `linear-gradient(180deg, #fff 0%, #fff 45%, rgba(255,255,255,0) 70%), url("${p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}")`,
+                    backgroundImage: `url("${p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}")`,
                   }}
                 />
               </>
