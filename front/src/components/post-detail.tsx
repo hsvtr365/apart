@@ -101,9 +101,6 @@ export function PostDetail({
           {post.imageUrl && <ImageViewer src={post.imageUrl} sources={post.imageUrls} alt={post.title} />}
           <div className="detail-body">
             <PostDetailBody post={post} />
-            {!post.comments.length && (
-              <p className="py-3 text-muted">첫 댓글을 남겨주세요.</p>
-            )}
             {post.comments.map((c) => (
               <div className="border-b border-line py-2" key={c.id}>
                 <div className="flex items-center justify-between gap-2">

@@ -41,13 +41,13 @@ export function Presence({
                   strokeWidth="2.5"
                 />
               )}
-              {state === "ARRIVED" ? (map ? "있어요" : "왔어요") : "갔어요"}
+              {state === "ARRIVED" ? "있어요" : "없어요"}
             </button>
           ))}
         <button
           type="button"
           className="presence-history-toggle"
-          aria-label="왔어요·갔어요 기록 보기"
+          aria-label="있어요·없어요 기록 보기"
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen(!open)}

@@ -1516,6 +1516,6 @@ header a:first-child {
   background: white; padding: 10px; border-radius: 8px; font-size: 12px;
 }
 
-.visit-status-tag { display:inline-flex; align-items:center; padding:5px 10px; border-radius:999px; font-size:13px; font-weight:700; line-height:1.4; }
-.visit-today { background:#e4f4eb; color:#16613b; border:1px solid #bbdfca; }
-.visit-not-today { background:#f0f1f3; color:#535b66; border:1px solid #d6dae0; }
+.visit-status-tag { display:inline-flex; align-items:center; padding:3px 8px; border-radius:999px; font-size:12px; font-weight:800; line-height:1.4; }
+.visit-today { background:#e4f4eb; color:#16613b; border:0; }
+.visit-not-today { background:#f0f1f3; color:#535b66; border:0; }

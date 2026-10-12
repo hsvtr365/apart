@@ -16,6 +16,6 @@ export function postStatus(post: Post, now = new Date()) {
     ? { observedAt: post.observedAt, state: post.presence } : null);
   if (!report) return { schedule, observation: "아직 제보가 없어요." };
   const stale = now.getTime() - new Date(report.observedAt).getTime() >= STALE_REPORT_MS;
-  const state = report.state === "ARRIVED" ? "왔어요" : "갔어요";
+  const state = report.state === "ARRIVED" ? "있어요" : "없어요";
   return { schedule, observation: `${clock(report.observedAt)} (${state})${stale ? " · 오래된 제보" : ""}` };
 }

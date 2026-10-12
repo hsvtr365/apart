@@ -4,7 +4,7 @@ import { Icon } from "./icons";
 import { PostStatus } from "./post-status";
 import { Presence } from "./presence";
 import { PostActions } from "./post-actions";
-import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
+import { categories, clock, type Post } from "@/lib/types";
 export function PostDetailBody({ post }: { post: Post }) {
   return <article className="post-detail-content">
       <div className="flex items-center justify-between gap-2 pb-2">
@@ -30,14 +30,6 @@ export function PostDetailBody({ post }: { post: Post }) {
       <PostStatus post={post} />
       {post.category === "NOTICE" && post.noticeStartDate && post.noticeEndDate && (
         <p className="text-xs text-muted mt-2">공고 기간 · {post.noticeStartDate} ~ {post.noticeEndDate}</p>
-      )}
-      {post.category !== "NOTICE" && (post.startDate || post.weekdays?.length > 0 || post.seasons?.length > 0 || post.arrivalTime || post.departureTime) && (
-        <p className="text-xs text-muted mt-2">
-          {[post.scheduleType === "ONCE" ? `1회 · ${post.startDate ?? "날짜 미정"}${post.finishDate ? ` ~ ${post.finishDate}` : ""}` : `매주 ${post.weekdays?.map(day => weekdayLabels[day]).join("·") || "요일 미정"}`,
-            post.arrivalTime ? `${post.arrivalTime} 도착 예정` : "",
-            post.departureTime ? `${post.departureTime} 출발 예정` : "",
-            post.seasons?.map(season => seasonLabels[season]).join("·")].filter(Boolean).join(" / ")}
-        </p>
       )}
     </article>;
 }

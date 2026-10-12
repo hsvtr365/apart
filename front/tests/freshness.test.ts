@@ -13,14 +13,14 @@ test("visit labels follow the schedule, independently of reports", () => {
 test("stale means at least four weeks, including the exact boundary", () => {
   const timestamp = new Date(now.getTime() - STALE_REPORT_MS).toISOString();
   const observed = { ...food, lastPresenceReport: { state: "ARRIVED" as const, observedAt: timestamp } };
-  assert.equal(postStatus(observed, new Date(now.getTime() - 1)).observation, `${clock(timestamp)} (왔어요)`);
-  assert.equal(postStatus(observed, now).observation, `${clock(timestamp)} (왔어요) · 오래된 제보`);
+  assert.equal(postStatus(observed, new Date(now.getTime() - 1)).observation, `${clock(timestamp)} (있어요)`);
+  assert.equal(postStatus(observed, now).observation, `${clock(timestamp)} (있어요) · 오래된 제보`);
 });
 test("past-visit reports remain readable without becoming today's confirmation", () => {
   const observedAt = "2026-10-05T01:00:00Z";
   const post = { ...food, presenceOccurrence: "WEEKLY:2026-10-12", presenceConfirmed: false,
     lastPresenceReport: { state: "GONE" as const, observedAt } };
-  assert.equal(postStatus(post, now).observation, `${clock(observedAt)} (갔어요)`);
+  assert.equal(postStatus(post, now).observation, `${clock(observedAt)} (없어요)`);
   assert.equal(post.presence, null);
   assert.equal(post.presenceConfirmed, false);
 });

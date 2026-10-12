@@ -149,10 +149,10 @@ export function PresenceHistoryDialog({
       {...dialogProps}
       id={panelId}
       className="detail-dialog"
-      aria-label="왔어요·갔어요 기록"
+      aria-label="있어요·없어요 기록"
     >
       <div className="post-detail-header">
-        <h1 className="post-detail-title">왔어요·갔어요 기록</h1>
+        <h1 className="post-detail-title">있어요·없어요 기록</h1>
         <button
           type="button"
           className="icon-btn"
@@ -184,7 +184,7 @@ export function PresenceHistoryDialog({
               <div>
                 <b>{log.nickname}</b>
                 <span className={`presence-log-${log.state.toLowerCase()}`}>
-                  {log.state === "ARRIVED" ? "왔어요" : "갔어요"}
+                  {log.state === "ARRIVED" ? "있어요" : "없어요"}
                 </span>
               </div>
             </li>
