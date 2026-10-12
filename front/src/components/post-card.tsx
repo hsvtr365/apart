@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CalendarDays } from "lucide-react";
+import { Icon } from "./icons";
+import { ImageViewer } from "./image-viewer";
 import { Presence } from "./presence";
 import { PostActions } from "./post-actions";
 import { PostImages } from "./post-images";
@@ -21,7 +23,13 @@ export function PostCard({ post }: { post: Post }) {
       post.seasons.map(season => seasonLabels[season]).join("·")].filter(Boolean).join(" / ");
   return <article className="post feed-card">
     <div className={`feed-card-main ${photos.length ? "feed-card-with-photo" : ""}`}>
-      {photos.length > 0 && <div className="feed-card-photo"><PostImages urls={photos} alt={post.title} href={"/post/" + post.id} onIndexChange={setPhotoIndex} /></div>}
+      {photos.length > 0 && <div className="feed-card-photo">
+        <PostImages urls={photos} alt={post.title} href={"/post/" + post.id} onIndexChange={setPhotoIndex} />
+        <div className="feed-photo-tools">
+          {post.category !== "NOTICE" && <Link href={"/map/" + post.id} scroll={false} className="icon-btn" aria-label="지도에서 위치 보기" title="지도에서 위치 보기"><Icon name="pin" /></Link>}
+          <div className="ml-auto"><ImageViewer src={photos[0]} sources={photos} alt={post.title} buttonOnly initialIndex={photoIndex} /></div>
+        </div>
+      </div>}
       <div className="feed-card-info">
         <div className="feed-card-meta">
           {post.category !== "NOTICE" && <span className={`visit-status-tag ${today ? "visit-today" : "visit-not-today"}`}>{today ? "오늘 와요" : "오늘 안와요"}</span>}
@@ -36,6 +44,6 @@ export function PostCard({ post }: { post: Post }) {
         {post.category === "FOOD" && <Presence post={post} />}
       </div>
     </div>
-    <PostActions post={post} expandPhotoIndex={photos.length ? photoIndex : undefined} />
+    <PostActions post={post} />
   </article>;
 }

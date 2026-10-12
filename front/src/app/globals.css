@@ -1551,3 +1551,8 @@ header a:first-child {
 .feed-card .post-actions .icon-btn { min-height:40px; padding:5px 7px; font-size:11px; }
 .feed-card .post-actions svg { width:18px; height:18px; }
 @media (max-width:360px) { .page-wrap:has(.feed-card) { padding-left:8px; padding-right:8px; } .feed-card-main { gap:8px; } }
+.feed-card-photo { position:relative; }
+.feed-photo-tools { position:absolute; top:4px; left:4px; right:4px; display:flex; align-items:flex-start; gap:4px; pointer-events:none; }
+.feed-photo-tools > a,.feed-photo-tools > div { pointer-events:auto; }
+.feed-photo-tools .icon-btn { display:flex; align-items:center; justify-content:center; width:28px; min-height:28px; padding:4px; border-radius:5px; background:#fffffff0; color:var(--color-brand); box-shadow:0 1px 4px #0002; }
+.feed-photo-tools svg { width:17px; height:17px; }
