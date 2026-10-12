@@ -5,7 +5,6 @@ import { occursToday } from "@/lib/map-filter";
 import type { Post } from "@/lib/types";
 import { Presence } from "./presence";
 import { KakaoMap } from "./kakao-map";
-import { PostStatus } from "./post-status";
 import { request, useVillage } from "./store";
 import { Expand } from "lucide-react";
 export function VillageMap({
@@ -120,7 +119,6 @@ export function VillageMap({
               zIndex: selected === p.id ? 2 : 1,
             }}
           >
-            <PostStatus post={p} compact />
             <Link
               href={"/post/" + p.id}
               className="flex min-h-11 items-center font-bold"

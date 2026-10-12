@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { Post } from "@/lib/types";
-import { PostStatus } from "./post-status";
 import { Presence } from "./presence";
 import { LoadingMask } from "./loading-mask";
 import { Icon } from "./icons";
@@ -110,7 +109,6 @@ function Pin({
             <span>{post.title}</span>
             <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
           </Link>
-          <PostStatus post={post} compact />
           {post.category === "FOOD" && (
             <div className="map-callout-actions">
               <Presence post={post} map />

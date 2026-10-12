@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useVillage } from "./store";
-import { PostStatus } from "./post-status";
 import { VillageMap } from "./village-map";
 import { categories, type Post } from "@/lib/types";
 import { sources } from "@/lib/sources";
@@ -207,7 +206,6 @@ function HomeNewsSection({
                     <ChevronRight className="notice-card-arrow" size={16} aria-hidden="true" />
                   </div>
                   <p className="news-card-body">{p.body}</p>
-                <PostStatus post={p} compact />
                 </div>
               </>
             ) : (
@@ -224,7 +222,6 @@ function HomeNewsSection({
                 </span>
                 <b className="news-card-title">{p.title}</b>
                 <p className="news-card-body">{p.body}</p>
-                <PostStatus post={p} compact />
                 <span
                   className="news-card-image"
                   aria-hidden="true"

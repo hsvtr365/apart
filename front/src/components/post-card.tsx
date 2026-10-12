@@ -3,11 +3,10 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { useVillage } from "./store";
 import { Icon } from "./icons";
-import { PostStatus } from "./post-status";
 import { Presence } from "./presence";
 import { PostActions } from "./post-actions";
 import { PostImages } from "./post-images";
-import { categories, clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
+import { categories, clock, type Post } from "@/lib/types";
 export function PostCard({
   post,
   imageDoubleClickLike = false,
@@ -41,7 +40,7 @@ export function PostCard({
           <small
             title="등록 시각"
           >
-            등록 · {clock(post.createdAt)}
+            {clock(post.createdAt)}
           </small>
         </div>
         <span className={`category-tag category-${post.category.toLowerCase()}`}>
@@ -118,18 +117,6 @@ export function PostCard({
           </div>
           <PostActions post={post} />
         </>
-      )}
-      <PostStatus post={post} />
-      {post.category === "NOTICE" && post.noticeStartDate && post.noticeEndDate && (
-        <p className="text-xs text-muted mt-2">공고 기간 · {post.noticeStartDate} ~ {post.noticeEndDate}</p>
-      )}
-      {post.category !== "NOTICE" && (post.startDate || post.weekdays?.length > 0 || post.seasons?.length > 0 || post.arrivalTime || post.departureTime) && (
-        <p className="text-xs text-muted mt-2">
-          {[post.scheduleType === "ONCE" ? `1회 · ${post.startDate ?? "날짜 미정"}${post.finishDate ? ` ~ ${post.finishDate}` : ""}` : `매주 ${post.weekdays?.map(day => weekdayLabels[day]).join("·") || "요일 미정"}`,
-            post.arrivalTime ? `${post.arrivalTime} 도착 예정` : "",
-            post.departureTime ? `${post.departureTime} 출발 예정` : "",
-            post.seasons?.map(season => seasonLabels[season]).join("·")].filter(Boolean).join(" / ")}
-        </p>
       )}
     </article>
   );
