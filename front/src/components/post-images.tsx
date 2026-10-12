@@ -6,9 +6,10 @@ export function PostImages({ urls, alt, href, onIndexChange }: { urls: string[];
   const [index, setIndex] = useState(0);
   const current = Math.min(index, urls.length - 1);
   function change(next: number) { setIndex(next); onIndexChange?.(next); }
+  const source = urls[current].startsWith("/api/uploads/") ? urls[current] + "?size=feed" : urls[current];
   return (
     <div className="post-image-gallery">
-      {href ? <Link href={href} scroll={false} aria-label={alt + " 사진으로 상세 보기"}><img src={urls[current]} alt={alt} /></Link> : <img src={urls[current]} alt={alt} />}
+      {href ? <Link href={href} scroll={false} aria-label={alt + " 사진으로 상세 보기"}><img src={source} alt={alt} loading="lazy" decoding="async" /></Link> : <img src={source} alt={alt} loading="lazy" decoding="async" />}
       {urls.length > 1 && (
         <>
           <span className="photo-counter">

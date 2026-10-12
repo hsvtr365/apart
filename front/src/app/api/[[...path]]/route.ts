@@ -197,14 +197,19 @@ async function handle(
     if (resource === "uploads" && id && method === "GET") {
       if (!/^[a-f0-9-]+\.webp$/.test(id))
         throw new HttpError("사진을 찾을 수 없습니다.", 404);
-      const bytes = await readFile(
-        /* turbopackIgnore: true */ path.join(
-          /* turbopackIgnore: true */ process.env.UPLOAD_DIR ||
-            "./data/uploads",
-          id,
-        ),
-      ).catch(() => null);
-      if (!bytes) throw new HttpError("사진을 찾을 수 없습니다.", 404);
+      const dir = process.env.UPLOAD_DIR || "./data/uploads";
+      const thumbnail = req.nextUrl.searchParams.get("size") === "feed";
+      const cachePath = path.join(/* turbopackIgnore: true */ dir, "thumbnails", id);
+      let bytes = thumbnail ? await readFile(/* turbopackIgnore: true */ cachePath).catch(() => null) : null;
+      if (!bytes) {
+        bytes = await readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ dir, id)).catch(() => null);
+        if (!bytes) throw new HttpError("사진을 찾을 수 없습니다.", 404);
+        if (thumbnail) {
+          bytes = await sharp(bytes).resize(336, 540, { fit: "inside", withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();
+          await mkdir(path.join(/* turbopackIgnore: true */ dir, "thumbnails"), { recursive: true });
+          await writeFile(cachePath, bytes);
+        }
+      }
       return new NextResponse(bytes, {
         headers: {
           "Content-Type": "image/webp",
