@@ -1556,3 +1556,6 @@ header a:first-child {
 .feed-photo-tools > a,.feed-photo-tools > div { pointer-events:auto; }
 .feed-photo-tools .icon-btn { display:flex; align-items:center; justify-content:center; width:28px; min-height:28px; padding:4px; border-radius:5px; background:#fffffff0; color:var(--color-brand); box-shadow:0 1px 4px #0002; }
 .feed-photo-tools svg { width:17px; height:17px; }
+.feed-photo-tools { bottom:4px; }
+.feed-photo-tools > div { position:absolute; right:0; bottom:0; }
+.feed-card-photo .photo-counter { right:36px; }
