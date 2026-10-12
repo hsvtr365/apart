@@ -3,12 +3,17 @@ import { visitorHash } from "./visitor";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Post, Notice } from "./types";
 import { todayContext } from "./map-filter";
+import { presenceOccurrence } from "./presence";
 const include = {
   images: { orderBy: { position: "asc" as const } },
   author: { select: { id: true, nickname: true, building: true } },
   _count: { select: { likes: true, comments: true } },
   presences: { orderBy: { observedAt: "desc" as const }, take: 1 },
   visitorPresences: { orderBy: { observedAt: "desc" as const }, take: 1 },
+  presenceEvents: {
+    orderBy: [{ observedAt: "desc" as const }, { id: "desc" as const }],
+    take: 1,
+  },
 };
 export async function getPosts(
   userId?: string,
@@ -18,7 +23,13 @@ export async function getPosts(
   includeHidden = false,
 ): Promise<{ posts: Post[]; nextCursor: string | null }> {
   const rows = await db().post.findMany({
-    where: { AND: [where, { userDeleted: false }, ...(includeHidden ? [] : [{ hidden: false, adminDeleted: false }])] },
+    where: {
+      AND: [
+        where,
+        { userDeleted: false },
+        ...(includeHidden ? [] : [{ hidden: false, adminDeleted: false }]),
+      ],
+    },
     include,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: limit + 1,
@@ -26,27 +37,52 @@ export async function getPosts(
   });
   const more = rows.length > limit;
   const page = rows.slice(0, limit);
+  const now = new Date();
+  const occurrences = new Map(
+    page.map((p) => [p.id, presenceOccurrence(p, now)]),
+  );
   const visitor = await visitorHash();
   const [confirmations, memberConfirmations, likes] = await Promise.all([
-    visitor ? db().visitorPresence.findMany({
-      where: { visitorHash: visitor, postId: { in: page.map((p) => p.id) } },
-      select: { postId: true },
-    }) : Promise.resolve([]),
-    userId ? db().presence.findMany({
-      where: { userId, postId: { in: page.map((p) => p.id) } },
-      select: { postId: true },
-    }) : Promise.resolve([]),
-    userId ? db().like.findMany({
-      where: { userId, postId: { in: page.map((p) => p.id) } },
-    }) : Promise.resolve([]),
+    visitor
+      ? db().visitorPresence.findMany({
+          where: {
+            visitorHash: visitor,
+            postId: { in: page.map((p) => p.id) },
+          },
+          select: { postId: true, observedAt: true, occurrence: true },
+        })
+      : Promise.resolve([]),
+    userId
+      ? db().presence.findMany({
+          where: { userId, postId: { in: page.map((p) => p.id) } },
+          select: { postId: true, observedAt: true, occurrence: true },
+        })
+      : Promise.resolve([]),
+    userId
+      ? db().like.findMany({
+          where: { userId, postId: { in: page.map((p) => p.id) } },
+        })
+      : Promise.resolve([]),
   ]);
   const confirmed = new Set(
-    [...confirmations, ...memberConfirmations].map((p) => p.postId),
+    [...confirmations, ...memberConfirmations]
+      .filter((c) => {
+        const post = page.find((p) => p.id === c.postId)!;
+        return (
+          (c.occurrence ?? presenceOccurrence(post, c.observedAt)) ===
+          occurrences.get(c.postId)
+        );
+      })
+      .map((p) => p.postId),
   );
   const latest = (p: (typeof page)[number]) =>
-    [...p.presences, ...p.visitorPresences].sort(
-      (a, b) => b.observedAt.getTime() - a.observedAt.getTime(),
-    )[0];
+    [...p.presences, ...p.visitorPresences, ...p.presenceEvents]
+      .filter(
+        (event) =>
+          (event.occurrence ?? presenceOccurrence(p, event.observedAt)) ===
+          occurrences.get(p.id),
+      )
+      .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime())[0];
   return {
     nextCursor: more ? page.at(-1)!.id : null,
     posts: page.map((p) => ({
@@ -81,6 +117,7 @@ export async function getPosts(
       commentCount: p._count.comments,
       comments: [],
       presenceConfirmed: confirmed.has(p.id),
+      presenceOccurrence: occurrences.get(p.id),
       presence: latest(p)?.state ?? null,
       observedAt: latest(p)?.observedAt.toISOString() ?? null,
     })),
@@ -126,7 +163,13 @@ export async function getTodayPosts(userId?: string) {
 }
 export async function notifications(userId: string): Promise<Notice[]> {
   const items = await db().notification.findMany({
-    where: { userId, post: { userDeleted: false, OR: [{ hidden: false, adminDeleted: false }, { authorId: userId }] } },
+    where: {
+      userId,
+      post: {
+        userDeleted: false,
+        OR: [{ hidden: false, adminDeleted: false }, { authorId: userId }],
+      },
+    },
     include: {
       post: { select: { title: true } },
       comment: { include: { author: { select: { nickname: true } } } },

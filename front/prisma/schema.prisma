@@ -30,6 +30,7 @@ model User {
   comments Comment[]
   likes Like[]
   presences Presence[]
+  presenceEvents PresenceEvent[]
   sessions Session[]
   notifications Notification[]
   uploads Upload[]
@@ -74,6 +75,7 @@ model Post {
   presences Presence[]
   notifications Notification[]
   visitorPresences VisitorPresence[]
+  presenceEvents PresenceEvent[]
   @@index([createdAt, id])
   @@index([category, createdAt])
   @@index([authorId, createdAt])
@@ -112,6 +114,7 @@ model Presence {
   postId String
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   state PresenceState
+  occurrence String? @db.VarChar(32)
   observedAt DateTime @default(now())
   @@id([userId, postId])
   @@index([postId, observedAt])
@@ -121,9 +124,25 @@ model VisitorPresence {
   postId String
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   state PresenceState
+  occurrence String? @db.VarChar(32)
   observedAt DateTime @default(now())
   @@id([visitorHash, postId])
   @@index([postId, observedAt])
+}
+model PresenceEvent {
+  id String @id @default(cuid())
+  postId String
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String?
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  visitorHash String
+  occurrence String @db.VarChar(32)
+  state PresenceState
+  observedAt DateTime @default(now())
+  @@index([postId, occurrence, observedAt, id])
+  @@index([postId, observedAt, id])
+  @@index([visitorHash, observedAt])
+  @@index([userId, observedAt])
 }
 model Notification {
   id String @id @default(cuid())

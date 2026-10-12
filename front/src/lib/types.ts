@@ -15,6 +15,8 @@ export type Comment = {
   createdAt: string;
 };
 export type Post = {
+  presenceOccurrence?: string;
+  presenceHistory?: PresenceLog[];
   hidden?: boolean;
   adminDeleted?: boolean;
   userDeleted?: boolean;
@@ -57,6 +59,18 @@ export type Notice = {
   body: string;
   author: string;
   readAt: string | null;
+};
+export type PresenceLog = {
+  id: string;
+  nickname: string;
+  state: "ARRIVED" | "GONE";
+  observedAt: string;
+  occurrence: string;
+};
+export type PresenceHistory = {
+  logs: PresenceLog[];
+  nextCursor: string | null;
+  occurrence: string;
 };
 export type Bootstrap = {
   todayPosts?: Post[];

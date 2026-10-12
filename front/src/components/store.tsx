@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Bootstrap, Post, PostInput, Comment } from "@/lib/types";
+import { presenceOccurrence } from "@/lib/presence";
 export async function request<T>(
   url: string,
   options: RequestInit = {},
@@ -59,6 +60,26 @@ export function Provider({ children }: { children: ReactNode }) {
     void reload();
   }, [reload]);
   useEffect(() => {
+    if (data?.mode !== "live") return;
+    const refreshOccurrence = () => {
+      if (
+        !document.hidden &&
+        [...data.posts, ...(data.todayPosts ?? [])].some(
+          (post) =>
+            post.presenceOccurrence &&
+            post.presenceOccurrence !== presenceOccurrence(post),
+        )
+      )
+        void reload();
+    };
+    const timer = setInterval(refreshOccurrence, 60_000);
+    document.addEventListener("visibilitychange", refreshOccurrence);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshOccurrence);
+    };
+  }, [data, reload]);
+  useEffect(() => {
     if (!message) return;
     const t = setTimeout(() => setMessage(""), 3500);
     return () => clearTimeout(t);
@@ -97,6 +118,17 @@ export function Provider({ children }: { children: ReactNode }) {
           p.presenceConfirmed = true;
           p.presence = value.state as Post["presence"];
           p.observedAt = new Date().toISOString();
+          p.presenceOccurrence = presenceOccurrence(p);
+          p.presenceHistory = [
+            {
+              id: crypto.randomUUID(),
+              nickname: next.user?.nickname ?? "방문자 DEMO",
+              state: p.presence!,
+              observedAt: p.observedAt,
+              occurrence: p.presenceOccurrence,
+            },
+            ...(p.presenceHistory ?? []),
+          ];
         }
         if (kind === "edit-post" && p) {
           if (p.adminDeleted) throw new Error("관리자가 삭제처리한 글은 수정할 수 없습니다.");

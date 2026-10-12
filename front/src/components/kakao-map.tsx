@@ -27,7 +27,6 @@ function Pin({
   const [node, setNode] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -110,9 +109,9 @@ function Pin({
             <span>{post.title}</span>
             <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
           </Link>
-          {post.category === "FOOD" && !confirmed && !post.presenceConfirmed && (
+          {post.category === "FOOD" && (
             <div className="map-callout-actions">
-              <Presence post={post} map onConfirmed={() => setConfirmed(true)} />
+              <Presence post={post} map />
             </div>
           )}
         </div>

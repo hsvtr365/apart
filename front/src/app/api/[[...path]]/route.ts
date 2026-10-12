@@ -21,6 +21,7 @@ import {
 import { getPosts, getTodayPosts, comments, notifications } from "@/lib/queries";
 import { demoData } from "@/lib/demo";
 import { visitorHash } from "@/lib/visitor";
+import { presenceOccurrence, visitorAlias } from "@/lib/presence";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (data: unknown, status = 200) =>
@@ -222,6 +223,56 @@ async function handle(
           ),
         );
       if (resource === "posts" && id) {
+        if (action === "presence-history") {
+          const post = await db().post.findUnique({ where: { id } });
+          if (
+            !post ||
+            post.userDeleted ||
+            post.adminDeleted ||
+            (post.hidden &&
+              post.authorId !== user?.id &&
+              user?.permission !== 0)
+          )
+            throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
+          if (post.category !== "FOOD")
+            throw new HttpError(
+              "먹거리 소식만 현장 확인 기록을 볼 수 있습니다.",
+            );
+          const occurrence = presenceOccurrence(post);
+          const cursor = req.nextUrl.searchParams.get("cursor");
+          const where = {
+            postId: id,
+            ...(req.nextUrl.searchParams.get("scope") === "all"
+              ? {}
+              : { occurrence }),
+          };
+          if (
+            cursor &&
+            !(await db().presenceEvent.findFirst({
+              where: { ...where, id: cursor },
+              select: { id: true },
+            }))
+          )
+            throw new HttpError("기록 페이지를 다시 열어주세요.");
+          const rows = await db().presenceEvent.findMany({
+            where,
+            include: { user: { select: { nickname: true } } },
+            orderBy: [{ observedAt: "desc" }, { id: "desc" }],
+            take: 31,
+            ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          });
+          return json({
+            occurrence,
+            nextCursor: rows.length > 30 ? rows[29].id : null,
+            logs: rows.slice(0, 30).map((event) => ({
+              id: event.id,
+              nickname: event.user?.nickname ?? visitorAlias(event.visitorHash),
+              state: event.state,
+              observedAt: event.observedAt.toISOString(),
+              occurrence: event.occurrence,
+            })),
+          });
+        }
         const p = (await getPosts(user?.id, undefined, { id }, 1, true)).posts[0];
         if (!p) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
         if ((p.hidden || p.adminDeleted) && p.authorId !== user?.id && user?.permission !== 0)
@@ -278,26 +329,67 @@ async function handle(
       if (ip) limit("presence-ip:" + hash(ip), 300);
       const { state } = z.object({ state: z.enum(["ARRIVED", "GONE"]) }).parse(await body(req));
       const post = await db().post.findUnique({ where: { id } });
-      if (!post || post.hidden || post.adminDeleted) throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
-      if (post.category !== "FOOD") throw new HttpError("먹거리 소식만 현장 확인할 수 있습니다.");
-      await db().$transaction(async tx => {
+      if (!post || post.hidden || post.adminDeleted || post.userDeleted)
+        throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
+      if (post.category !== "FOOD")
+        throw new HttpError("먹거리 소식만 현장 확인할 수 있습니다.");
+      await db().$transaction(async (tx) => {
         // Serialize the visitor's requests so concurrent clicks cannot bypass the cooldown.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${visitor}))`;
+        if (user)
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"presence-user:" + user.id}))`;
         const recent = await tx.visitorPresence.findFirst({
           where: { visitorHash: visitor }, orderBy: { observedAt: "desc" },
         });
-        if (recent && Date.now() - recent.observedAt.getTime() < 10_000)
+        const memberRecent = user
+          ? await tx.presence.findFirst({
+              where: { userId: user.id },
+              orderBy: { observedAt: "desc" },
+            })
+          : null;
+        const observedAt = new Date();
+        const occurrence = presenceOccurrence(post, observedAt);
+        if (
+          [recent, memberRecent].some(
+            (record) =>
+              record &&
+              observedAt.getTime() - record.observedAt.getTime() < 10_000,
+          )
+        )
           throw new HttpError("10초 후 다시 확인해주세요.", 429);
+        await tx.presenceEvent.create({
+          data: {
+            postId: id,
+            visitorHash: visitor,
+            userId: user?.id ?? null,
+            state,
+            observedAt,
+            occurrence,
+          },
+        });
         await tx.visitorPresence.upsert({
           where: { visitorHash_postId: { visitorHash: visitor, postId: id } },
-          create: { visitorHash: visitor, postId: id, state },
-          update: { state, observedAt: new Date() },
+          create: {
+            visitorHash: visitor,
+            postId: id,
+            state,
+            observedAt,
+            occurrence,
+          },
+          update: { state, observedAt, occurrence },
         });
-        if (user) await tx.presence.upsert({
-          where: { userId_postId: { userId: user.id, postId: id } },
-          create: { userId: user.id, postId: id, state },
-          update: { state, observedAt: new Date() },
-        });
+        if (user)
+          await tx.presence.upsert({
+            where: { userId_postId: { userId: user.id, postId: id } },
+            create: {
+              userId: user.id,
+              postId: id,
+              state,
+              observedAt,
+              occurrence,
+            },
+            update: { state, observedAt, occurrence },
+          });
       });
       return json({ ok: true });
     }
@@ -372,6 +464,7 @@ async function handle(
         throw new HttpError("본인 글만 수정할 수 있어요.", 403);
       if (existing?.adminDeleted)
         throw new HttpError("관리자가 삭제처리한 글은 수정할 수 없습니다.", 403);
+      if (existing?.userDeleted) throw new HttpError("이미 삭제한 글입니다.", 404);
       const input = postSchema.parse(await body(req));
       const { imageUrl, imageUrls, ...fields } = input;
       const urls = imageUrls ?? (imageUrl ? [imageUrl] : []);
