@@ -95,7 +95,7 @@ export function PostCard({
             </Link>
           )}
           {post.category === "FOOD" && (
-            <div className="absolute right-2 top-2 flex bg-white">
+            <div className="absolute right-2 top-2 flex">
               <Presence post={post} />
             </div>
           )}
