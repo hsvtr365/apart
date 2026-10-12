@@ -50,6 +50,7 @@
   body {
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
   }
   body {
     margin: 0;
@@ -203,7 +204,10 @@
   }
 }
 .app {
+  position: fixed;
+  inset: 0;
   height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -224,6 +228,9 @@
 }
 .home-wrap {
   max-width: 1180px;
+}
+.home-wrap .map-view {
+  height: 330px;
 }
 .map-view {
   position: relative;
@@ -652,6 +659,8 @@
 .detail-edit { padding:0 16px 16px; }
 .detail-body { padding:12px; }
 .bottom-nav {
+  touch-action: none;
+  overscroll-behavior: none;
   display: flex;
   flex-shrink: 0;
   justify-content: space-around;
@@ -663,6 +672,7 @@
   background: white;
 }
 .bottom-nav a {
+  touch-action: none;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -973,6 +983,9 @@ header a:first-child {
   }
   .map-view {
     height: 400px;
+  }
+  .home-wrap .map-view {
+    height: 300px;
   }
   .map-pin {
     width: 136px;
