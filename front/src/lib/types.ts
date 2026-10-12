@@ -69,6 +69,8 @@ export type PresenceLog = {
   occurrence: string;
 };
 export type PresenceHistory = {
+  boundary?: string;
+  hasOlder?: boolean;
   logs: PresenceLog[];
   nextCursor: string | null;
   occurrence: string;

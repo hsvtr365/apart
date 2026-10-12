@@ -251,11 +251,13 @@ async function handle(
             );
           const occurrence = presenceOccurrence(post);
           const cursor = req.nextUrl.searchParams.get("cursor");
+          const scope = z.enum(["current", "all", "recent", "older"]).parse(req.nextUrl.searchParams.get("scope") ?? "current");
+          const boundary = z.iso.datetime().parse(req.nextUrl.searchParams.get("boundary") ?? new Date(Date.now() - 28 * 86400000).toISOString());
           const where = {
             postId: id,
-            ...(req.nextUrl.searchParams.get("scope") === "all"
-              ? {}
-              : { occurrence }),
+            ...(scope === "current" ? { occurrence } : {}),
+            ...(scope === "recent" ? { observedAt: { gte: new Date(boundary) } } : {}),
+            ...(scope === "older" ? { observedAt: { lt: new Date(boundary) } } : {}),
           };
           if (
             cursor &&
@@ -272,7 +274,12 @@ async function handle(
             take: 31,
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
           });
+          const hasOlder = scope === "recent" && !!(await db().presenceEvent.findFirst({
+            where: { postId: id, observedAt: { lt: new Date(boundary) } }, select: { id: true },
+          }));
           return json({
+            boundary,
+            hasOlder,
             occurrence,
             nextCursor: rows.length > 30 ? rows[29].id : null,
             logs: rows.slice(0, 30).map((event) => ({

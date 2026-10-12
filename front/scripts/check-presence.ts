@@ -356,6 +356,29 @@ try {
   assert.equal(new Set([...mapFirst.posts, ...mapNext.posts].map(p => p.id)).size, 106);
   await db().post.update({ where: { id: old.id }, data: { hidden: true } });
   assert(!(await call("map-posts?category=MARKET&cursor=" + mapFirst.nextCursor)).data.posts.some((p: { id: string }) => p.id === old.id));
+  const historyPost = await db().post.create({ data: { authorId: user.id, title: "기록 페이지 검사", body: "임시", category: "FOOD" } });
+  const boundary = new Date(Date.now() - 28 * 86400000).toISOString();
+  await db().presenceEvent.createMany({ data: Array.from({ length: 64 }, (_, i) => ({
+    postId: historyPost.id, visitorHash: hash, state: "ARRIVED" as const, occurrence: "WEEKLY:2026-09-01",
+    observedAt: new Date(new Date(boundary).getTime() + (i - 31) * 1000),
+  })) });
+  const historyUrl = `posts/${historyPost.id}/presence-history?boundary=${encodeURIComponent(boundary)}`;
+  const recentFirst = (await call(historyUrl + "&scope=recent")).data;
+  const recentNext = (await call(historyUrl + "&scope=recent&cursor=" + recentFirst.nextCursor)).data;
+  assert.equal(recentFirst.logs.length, 30);
+  assert.equal(recentNext.logs.length, 3);
+  assert.equal(recentNext.nextCursor, null);
+  assert.equal(recentNext.hasOlder, true);
+  const olderFirst = (await call(historyUrl + "&scope=older")).data;
+  const olderNext = (await call(historyUrl + "&scope=older&cursor=" + olderFirst.nextCursor)).data;
+  assert.equal(olderFirst.logs.length, 30);
+  assert.equal(olderNext.logs.length, 1);
+  assert.equal(olderNext.nextCursor, null);
+  assert.equal(olderNext.hasOlder, false);
+  assert.equal(new Set([...recentFirst.logs, ...recentNext.logs, ...olderFirst.logs, ...olderNext.logs].map(log => log.id)).size, 64);
+  assert.equal((await call(historyUrl + "&scope=older&cursor=" + recentFirst.logs[0].id)).status, 400);
+  assert.equal((await call(`posts/${historyPost.id}/presence-history?scope=recent&boundary=bad`)).status, 400);
+  console.log("PASS four-week history boundary, recent/older cursors, 64 distinct records and invalid cursor rejection");
   console.log("PASS remaining section 3: deleted mutations unchanged, category cursors, old selected map post, 106 map entries independent of home cards");
   console.log(
     "PASS isolated DB/API: logs, guest aliases, member names, privacy, cooldown, visit reset, pagination, permissions",

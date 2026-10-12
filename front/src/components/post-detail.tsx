@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useDetailDialog } from "./use-detail-dialog";
 import { Report } from "./report";
 import { useVillage } from "./store";
 import { PostDetailBody } from "./post-detail-body";
@@ -20,15 +21,9 @@ export function PostDetail({
     [error, setError] = useState(""),
     [text, setText] = useState(""),
     [next, setNext] = useState<string | null>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
-  const backdropPressed = useRef(false);
+  const dialogProps = useDetailDialog(onClose);
   const close = useRef(onClose);
   close.current = onClose;
-  useEffect(() => {
-    const el = dialog.current;
-    if (el && !el.open) el.showModal();
-    return () => el?.close();
-  }, []);
   useEffect(() => {
     let active = true;
     setError("");
@@ -58,37 +53,9 @@ export function PostDetail({
   }
   return (
     <dialog
-      ref={dialog}
+      {...dialogProps}
       className="detail-dialog"
       aria-label="게시물 상세"
-      onPointerDown={(e) => {
-        const box = e.currentTarget.getBoundingClientRect();
-        backdropPressed.current =
-          e.target === e.currentTarget &&
-          (e.clientX < box.left ||
-            e.clientX > box.right ||
-            e.clientY < box.top ||
-            e.clientY > box.bottom);
-      }}
-      onClick={(e) => {
-        const box = e.currentTarget.getBoundingClientRect();
-        if (
-          backdropPressed.current &&
-          e.target === e.currentTarget &&
-          (e.clientX < box.left ||
-            e.clientX > box.right ||
-            e.clientY < box.top ||
-            e.clientY > box.bottom)
-        )
-          close.current();
-        backdropPressed.current = false;
-      }}
-      onCancel={(e) => {
-        // File-picker cancellation bubbles to the enclosing dialog in some browsers.
-        if (e.target !== e.currentTarget) return;
-        e.preventDefault();
-        close.current();
-      }}
     >
       {!editing && <div className="post-detail-header">
         <h1 className="post-detail-title">{post?.title}</h1>
