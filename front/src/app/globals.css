@@ -306,6 +306,17 @@
   transform: translateX(-50%);
   width: max-content;
   max-width: min(260px, calc(100vw - 32px));
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 3px 10px #20272226;
+}
+.map-pin-card:has(.selected) { border-color: var(--color-brand); }
+.map-pin-card > [aria-label="일정과 현장 확인"] {
+  margin: 0;
+  padding: 0 12px 8px;
+  white-space: normal;
+  line-height: 1.4;
 }
 .map-callout-title {
   position: relative;
@@ -314,18 +325,18 @@
   gap: 10px;
   min-height: 48px;
   padding: 8px 14px;
-  border: 1px solid var(--color-line);
-  border-radius: 28px;
+  border: 0;
+  border-radius: 16px;
   background: white;
   color: var(--color-ink);
   font-size: 15px;
   font-weight: 800;
-  box-shadow: 0 3px 10px #20272226;
+
 }
 .map-marker.expanded .map-marker-button {
   visibility: hidden;
 }
-.map-callout-title::after {
+.map-pin-card::after {
   content: "";
   position: absolute;
   left: 50%;
