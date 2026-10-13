@@ -7,7 +7,7 @@ import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import pg from "pg";
 import { db } from "../src/lib/db";
-import { loginAccount, purgeExpiredAccountData, oneYearAfter } from "../src/lib/account-retention";
+import { loginAccount, purgeExpiredAccountData, oneYearAfter, withdrawnNickname } from "../src/lib/account-retention";
 import { presenceOccurrence, visitorAlias } from "../src/lib/presence";
 
 const originalUrl = process.env.DATABASE_URL;
@@ -391,14 +391,14 @@ try {
   const retired = await db().user.findUniqueOrThrow({ where: { id: user.id } });
   assert(retired.withdrawnAt);
   assert.equal(retired.kakaoId, null);
-  assert.equal(retired.nickname, "탈퇴한 이용자");
+  assert.equal(retired.nickname, withdrawnNickname(user.id));
   assert.equal(retired.building, null);
   assert.equal(await db().session.count({ where: { userId: user.id } }), 0);
   assert.equal(await db().like.count({ where: { userId: user.id } }), 1);
   assert.equal(await db().post.count({ where: { authorId: user.id } }), authoredBefore);
   assert.equal(await db().comment.count({ where: { authorId: user.id } }), commentsBefore);
   assert.equal((await call("bootstrap", memberCookie)).data.user, null);
-  assert.equal((await call(`posts/${historyPost.id}`)).data.author, "탈퇴한 이용자");
+  assert.equal((await call(`posts/${historyPost.id}`)).data.author, withdrawnNickname(user.id));
   const joined = await Promise.all([loginAccount("test-kakao-identity"), loginAccount("test-kakao-identity")]);
   assert.equal(joined[0].id, joined[1].id);
   const rejoined = joined[0];
@@ -433,7 +433,7 @@ try {
   assert.equal((await db().like.findUniqueOrThrow({ where: { userId_postId: { userId: user.id, postId: old.id } } })).abuseIdentityId, null);
   assert.equal((await call("account", rejoinedCookie, "DELETE", { confirm: true })).status, 200);
   const scrubbed = await db().nicknameChangeLog.findMany({ where: { userId: rejoined.id } });
-  assert(scrubbed.every(log => !log.before && (!log.after || log.after === "탈퇴한 이용자")));
+  assert(scrubbed.every(log => !log.before && (!log.after || log.after === withdrawnNickname(rejoined.id))));
   await db().abuseIdentity.updateMany({ data: { expiresAt: new Date(0) } });
   await purgeExpiredAccountData();
   assert.equal(await db().abuseIdentity.count(), 0);

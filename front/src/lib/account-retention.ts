@@ -2,6 +2,10 @@ import { createHmac, randomBytes } from "node:crypto";
 import { db } from "./db";
 import type { Prisma } from "@/generated/prisma/client";
 
+export function withdrawnNickname(userId: string) {
+  return "탈퇴_" + userId.slice(-8).toUpperCase();
+}
+
 export function oneYearAfter(now = new Date()) {
   const next = new Date(now);
   const month = next.getUTCMonth();
@@ -139,7 +143,7 @@ export async function withdrawAccount(userId: string) {
     await tx.nicknameChangeLog.create({
       data: {
         userId,
-        after: "탈퇴한 이용자",
+        after: withdrawnNickname(userId),
         reason: "WITHDRAWAL",
         expiresAt: expiry,
       },
@@ -150,7 +154,7 @@ export async function withdrawAccount(userId: string) {
       where: { id: userId },
       data: {
         kakaoId: null,
-        nickname: "탈퇴한 이용자",
+        nickname: withdrawnNickname(userId),
         building: null,
         withdrawnAt: now,
         role: "USER",
