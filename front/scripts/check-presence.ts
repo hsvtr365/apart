@@ -378,6 +378,20 @@ try {
   assert.equal(new Set([...recentFirst.logs, ...recentNext.logs, ...olderFirst.logs, ...olderNext.logs].map(log => log.id)).size, 64);
   assert.equal((await call(historyUrl + "&scope=older&cursor=" + recentFirst.logs[0].id)).status, 400);
   assert.equal((await call(`posts/${historyPost.id}/presence-history?scope=recent&boundary=bad`)).status, 400);
+  assert.equal((await call("account", "", "DELETE", { confirm: true })).status, 401);
+  assert.equal((await call("account", memberCookie, "DELETE", { confirm: false })).status, 400);
+  await db().like.create({ data: { userId: user.id, postId: old.id } });
+  const authoredBefore = await db().post.count({ where: { authorId: user.id } });
+  const commentsBefore = await db().comment.count({ where: { authorId: user.id } });
+  assert.equal((await call("account", memberCookie, "DELETE", { confirm: true })).status, 200);
+  assert.equal(await db().user.findUnique({ where: { id: user.id } }), null);
+  assert.equal(await db().session.count({ where: { userId: user.id } }), 0);
+  assert.equal(await db().like.count({ where: { userId: user.id } }), 0);
+  assert.equal(await db().post.count({ where: { authorId: "retired-neighbor" } }), authoredBefore);
+  assert.equal(await db().comment.count({ where: { authorId: "retired-neighbor" } }), commentsBefore);
+  assert.equal((await call("bootstrap", memberCookie)).data.user, null);
+  assert.equal((await call(`posts/${historyPost.id}`)).data.author, "탈퇴한 이웃");
+  console.log("PASS withdrawal: confirmation required, account/session/likes removed, authored content retained anonymously");
   console.log("PASS four-week history boundary, recent/older cursors, 64 distinct records and invalid cursor rejection");
   console.log("PASS remaining section 3: deleted mutations unchanged, category cursors, old selected map post, 106 map entries independent of home cards");
   console.log(

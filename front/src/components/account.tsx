@@ -1,4 +1,6 @@
 "use client";
+import { Settings, Pencil } from "lucide-react";
+import { AccountSettings } from "./account-settings";
 import { LoadingMask } from "./loading-mask";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -8,6 +10,7 @@ import { categories, type Post } from "@/lib/types";
 export function Account() {
   const params = useSearchParams();
   const { data, act, notify, busy } = useVillage();
+  const [settings, setSettings] = useState(false);
   const [tab, setTab] = useState("posts"),
     [editing, setEditing] = useState(false),
     [rows, setRows] = useState<Post[]>([]),
@@ -80,6 +83,7 @@ export function Account() {
   return (
     <>
       <h1 className="page-title">내 정보</h1>
+      {settings && user && <AccountSettings onClose={() => setSettings(false)} />}
       {params.get("login") === "failed" && (
         <p role="alert" className="mb-3 text-red-700">
           카카오 로그인을 완료하지 못했어요. 다시 시도해주세요.
@@ -93,16 +97,10 @@ export function Account() {
                 나
               </span>
               <div>
-                <h2>{user.nickname}</h2>
+                <div className="flex items-center gap-1"><h2>{user.nickname}</h2><button type="button" className="icon-btn text-muted" aria-label="프로필 수정" aria-expanded={editing} onClick={() => setEditing(!editing)}><Pencil size={17} aria-hidden="true" /></button></div>
                 <small>{user.building || "동 미설정"}</small>
               </div>
-              <button
-                className="btn btn-secondary ml-auto"
-                onClick={() => setEditing(!editing)}
-                aria-expanded={editing}
-              >
-                프로필 수정
-              </button>
+              <button type="button" className="icon-btn ml-auto" aria-label="계정 설정" onClick={() => setSettings(true)}><Settings size={22} aria-hidden="true" /></button>
             </div>
             {editing && (
               <form
@@ -171,16 +169,7 @@ export function Account() {
                   ? "예시 프로필 · 새로고침하면 초기화됩니다."
                   : "카카오 계정으로 로그인됨"}
               </small>
-              {data.mode === "live" && (
-                <button
-                  className="icon-btn text-muted"
-                  onClick={() =>
-                    void act("logout").catch((e) => notify(e.message))
-                  }
-                >
-                  로그아웃
-                </button>
-              )}
+
             </div>
           </>
         ) : (

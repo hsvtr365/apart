@@ -426,6 +426,22 @@ async function handle(
       jar.delete("village_session");
       return json({ ok: true });
     }
+    if (resource === "account" && method === "DELETE") {
+      z.object({ confirm: z.literal(true) }).parse(await body(req));
+      await db().$transaction(async tx => {
+        const retired = await tx.user.upsert({
+          where: { id: "retired-neighbor" },
+          create: { id: "retired-neighbor", nickname: "탈퇴한 이웃", permission: 1 },
+          update: {},
+        });
+        await tx.post.updateMany({ where: { authorId: user.id }, data: { authorId: retired.id } });
+        await tx.comment.updateMany({ where: { authorId: user.id }, data: { authorId: retired.id } });
+        await tx.presenceEvent.updateMany({ where: { userId: user.id }, data: { userId: retired.id } });
+        await tx.user.delete({ where: { id: user.id } });
+      });
+      (await cookies()).delete("village_session");
+      return json({ ok: true });
+    }
     if (resource === "profile" && method === "PATCH") {
       const input = profileSchema.parse(await body(req));
       const updated = await db().user.update({
