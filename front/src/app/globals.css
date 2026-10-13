@@ -1610,3 +1610,12 @@ header a:first-child {
 .detail-presence .presence-gone > svg { background:#626b65; color:white; }
 .detail-presence .presence-state > small { grid-column:1 / -1; font-size:12px; font-weight:400; line-height:1.4; }
 .detail-presence .presence-gone[aria-pressed="true"] > svg { background:white; color:#626b65; }
+
+.post-detail-dialog { border-radius:6px; }
+.detail-photos .image-viewer-preview,.detail-photo-thumbnails button { border-radius:4px; }
+.detail-presence .presence-state,.detail-schedule-card,.detail-comment-form { border-radius:4px; }
+.detail-presence .presence-arrived > small { color:#fff; }
+.detail-presence .presence-gone > small { color:#374151; }
+.detail-presence .presence-gone[aria-pressed="true"] > small { color:#fff; }
+.detail-last-report { min-height:36px; padding:4px 6px; border-radius:4px; color:#475569; text-decoration:underline; text-underline-offset:3px; }
+.detail-last-report:hover { background:var(--color-soft); color:var(--color-brand); }

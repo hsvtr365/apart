@@ -9,10 +9,12 @@ export function Presence({
   post,
   map = false,
   detail = false,
+  hideHistory = false,
 }: {
   post: Post;
   map?: boolean;
   detail?: boolean;
+  hideHistory?: boolean;
 }) {
   const { act, notify, busy } = useVillage();
   const [open, setOpen] = useState(false);
@@ -47,7 +49,7 @@ export function Presence({
               {detail && <small>{state === "ARRIVED" ? "현장에 있어요" : "지금은 없어요"}</small>}
             </button>
           ))}
-        <button
+        {!hideHistory && <button
           type="button"
           className="presence-history-toggle"
           aria-label="있어요·없어요 기록 보기"
@@ -56,7 +58,7 @@ export function Presence({
           onClick={() => setOpen(!open)}
         >
           <Eye size={20} aria-hidden="true" />
-        </button>
+        </button>}
       </div>
       {open && <PresenceHistoryDialog post={post} panelId={panelId} onClose={() => setOpen(false)} />}
     </div>
