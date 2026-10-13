@@ -30,7 +30,7 @@ export function Presence({
               className={`presence-state presence-${state.toLowerCase()}`}
               key={state}
               aria-pressed={post.presence === state}
-              disabled={busy}
+              disabled={busy || post.hidden}
               onClick={() =>
                 void act("presence", post.id, { state })
                   .then(() => {
@@ -46,21 +46,33 @@ export function Presence({
                 />
               )}
               <span>{state === "ARRIVED" ? "있어요" : "없어요"}</span>
-              {detail && <small>{state === "ARRIVED" ? "현장에 있어요" : "지금은 없어요"}</small>}
+              {detail && (
+                <small>
+                  {state === "ARRIVED" ? "현장에 있어요" : "지금은 없어요"}
+                </small>
+              )}
             </button>
           ))}
-        {!hideHistory && <button
-          type="button"
-          className="presence-history-toggle"
-          aria-label="있어요·없어요 기록 보기"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen(!open)}
-        >
-          <Eye size={20} aria-hidden="true" />
-        </button>}
+        {!hideHistory && (
+          <button
+            type="button"
+            className="presence-history-toggle"
+            aria-label="있어요·없어요 기록 보기"
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => setOpen(!open)}
+          >
+            <Eye size={20} aria-hidden="true" />
+          </button>
+        )}
       </div>
-      {open && <PresenceHistoryDialog post={post} panelId={panelId} onClose={() => setOpen(false)} />}
+      {open && (
+        <PresenceHistoryDialog
+          post={post}
+          panelId={panelId}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </div>
   );
 }

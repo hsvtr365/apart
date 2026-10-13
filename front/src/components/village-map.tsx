@@ -16,7 +16,7 @@ export function VillageMap({
   full?: boolean;
   selected?: string;
 }) {
-  const { data, revision } = useVillage();
+  const { data, revision, updatedPost } = useVillage();
   const demo = data?.mode === "demo";
   const [todayOnly, setTodayOnly] = useState(!selected);
   const [food, setFood] = useState(true);
@@ -33,30 +33,59 @@ export function VillageMap({
     const options = { signal: controller.signal };
     async function load() {
       const params = new URLSearchParams({ today: String(!full || todayOnly) });
-      if (full && food !== market) params.set("category", food ? "FOOD" : "MARKET");
+      if (full && food !== market)
+        params.set("category", food ? "FOOD" : "MARKET");
       const result: Post[] = [];
       if (!full || food || market) {
         let cursor: string | null = null;
         do {
           if (cursor) params.set("cursor", cursor);
-          const page: { posts: Post[]; nextCursor: string | null } = await request("/api/map-posts?" + params, options);
-          result.push(...page.posts.filter(p => !result.some(existing => existing.id === p.id)));
+          const page: { posts: Post[]; nextCursor: string | null } =
+            await request("/api/map-posts?" + params, options);
+          result.push(
+            ...page.posts.filter(
+              (p) => !result.some((existing) => existing.id === p.id),
+            ),
+          );
           cursor = page.nextCursor;
         } while (cursor);
       }
       if (selected) {
-        const post = await request<Post>("/api/posts/" + encodeURIComponent(selected), options);
-        if (post.hidden || post.adminDeleted || post.userDeleted || post.category === "NOTICE" || post.latitude == null || post.longitude == null)
+        const post = await request<Post>(
+          "/api/posts/" + encodeURIComponent(selected),
+          options,
+        );
+        if (
+          post.hidden ||
+          post.adminDeleted ||
+          post.userDeleted ||
+          post.category === "NOTICE" ||
+          post.latitude == null ||
+          post.longitude == null
+        )
           throw new Error("선택한 소식은 지도에 표시할 수 없어요.");
-        if (!result.some(p => p.id === post.id)) result.push(post);
+        if (!result.some((p) => p.id === post.id)) result.push(post);
       }
       if (!controller.signal.aborted) setRemotePosts(result);
     }
-    void load().catch(e => {
-      if (!controller.signal.aborted) { setRemotePosts([]); setError(e.message); }
-    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    void load()
+      .catch((e) => {
+        if (!controller.signal.aborted) {
+          setRemotePosts([]);
+          setError(e.message);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
   }, [demo, full, todayOnly, food, market, selected, revision, retry]);
+  useEffect(() => {
+    if (updatedPost)
+      setRemotePosts((posts) =>
+        posts.map((post) => (post.id === updatedPost.id ? updatedPost : post)),
+      );
+  }, [updatedPost]);
   const visible = (demo ? posts : remotePosts).filter((p) => {
     if (p.hidden || p.adminDeleted || p.userDeleted) return false;
     if (p.id === selected) return true;
@@ -78,11 +107,19 @@ export function VillageMap({
     : points.slice(0, 4);
   return (
     <div className={"map-view " + (full ? "full" : "")}>
-      {!demo && (loading || error) && <div className="map-load-status" role={error ? "alert" : "status"}>
-        {error || "지도 소식을 불러오는 중이에요."}
-        {error && <button className="btn" onClick={() => setRetry(v => v + 1)}>다시 시도</button>}
-      </div>}
-      {!demo && !loading && !error && !visible.length && <p className="map-load-status">조건에 맞는 지도 소식이 없어요.</p>}
+      {!demo && (loading || error) && (
+        <div className="map-load-status" role={error ? "alert" : "status"}>
+          {error || "지도 소식을 불러오는 중이에요."}
+          {error && (
+            <button className="btn" onClick={() => setRetry((v) => v + 1)}>
+              다시 시도
+            </button>
+          )}
+        </div>
+      )}
+      {!demo && !loading && !error && !visible.length && (
+        <p className="map-load-status">조건에 맞는 지도 소식이 없어요.</p>
+      )}
       {!demo && <KakaoMap posts={visible} selected={selected} />}
       {full && (
         <div className="map-filters" role="group" aria-label="지도 표시 조건">

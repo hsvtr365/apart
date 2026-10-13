@@ -1,4 +1,5 @@
 import { createHmac, randomBytes } from "node:crypto";
+import { lockActiveAccount, lockPost, HttpError } from "./write-guards";
 import { db } from "./db";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -60,6 +61,27 @@ export async function linkIdentity(
 ) {
   const id = abuseKey(kakaoId);
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"abuse:" + id}))`;
+  const now = new Date();
+  const expired = await tx.user.findMany({
+    where: {
+      abuseIdentityId: id,
+      withdrawnAt: { not: null },
+      abuseLinkExpiresAt: { lte: now },
+    },
+    select: { id: true },
+  });
+  const ids = expired.map((user) => user.id);
+  if (ids.length) {
+    await tx.like.updateMany({
+      where: { userId: { in: ids } },
+      data: { abuseIdentityId: null },
+    });
+    await tx.user.updateMany({
+      where: { id: { in: ids } },
+      data: { abuseIdentityId: null, abuseLinkExpiresAt: null },
+    });
+  }
+  await tx.abuseIdentity.deleteMany({ where: { id, expiresAt: { lte: now } } });
   await tx.abuseIdentity.upsert({
     where: { id },
     create: { id },
@@ -92,7 +114,6 @@ export async function linkIdentity(
   return id;
 }
 export async function loginAccount(kakaoId: string) {
-  await purgeExpiredAccountData();
   return db().$transaction(async (tx) => {
     const identity = abuseKey(kakaoId);
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"abuse:" + identity}))`;
@@ -126,7 +147,6 @@ export async function loginAccount(kakaoId: string) {
   });
 }
 export async function withdrawAccount(userId: string) {
-  await purgeExpiredAccountData();
   return db().$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"account:" + userId}))`;
     const user = await tx.user.findUniqueOrThrow({ where: { id: userId } });
@@ -214,13 +234,19 @@ export async function setAccountLike(
   userId: string,
   postId: string,
   liked: boolean,
+  transaction?: Prisma.TransactionClient,
 ) {
-  await purgeExpiredAccountData();
-  return db().$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"account:" + userId}))`;
-    const user = await tx.user.findUniqueOrThrow({ where: { id: userId } });
-    if (user.withdrawnAt)
-      throw new Error("Withdrawn account cannot like posts");
+  const write = async (tx: Prisma.TransactionClient) => {
+    const user = await lockActiveAccount(tx, userId);
+    await lockPost(tx, postId);
+    const post = await tx.post.findUnique({ where: { id: postId } });
+    if (
+      !post ||
+      post.userDeleted ||
+      post.adminDeleted ||
+      (post.hidden && post.authorId !== userId && user.permission !== 0)
+    )
+      throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
     const identity = user.kakaoId
       ? await linkIdentity(tx, userId, user.kakaoId)
       : user.abuseIdentityId;
@@ -251,5 +277,6 @@ export async function setAccountLike(
       });
     else await tx.like.deleteMany({ where: { userId, postId } });
     return true;
-  });
+  };
+  return transaction ? write(transaction) : db().$transaction(write);
 }

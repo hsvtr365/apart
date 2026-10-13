@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { uploadBytes } from "@/lib/upload-thumbnail";
 import { z } from "zod";
+import { HttpError, lockActiveAccount, lockPost } from "@/lib/write-guards";
 import { db } from "@/lib/db";
 import {
   currentUser,
@@ -13,28 +15,27 @@ import {
   origin,
   cookieOptions,
 } from "@/lib/auth";
+import { postSchema, profileSchema, commentSchema } from "@/lib/validation";
 import {
-  postSchema,
-  profileSchema,
-  commentSchema,
-} from "@/lib/validation";
-import { getPosts, getTodayPosts, todayPostWhere, comments, notifications } from "@/lib/queries";
+  getPosts,
+  getTodayPosts,
+  todayPostWhere,
+  comments,
+  notifications,
+} from "@/lib/queries";
 import { demoData } from "@/lib/demo";
 import { visitorHash } from "@/lib/visitor";
 import { presenceOccurrence, visitorAlias } from "@/lib/presence";
-import { loginAccount, withdrawAccount, changeProfile, setAccountLike } from "@/lib/account-retention";
+import {
+  loginAccount,
+  withdrawAccount,
+  changeProfile,
+  setAccountLike,
+} from "@/lib/account-retention";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (data: unknown, status = 200) =>
   NextResponse.json(data, { status, headers: { "Cache-Control": "no-store" } });
-class HttpError extends Error {
-  constructor(
-    message: string,
-    public status = 400,
-  ) {
-    super(message);
-  }
-}
 async function body(req: NextRequest) {
   const raw = await req.text();
   if (Buffer.byteLength(raw) > 16_000)
@@ -86,7 +87,12 @@ async function handle(
       return json({
         mode: "live",
         user: user
-          ? { id: user.id, nickname: user.nickname, building: user.building, permission: user.permission }
+          ? {
+              id: user.id,
+              nickname: user.nickname,
+              building: user.building,
+              permission: user.permission,
+            }
           : null,
         ...feed,
         todayPosts,
@@ -193,18 +199,15 @@ async function handle(
         throw new HttpError("사진을 찾을 수 없습니다.", 404);
       const dir = process.env.UPLOAD_DIR || "./data/uploads";
       const thumbnail = req.nextUrl.searchParams.get("size") === "feed";
-      const cachePath = path.join(/* turbopackIgnore: true */ dir, "thumbnails", id);
-      let bytes = thumbnail ? await readFile(/* turbopackIgnore: true */ cachePath).catch(() => null) : null;
-      if (!bytes) {
-        bytes = await readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ dir, id)).catch(() => null);
-        if (!bytes) throw new HttpError("사진을 찾을 수 없습니다.", 404);
-        if (thumbnail) {
-          bytes = await sharp(bytes).resize(336, 540, { fit: "inside", withoutEnlargement: true }).webp({ quality: 72 }).toBuffer();
-          await mkdir(path.join(/* turbopackIgnore: true */ dir, "thumbnails"), { recursive: true });
-          await writeFile(cachePath, bytes);
-        }
+      let bytes: Buffer;
+      try {
+        bytes = await uploadBytes(dir, id, thumbnail);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT")
+          throw new HttpError("사진을 찾을 수 없습니다.", 404);
+        throw error;
       }
-      return new NextResponse(bytes, {
+      return new NextResponse(new Uint8Array(bytes), {
         headers: {
           "Content-Type": "image/webp",
           "Cache-Control": "public, max-age=31536000, immutable",
@@ -215,35 +218,97 @@ async function handle(
     const user = await currentUser();
     if (method === "GET") {
       if (resource === "account-audit") {
-        if (!user || user.permission !== 0) throw new HttpError("관리자 권한이 필요합니다.", 403);
-        const targetId = z.string().min(1).max(100).parse(req.nextUrl.searchParams.get("userId"));
+        if (!user || user.permission !== 0)
+          throw new HttpError("관리자 권한이 필요합니다.", 403);
+        const targetId = z
+          .string()
+          .min(1)
+          .max(100)
+          .parse(req.nextUrl.searchParams.get("userId"));
         const target = await db().user.findUnique({ where: { id: targetId } });
         if (!target) throw new HttpError("계정을 찾을 수 없습니다.", 404);
         const now = new Date();
-        const linked = target.abuseIdentityId && (!target.abuseLinkExpiresAt || target.abuseLinkExpiresAt > now);
+        const linked =
+          target.abuseIdentityId &&
+          (!target.abuseLinkExpiresAt || target.abuseLinkExpiresAt > now);
         return json({
-          accounts: linked ? await db().user.findMany({ where: { abuseIdentityId: target.abuseIdentityId, OR: [{ abuseLinkExpiresAt: null }, { abuseLinkExpiresAt: { gt: now } }] }, select: { id: true, nickname: true, withdrawnAt: true }, take: 100 }) : [{ id: target.id, nickname: target.nickname, withdrawnAt: target.withdrawnAt }],
-          nicknameLogs: await db().nicknameChangeLog.findMany({ where: { userId: target.id, expiresAt: { gt: now } }, orderBy: { createdAt: "desc" }, take: 100 }),
-          securityEvents: linked ? await db().accountSecurityEvent.findMany({ where: { identityId: target.abuseIdentityId!, expiresAt: { gt: now } }, select: { userId: true, reason: true, postId: true, createdAt: true, expiresAt: true }, orderBy: { createdAt: "desc" }, take: 100 }) : [],
+          accounts: linked
+            ? await db().user.findMany({
+                where: {
+                  abuseIdentityId: target.abuseIdentityId,
+                  OR: [
+                    { abuseLinkExpiresAt: null },
+                    { abuseLinkExpiresAt: { gt: now } },
+                  ],
+                },
+                select: { id: true, nickname: true, withdrawnAt: true },
+                take: 100,
+              })
+            : [
+                {
+                  id: target.id,
+                  nickname: target.nickname,
+                  withdrawnAt: target.withdrawnAt,
+                },
+              ],
+          nicknameLogs: await db().nicknameChangeLog.findMany({
+            where: { userId: target.id, expiresAt: { gt: now } },
+            orderBy: { createdAt: "desc" },
+            take: 100,
+          }),
+          securityEvents: linked
+            ? await db().accountSecurityEvent.findMany({
+                where: {
+                  identityId: target.abuseIdentityId!,
+                  expiresAt: { gt: now },
+                },
+                select: {
+                  userId: true,
+                  reason: true,
+                  postId: true,
+                  createdAt: true,
+                  expiresAt: true,
+                },
+                orderBy: { createdAt: "desc" },
+                take: 100,
+              })
+            : [],
         });
       }
       if ((resource === "posts" || resource === "map-posts") && !id) {
         const params = req.nextUrl.searchParams;
-        const category = z.enum(["FOOD", "NOTICE", "MARKET"]).optional().parse(params.get("category") ?? undefined);
-        const today = z.enum(["true", "false"]).optional().parse(params.get("today") ?? undefined);
-        return json(await getPosts(
-          user?.id,
-          params.get("cursor") ?? undefined,
-          { AND: [
-            ...(category ? [{ category }] : []),
-            ...(resource === "map-posts" ? [{
-              category: { in: ["FOOD", "MARKET"] as ("FOOD" | "MARKET")[] },
-              latitude: { not: null }, longitude: { not: null },
-            }] : []),
-            ...(today === "true" ? [todayPostWhere()] : []),
-          ] },
-          resource === "map-posts" ? 100 : 30,
-        ));
+        const category = z
+          .enum(["FOOD", "NOTICE", "MARKET"])
+          .optional()
+          .parse(params.get("category") ?? undefined);
+        const today = z
+          .enum(["true", "false"])
+          .optional()
+          .parse(params.get("today") ?? undefined);
+        return json(
+          await getPosts(
+            user?.id,
+            params.get("cursor") ?? undefined,
+            {
+              AND: [
+                ...(category ? [{ category }] : []),
+                ...(resource === "map-posts"
+                  ? [
+                      {
+                        category: {
+                          in: ["FOOD", "MARKET"] as ("FOOD" | "MARKET")[],
+                        },
+                        latitude: { not: null },
+                        longitude: { not: null },
+                      },
+                    ]
+                  : []),
+                ...(today === "true" ? [todayPostWhere()] : []),
+              ],
+            },
+            resource === "map-posts" ? 100 : 30,
+          ),
+        );
       }
       if (resource === "posts" && id) {
         if (action === "presence-history") {
@@ -263,13 +328,24 @@ async function handle(
             );
           const occurrence = presenceOccurrence(post);
           const cursor = req.nextUrl.searchParams.get("cursor");
-          const scope = z.enum(["current", "all", "recent", "older"]).parse(req.nextUrl.searchParams.get("scope") ?? "current");
-          const boundary = z.iso.datetime().parse(req.nextUrl.searchParams.get("boundary") ?? new Date(Date.now() - 28 * 86400000).toISOString());
+          const scope = z
+            .enum(["current", "all", "recent", "older"])
+            .parse(req.nextUrl.searchParams.get("scope") ?? "current");
+          const boundary = z.iso
+            .datetime()
+            .parse(
+              req.nextUrl.searchParams.get("boundary") ??
+                new Date(Date.now() - 28 * 86400000).toISOString(),
+            );
           const where = {
             postId: id,
             ...(scope === "current" ? { occurrence } : {}),
-            ...(scope === "recent" ? { observedAt: { gte: new Date(boundary) } } : {}),
-            ...(scope === "older" ? { observedAt: { lt: new Date(boundary) } } : {}),
+            ...(scope === "recent"
+              ? { observedAt: { gte: new Date(boundary) } }
+              : {}),
+            ...(scope === "older"
+              ? { observedAt: { lt: new Date(boundary) } }
+              : {}),
           };
           if (
             cursor &&
@@ -286,9 +362,12 @@ async function handle(
             take: 31,
             ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
           });
-          const hasOlder = scope === "recent" && !!(await db().presenceEvent.findFirst({
-            where: { postId: id, observedAt: { lt: new Date(boundary) } }, select: { id: true },
-          }));
+          const hasOlder =
+            scope === "recent" &&
+            !!(await db().presenceEvent.findFirst({
+              where: { postId: id, observedAt: { lt: new Date(boundary) } },
+              select: { id: true },
+            }));
           return json({
             boundary,
             hasOlder,
@@ -303,9 +382,14 @@ async function handle(
             })),
           });
         }
-        const p = (await getPosts(user?.id, undefined, { id }, 1, true)).posts[0];
+        const p = (await getPosts(user?.id, undefined, { id }, 1, true))
+          .posts[0];
         if (!p) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
-        if ((p.hidden || p.adminDeleted) && p.authorId !== user?.id && user?.permission !== 0)
+        if (
+          (p.hidden || p.adminDeleted) &&
+          p.authorId !== user?.id &&
+          user?.permission !== 0
+        )
           throw new HttpError("숨겨진 글입니다.", 404);
         return json({
           ...p,
@@ -331,45 +415,60 @@ async function handle(
           30,
           tab !== "liked" && tab !== "comments",
         );
-        if (tab === "comments")
-          for (const p of result.posts) {
-            const own = await db().comment.findMany({
-              where: { postId: p.id, authorId: user.id },
-              orderBy: { createdAt: "desc" },
-            });
-            p.comments = own.map((c) => ({
-              id: c.id,
-              body: c.body,
+        if (tab === "comments") {
+          const own = await db().comment.findMany({
+            where: {
+              postId: { in: result.posts.map((p) => p.id) },
               authorId: user.id,
-              author: user.nickname,
-              createdAt: c.createdAt.toISOString(),
-            }));
-          }
+            },
+            orderBy: { createdAt: "desc" },
+          });
+          for (const p of result.posts)
+            p.comments = own
+              .filter((c) => c.postId === p.id)
+              .map((c) => ({
+                id: c.id,
+                body: c.body,
+                authorId: user.id,
+                author: user.nickname,
+                createdAt: c.createdAt.toISOString(),
+              }));
+        }
         return json({ ...result, notifications: await notifications(user.id) });
       }
       throw new HttpError("없는 경로입니다.", 404);
     }
     if (req.headers.get("origin") !== origin())
       throw new HttpError("요청 출처를 확인할 수 없습니다.", 403);
-    if (resource === "posts" && id && action === "presence" && method === "PUT") {
+    if (
+      resource === "posts" &&
+      id &&
+      action === "presence" &&
+      method === "PUT"
+    ) {
       const visitor = (await visitorHash(true))!;
       limit("presence:" + visitor, 10);
       // Nginx overwrites X-Real-IP. This loose limit may cover a shared proxy/IP.
       const ip = req.headers.get("x-real-ip");
       if (ip) limit("presence-ip:" + hash(ip), 300);
-      const { state } = z.object({ state: z.enum(["ARRIVED", "GONE"]) }).parse(await body(req));
-      const post = await db().post.findUnique({ where: { id } });
-      if (!post || post.hidden || post.adminDeleted || post.userDeleted)
-        throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
-      if (post.category !== "FOOD")
-        throw new HttpError("먹거리 소식만 현장 확인할 수 있습니다.");
+      const { state } = z
+        .object({ state: z.enum(["ARRIVED", "GONE"]) })
+        .parse(await body(req));
       await db().$transaction(async (tx) => {
+        if (user) await lockActiveAccount(tx, user.id);
+        await lockPost(tx, id);
+        const post = await tx.post.findUnique({ where: { id } });
+        if (!post || post.hidden || post.adminDeleted || post.userDeleted)
+          throw new HttpError("삭제되었거나 숨겨진 글입니다.", 404);
+        if (post.category !== "FOOD")
+          throw new HttpError("먹거리 소식만 현장 확인할 수 있습니다.");
         // Serialize the visitor's requests so concurrent clicks cannot bypass the cooldown.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${visitor}))`;
         if (user)
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${"presence-user:" + user.id}))`;
         const recent = await tx.visitorPresence.findFirst({
-          where: { visitorHash: visitor }, orderBy: { observedAt: "desc" },
+          where: { visitorHash: visitor },
+          orderBy: { observedAt: "desc" },
         });
         const memberRecent = user
           ? await tx.presence.findFirst({
@@ -448,9 +547,12 @@ async function handle(
       const input = z
         .object({ id: z.string().optional() })
         .parse(await body(req));
-      await db().notification.updateMany({
-        where: { userId: user.id, ...(input.id ? { id: input.id } : {}) },
-        data: { readAt: new Date() },
+      await db().$transaction(async (tx) => {
+        await lockActiveAccount(tx, user.id);
+        await tx.notification.updateMany({
+          where: { userId: user.id, ...(input.id ? { id: input.id } : {}) },
+          data: { readAt: new Date() },
+        });
       });
       return json({ ok: true });
     }
@@ -480,105 +582,167 @@ async function handle(
       const dir = process.env.UPLOAD_DIR || "./data/uploads";
       await mkdir(dir, { recursive: true });
       await writeFile(path.join(dir, name), image);
-      await db().upload.create({ data: { id: name, userId: user.id } });
+      try {
+        await db().$transaction(async (tx) => {
+          await lockActiveAccount(tx, user.id);
+          await tx.upload.create({ data: { id: name, userId: user.id } });
+        });
+      } catch (error) {
+        await unlink(path.join(dir, name)).catch(() => {});
+        throw error;
+      }
       return json({ url: "/api/uploads/" + name }, 201);
     }
-    if (
-      resource === "posts" &&
-      ((!id && method === "POST") || (id && !action && method === "PATCH"))
-    ) {
-      const existing = id
-        ? await db().post.findUnique({ where: { id }, include: { images: true } })
-        : null;
-      if (id && !existing)
-        throw new HttpError("삭제되었거나 없는 글입니다.", 404);
-      if (existing && existing.authorId !== user.id && user.permission !== 0)
-        throw new HttpError("본인 글만 수정할 수 있어요.", 403);
-      if (existing?.adminDeleted)
-        throw new HttpError("관리자가 삭제처리한 글은 수정할 수 없습니다.", 403);
-      if (existing?.userDeleted) throw new HttpError("이미 삭제한 글입니다.", 404);
-      const input = postSchema.parse(await body(req));
-      const { imageUrl, imageUrls, ...fields } = input;
-      const urls = imageUrls ?? (imageUrl ? [imageUrl] : []);
-      const added = urls.filter(url => !existing?.images.some(image => image.url === url));
-      const uploads = await db().upload.findMany({
-        where: { id: { in: added.map(url => url.split("/").at(-1)!) }, userId: user.id },
-        select: { id: true },
-      });
-      if (uploads.length !== added.length)
-        throw new HttpError("직접 업로드한 사진을 선택해주세요.");
-      if (existing) {
-        await db().post.update({
-          where: { id: existing.id },
-          data: { ...fields, images: { deleteMany: {}, create: urls.map((url, position) => ({ url, position })) } },
+    const inputBody = ["POST", "PUT", "PATCH"].includes(method)
+      ? await body(req)
+      : undefined;
+    const accountId = user.id;
+    return await db().$transaction(async (tx) => {
+      const user = await lockActiveAccount(tx, accountId);
+      if (resource === "posts" && id) await lockPost(tx, id);
+      if (resource === "comments" && id) {
+        const comment = await tx.comment.findUnique({
+          where: { id },
+          select: { postId: true },
         });
-        return json({ id: existing.id });
+        if (comment) await lockPost(tx, comment.postId);
       }
-      const post = await db().post.create({
-        data: { ...fields, authorId: user.id, images: { create: urls.map((url, position) => ({ url, position })) } },
-      });
-      return json({ id: post.id }, 201);
-    }
-    if (resource === "posts" && id) {
-      const post = await db().post.findUnique({ where: { id } });
-      if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
-      if (post.userDeleted) throw new HttpError("이미 삭제한 글입니다.", 404);
-      if (method === "DELETE") {
-        if (post.authorId !== user.id) throw new HttpError("본인 글만 삭제할 수 있어요.", 403);
-        if (post.adminDeleted) throw new HttpError("관리자가 삭제처리한 글은 직접 삭제할 수 없습니다.", 403);
-        await db().post.update({ where: { id }, data: { userDeleted: true } });
-        return json({ ok: true });
-      }
-      if (post.adminDeleted) throw new HttpError("관리자가 삭제처리한 글은 변경할 수 없습니다.", 403);
-      if (action === "admin-delete" && method === "PATCH") {
-        if (user.permission !== 0) throw new HttpError("관리자 권한이 필요합니다.", 403);
-        await db().post.update({ where: { id }, data: { adminDeleted: true } });
-        return json({ ok: true });
-      }
-      if (post.hidden && post.authorId !== user.id && user.permission !== 0)
-        throw new HttpError("숨겨진 글입니다.", 404);
-      if (action === "comments" && method === "POST") {
-        const input = commentSchema.parse(await body(req));
-        await db().$transaction(async (tx) => {
-          const c = await tx.comment.create({
-            data: { postId: id, authorId: user.id, ...input },
-          });
-          if (post.authorId !== user.id)
-            await tx.notification.create({
-              data: { userId: post.authorId, postId: id, commentId: c.id },
-            });
-        });
-        return json({ ok: true }, 201);
-      }
-      if (action === "like" && method === "PUT") {
-        const { liked } = z
-          .object({ liked: z.boolean() })
-          .parse(await body(req));
-        if (!(await setAccountLike(user.id, id, liked)))
-          throw new HttpError("이 카카오 계정으로 이미 좋아요한 글입니다. 재가입해도 중복 집계되지 않아요.", 409);
-        return json({ ok: true });
-      }
-
-    }
-    if (resource === "comments" && id && method === "DELETE") {
-      const result = await db().comment.deleteMany({
-        where: {
-          id,
-          authorId: user.id,
-          post: {
-            adminDeleted: false,
-            userDeleted: false,
-            ...(user.permission === 0 ? {} : {
-              OR: [{ hidden: false }, { authorId: user.id }],
-            }),
+      if (
+        resource === "posts" &&
+        ((!id && method === "POST") || (id && !action && method === "PATCH"))
+      ) {
+        const existing = id
+          ? await tx.post.findUnique({
+              where: { id },
+              include: { images: true },
+            })
+          : null;
+        if (id && !existing)
+          throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+        if (existing && existing.authorId !== user.id && user.permission !== 0)
+          throw new HttpError("본인 글만 수정할 수 있어요.", 403);
+        if (existing?.adminDeleted)
+          throw new HttpError(
+            "관리자가 삭제처리한 글은 수정할 수 없습니다.",
+            403,
+          );
+        if (existing?.userDeleted)
+          throw new HttpError("이미 삭제한 글입니다.", 404);
+        const input = postSchema.parse(inputBody);
+        const { imageUrl, imageUrls, ...fields } = input;
+        const urls = imageUrls ?? (imageUrl ? [imageUrl] : []);
+        const added = urls.filter(
+          (url) => !existing?.images.some((image) => image.url === url),
+        );
+        const uploads = await tx.upload.findMany({
+          where: {
+            id: { in: added.map((url) => url.split("/").at(-1)!) },
+            userId: user.id,
           },
-        },
-      });
-      if (!result.count)
-        throw new HttpError("본인의 댓글만 삭제할 수 있습니다.", 403);
-      return json({ ok: true });
-    }
-    throw new HttpError("없는 경로입니다.", 404);
+          select: { id: true },
+        });
+        if (uploads.length !== added.length)
+          throw new HttpError("직접 업로드한 사진을 선택해주세요.");
+        if (existing) {
+          await tx.post.update({
+            where: { id: existing.id },
+            data: {
+              ...fields,
+              images: {
+                deleteMany: {},
+                create: urls.map((url, position) => ({ url, position })),
+              },
+            },
+          });
+          return json({ id: existing.id });
+        }
+        const post = await tx.post.create({
+          data: {
+            ...fields,
+            authorId: user.id,
+            images: {
+              create: urls.map((url, position) => ({ url, position })),
+            },
+          },
+        });
+        return json({ id: post.id }, 201);
+      }
+      if (resource === "posts" && id) {
+        const post = await tx.post.findUnique({ where: { id } });
+        if (!post) throw new HttpError("삭제되었거나 없는 글입니다.", 404);
+        if (post.userDeleted) throw new HttpError("이미 삭제한 글입니다.", 404);
+        if (method === "DELETE") {
+          if (post.authorId !== user.id)
+            throw new HttpError("본인 글만 삭제할 수 있어요.", 403);
+          if (post.adminDeleted)
+            throw new HttpError(
+              "관리자가 삭제처리한 글은 직접 삭제할 수 없습니다.",
+              403,
+            );
+          await tx.post.update({ where: { id }, data: { userDeleted: true } });
+          return json({ ok: true });
+        }
+        if (post.adminDeleted)
+          throw new HttpError(
+            "관리자가 삭제처리한 글은 변경할 수 없습니다.",
+            403,
+          );
+        if (action === "admin-delete" && method === "PATCH") {
+          if (user.permission !== 0)
+            throw new HttpError("관리자 권한이 필요합니다.", 403);
+          await tx.post.update({ where: { id }, data: { adminDeleted: true } });
+          return json({ ok: true });
+        }
+        if (post.hidden && post.authorId !== user.id && user.permission !== 0)
+          throw new HttpError("숨겨진 글입니다.", 404);
+        if (action === "comments" && method === "POST") {
+          const input = commentSchema.parse(inputBody);
+          {
+            const c = await tx.comment.create({
+              data: { postId: id, authorId: user.id, ...input },
+            });
+            if (post.authorId !== user.id)
+              await tx.notification.create({
+                data: { userId: post.authorId, postId: id, commentId: c.id },
+              });
+          }
+          return json({ ok: true }, 201);
+        }
+        if (action === "like" && method === "PUT") {
+          const { liked } = z.object({ liked: z.boolean() }).parse(inputBody);
+          if (!(await setAccountLike(user.id, id, liked, tx)))
+            return json(
+              {
+                error:
+                  "이 카카오 계정으로 이미 좋아요한 글입니다. 재가입해도 중복 집계되지 않아요.",
+              },
+              409,
+            );
+          return json({ ok: true });
+        }
+      }
+      if (resource === "comments" && id && method === "DELETE") {
+        const result = await tx.comment.deleteMany({
+          where: {
+            id,
+            authorId: user.id,
+            post: {
+              adminDeleted: false,
+              userDeleted: false,
+              ...(user.permission === 0
+                ? {}
+                : {
+                    OR: [{ hidden: false }, { authorId: user.id }],
+                  }),
+            },
+          },
+        });
+        if (!result.count)
+          throw new HttpError("본인의 댓글만 삭제할 수 있습니다.", 403);
+        return json({ ok: true });
+      }
+      throw new HttpError("없는 경로입니다.", 404);
+    });
   } catch (e) {
     if (e instanceof z.ZodError)
       return json(

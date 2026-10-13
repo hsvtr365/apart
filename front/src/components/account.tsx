@@ -1,6 +1,7 @@
 "use client";
 import { Settings, Pencil } from "lucide-react";
 import { AccountSettings } from "./account-settings";
+import { usePagedList } from "./use-paged-list";
 import { LoadingMask } from "./loading-mask";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -12,78 +13,63 @@ export function Account() {
   const { data, act, notify, busy } = useVillage();
   const [settings, setSettings] = useState(false);
   const [tab, setTab] = useState("posts"),
-    [editing, setEditing] = useState(false),
-    [rows, setRows] = useState<Post[]>([]),
-    [next, setNext] = useState<string | null>(null),
-    [loading, setLoading] = useState(false),
-    [error, setError] = useState("");
+    [editing, setEditing] = useState(false);
   useEffect(() => {
     if (data?.user && !data.user.building?.trim()) setEditing(true);
   }, [data?.user?.id, data?.user?.building]);
-  useEffect(() => {
-    let active = true;
-    if (!data) return;
-    setError("");
-    if (data.mode === "demo") {
-      const user = data.user;
-      setRows(
-        data.posts.filter((p) =>
-          tab === "liked"
-            ? p.liked
-            : tab === "comments"
-              ? p.comments.some((c) => c.authorId === user?.id)
-              : p.authorId === user?.id,
-        ),
+  const {
+    page,
+    loading,
+    error,
+    more: loadMore,
+  } = usePagedList(
+    `${data?.user?.id ?? "guest"}:${tab}`,
+    !!data?.user && data.mode === "live" && tab !== "received",
+    data,
+    async (cursor, signal) => {
+      const result = await request<{
+        posts: Post[];
+        nextCursor: string | null;
+      }>(
+        "/api/activity?tab=" +
+          tab +
+          (cursor ? "&cursor=" + encodeURIComponent(cursor) : ""),
+        { signal },
       );
-      setNext(null);
-      return;
-    }
-    if (!data.user || tab === "received") return;
-    setLoading(true);
-    request<{ posts: Post[]; nextCursor: string | null }>(
-      "/api/activity?tab=" + tab,
-    )
-      .then((r) => {
-        if (active) {
-          setRows(r.posts);
-          setNext(r.nextCursor);
-        }
-      })
-      .catch((e) => {
-        if (active) setError(e.message);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [data, tab]);
+      return {
+        items: result.posts,
+        nextCursor: result.nextCursor,
+        value: null,
+      };
+    },
+  );
   if (!data) return null;
   const user = data.user;
+  const rows =
+    data.mode === "demo"
+      ? data.posts.filter(
+          (p) =>
+            !p.userDeleted &&
+            (tab === "liked"
+              ? p.liked
+              : tab === "comments"
+                ? p.comments.some((c) => c.authorId === user?.id)
+                : p.authorId === user?.id),
+        )
+      : (page?.items ?? []);
+  const next = page?.nextCursor;
   const tabs = [
     ["posts", "내 글"],
     ["comments", "내 댓글"],
     ["received", "받은 댓글"],
     ["liked", "좋아요"],
   ];
-  async function loadMore() {
-    if (!next) return;
-    try {
-      const result = await request<{
-        posts: Post[];
-        nextCursor: string | null;
-      }>("/api/activity?tab=" + tab + "&cursor=" + encodeURIComponent(next));
-      setRows([...rows, ...result.posts]);
-      setNext(result.nextCursor);
-    } catch (e) {
-      notify((e as Error).message);
-    }
-  }
   return (
     <>
       <h1 className="page-title">내 정보</h1>
-      {settings && user && <AccountSettings onClose={() => setSettings(false)} />}
+      {settings && user && (
+        <AccountSettings onClose={() => setSettings(false)} />
+      )}
       {params.get("login") === "failed" && (
         <p role="alert" className="mb-3 text-red-700">
           카카오 로그인을 완료하지 못했어요. 다시 시도해주세요.
@@ -97,10 +83,28 @@ export function Account() {
                 나
               </span>
               <div>
-                <div className="flex items-center gap-1"><h2>{user.nickname}</h2><button type="button" className="icon-btn text-muted" aria-label="프로필 수정" aria-expanded={editing} onClick={() => setEditing(!editing)}><Pencil size={17} aria-hidden="true" /></button></div>
+                <div className="flex items-center gap-1">
+                  <h2>{user.nickname}</h2>
+                  <button
+                    type="button"
+                    className="icon-btn text-muted"
+                    aria-label="프로필 수정"
+                    aria-expanded={editing}
+                    onClick={() => setEditing(!editing)}
+                  >
+                    <Pencil size={17} aria-hidden="true" />
+                  </button>
+                </div>
                 <small>{user.building || "동 미설정"}</small>
               </div>
-              <button type="button" className="icon-btn ml-auto" aria-label="계정 설정" onClick={() => setSettings(true)}><Settings size={22} aria-hidden="true" /></button>
+              <button
+                type="button"
+                className="icon-btn ml-auto"
+                aria-label="계정 설정"
+                onClick={() => setSettings(true)}
+              >
+                <Settings size={22} aria-hidden="true" />
+              </button>
             </div>
             {editing && (
               <form
@@ -169,7 +173,6 @@ export function Account() {
                   ? "예시 프로필 · 새로고침하면 초기화됩니다."
                   : "카카오 계정으로 로그인됨"}
               </small>
-
             </div>
           </>
         ) : (
@@ -229,7 +232,7 @@ export function Account() {
             </div>
           )}
           {error && <p role="alert">{error}</p>}
-          {loading ? (
+          {loading && tab !== "received" && !rows.length ? (
             <LoadingMask />
           ) : tab === "received" ? (
             <>
@@ -272,13 +275,21 @@ export function Account() {
                 ) : (
                   <Link className="row" key={p.id} href={"/post/" + p.id}>
                     <div className="flex items-center justify-between gap-2">
-                      <b>{p.adminDeleted && <span className="text-red-700">관리자가 삭제처리 · </span>}{p.title}</b>
-                      {p.hidden && !p.adminDeleted && <small className="shrink-0">숨김</small>}
+                      <b>
+                        {p.adminDeleted && (
+                          <span className="text-red-700">
+                            관리자가 삭제처리 ·{" "}
+                          </span>
+                        )}
+                        {p.title}
+                      </b>
+                      {p.hidden && !p.adminDeleted && (
+                        <small className="shrink-0">숨김</small>
+                      )}
                     </div>
                     <p className="my-1 line-clamp-2">{p.body}</p>
                     <small>
-                      {categories[p.category]} · 댓글{" "}
-                      {p.commentCount}
+                      {categories[p.category]} · 댓글 {p.commentCount}
                     </small>
                   </Link>
                 ),
@@ -305,6 +316,7 @@ export function Account() {
               {next && (
                 <button
                   className="btn btn-secondary mt-3 w-full"
+                  disabled={loading}
                   onClick={() => void loadMore()}
                 >
                   더 불러오기

@@ -1,15 +1,39 @@
 "use client";
+import { thumbnailUrl } from "@/lib/images";
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-export function PostImages({ urls, alt, href, onIndexChange }: { urls: string[]; alt: string; href?: string; onIndexChange?: (index: number) => void }) {
+export function PostImages({
+  urls,
+  alt,
+  href,
+  onIndexChange,
+}: {
+  urls: string[];
+  alt: string;
+  href?: string;
+  onIndexChange?: (index: number) => void;
+}) {
   const [index, setIndex] = useState(0);
   const current = Math.min(index, urls.length - 1);
-  function change(next: number) { setIndex(next); onIndexChange?.(next); }
-  const source = urls[current].startsWith("/api/uploads/") ? urls[current] + "?size=feed" : urls[current];
+  function change(next: number) {
+    setIndex(next);
+    onIndexChange?.(next);
+  }
+  const source = thumbnailUrl(urls[current])!;
   return (
     <div className="post-image-gallery">
-      {href ? <Link href={href} scroll={false} aria-label={alt + " 사진으로 상세 보기"}><img src={source} alt={alt} loading="lazy" decoding="async" /></Link> : <img src={source} alt={alt} loading="lazy" decoding="async" />}
+      {href ? (
+        <Link
+          href={href}
+          scroll={false}
+          aria-label={alt + " 사진으로 상세 보기"}
+        >
+          <img src={source} alt={alt} loading="lazy" decoding="async" />
+        </Link>
+      ) : (
+        <img src={source} alt={alt} loading="lazy" decoding="async" />
+      )}
       {urls.length > 1 && (
         <>
           <span className="photo-counter">

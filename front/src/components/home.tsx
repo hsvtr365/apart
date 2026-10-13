@@ -1,4 +1,5 @@
 "use client";
+import { thumbnailUrl } from "@/lib/images";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useVillage } from "./store";
@@ -36,10 +37,15 @@ export function FeedTabs({ selected = "all" }: { selected?: string }) {
             selected.toUpperCase() === key.toUpperCase() ? "page" : undefined
           }
         >
-          {key === "all" ? <LayoutGrid size={18} aria-hidden="true" /> :
-            key === "FOOD" ? <Utensils size={18} aria-hidden="true" /> :
-            key === "NOTICE" ? <Building2 size={18} aria-hidden="true" /> :
-            <Store size={18} aria-hidden="true" />}
+          {key === "all" ? (
+            <LayoutGrid size={18} aria-hidden="true" />
+          ) : key === "FOOD" ? (
+            <Utensils size={18} aria-hidden="true" />
+          ) : key === "NOTICE" ? (
+            <Building2 size={18} aria-hidden="true" />
+          ) : (
+            <Store size={18} aria-hidden="true" />
+          )}
           {label}
         </Link>
       ))}
@@ -203,7 +209,11 @@ function HomeNewsSection({
                 <div className="notice-card-content">
                   <div className="notice-card-title-row">
                     <b className="news-card-title">{p.title}</b>
-                    <ChevronRight className="notice-card-arrow" size={16} aria-hidden="true" />
+                    <ChevronRight
+                      className="notice-card-arrow"
+                      size={16}
+                      aria-hidden="true"
+                    />
                   </div>
                   <p className="news-card-body">{p.body}</p>
                 </div>
@@ -226,7 +236,7 @@ function HomeNewsSection({
                   className="news-card-image"
                   aria-hidden="true"
                   style={{
-                    backgroundImage: `url("${p.imageUrl || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}")`,
+                    backgroundImage: `url("${thumbnailUrl(p.imageUrl) || (p.category === "MARKET" ? "/market.svg" : "/food.svg")}")`,
                   }}
                 />
               </>
@@ -259,20 +269,22 @@ export function Home() {
       <div className="grid md:grid-cols-2 md:gap-x-6">
         {sources.slice(start, end).map((s) => (
           <div key={s.name} className="min-w-0">
-          <a
-            className="row flex items-center justify-between gap-3"
-            href={s.url}
-            key={s.name}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span>
-              <b className="block">{s.name}</b>
-              <small className="mt-1 block">{s.description}</small>
-            </span>
-            <ExternalLink size={18} aria-hidden="true" />
-          </a>
-          {s.url.startsWith("https://www.instagram.com/") && <InstagramEmbed url={s.url} name={s.name} />}
+            <a
+              className="row flex items-center justify-between gap-3"
+              href={s.url}
+              key={s.name}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>
+                <b className="block">{s.name}</b>
+                <small className="mt-1 block">{s.description}</small>
+              </span>
+              <ExternalLink size={18} aria-hidden="true" />
+            </a>
+            {s.url.startsWith("https://www.instagram.com/") && (
+              <InstagramEmbed url={s.url} name={s.name} />
+            )}
           </div>
         ))}
       </div>
@@ -307,8 +319,8 @@ export function Home() {
             <Link
               key={key}
               scroll={false}
-          href={key === "all" ? "/feed" : "/feed/" + key.toLowerCase()}
-              className={`home-feed-filter category-${key.toLowerCase()}` + (key === "all" ? " active" : "")}
+              href={key === "all" ? "/feed" : "/feed/" + key.toLowerCase()}
+              className={`home-feed-filter category-${key.toLowerCase()}`}
             >
               {key === "all" ? (
                 <LayoutGrid size={19} aria-hidden="true" />
@@ -333,7 +345,8 @@ export function Home() {
       {group(0, 4)}
       <details open>
         <summary className="min-h-11 cursor-pointer py-3">
-          고양시 기관·문화 채널 <small className="float-right">{sources.length - 4}곳</small>
+          고양시 기관·문화 채널{" "}
+          <small className="float-right">{sources.length - 4}곳</small>
         </summary>
         {group(4, sources.length)}
       </details>

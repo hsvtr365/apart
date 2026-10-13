@@ -109,93 +109,100 @@ export function LifeReportFields({
           ))}
         </div>
       </fieldset>
-      {scheduleType === "WEEKLY" && (
-        <fieldset className="mt-3">
-          <legend className="field">오는 요일 · 선택</legend>
-          <div className="choice-row">
-            {weekdayLabels.map((label, day) => (
-              <label key={day} className="choice-chip">
-                <input
-                  type="checkbox"
-                  name="weekdays"
-                  value={day}
-                  defaultChecked={post?.weekdays.includes(day)}
+      <fieldset
+        className="mt-3"
+        hidden={scheduleType !== "WEEKLY"}
+        disabled={scheduleType !== "WEEKLY"}
+      >
+        <legend className="field">오는 요일 · 선택</legend>
+        <div className="choice-row">
+          {weekdayLabels.map((label, day) => (
+            <label key={day} className="choice-chip">
+              <input
+                type="checkbox"
+                name="weekdays"
+                value={day}
+                defaultChecked={post?.weekdays.includes(day)}
+              />
+              <span>
+                {label}
+                <Square
+                  className="choice-square"
+                  size={18}
+                  aria-hidden="true"
                 />
-                <span>
-                  {label}
-                  <Square
-                    className="choice-square"
-                    size={18}
-                    aria-hidden="true"
-                  />
-                  <SquareCheck
-                    className="choice-square-checked"
-                    size={18}
-                    aria-hidden="true"
-                  />
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-      {scheduleType === "ONCE" && (
-        <div className="grid grid-cols-2 gap-3">
-          <label>
-            <span className="field">열리는 날</span>
-            <input
-              type="date"
-              name="startDate"
-              required
-              defaultValue={post?.startDate ?? ""}
-            />
-          </label>
-          <label>
-            <span className="field">가는 날 · 선택</span>
-            <input
-              type="date"
-              name="finishDate"
-              defaultValue={post?.finishDate ?? ""}
-            />
-          </label>
+                <SquareCheck
+                  className="choice-square-checked"
+                  size={18}
+                  aria-hidden="true"
+                />
+              </span>
+            </label>
+          ))}
         </div>
-      )}
+      </fieldset>
+      <fieldset
+        className="grid grid-cols-2 gap-3"
+        hidden={scheduleType !== "ONCE"}
+        disabled={scheduleType !== "ONCE"}
+      >
+        <label>
+          <span className="field">열리는 날</span>
+          <input
+            type="date"
+            name="startDate"
+            required
+            defaultValue={post?.startDate ?? ""}
+          />
+        </label>
+        <label>
+          <span className="field">가는 날 · 선택</span>
+          <input
+            type="date"
+            name="finishDate"
+            defaultValue={post?.finishDate ?? ""}
+          />
+        </label>
+      </fieldset>
       <TimePicker
         arrival={post?.arrivalTime ?? null}
         departure={post?.departureTime ?? null}
       />
-      {scheduleType === "WEEKLY" && (
-        <fieldset className="mt-3">
-          <legend className="field">오는 계절 · 선택</legend>
-          <div className="choice-row">
-            {Object.entries(seasonLabels).map(([value, label]) => (
-              <label key={value} className="choice-chip">
-                <input
-                  type="checkbox"
-                  name="seasons"
-                  value={value}
-                  defaultChecked={post?.seasons.includes(value)}
+      <fieldset
+        className="mt-3"
+        hidden={scheduleType !== "WEEKLY"}
+        disabled={scheduleType !== "WEEKLY"}
+      >
+        <legend className="field">오는 계절 · 선택</legend>
+        <div className="choice-row">
+          {Object.entries(seasonLabels).map(([value, label]) => (
+            <label key={value} className="choice-chip">
+              <input
+                type="checkbox"
+                name="seasons"
+                value={value}
+                defaultChecked={post?.seasons.includes(value)}
+              />
+              <span>
+                {label}
+                <Square
+                  className="choice-square"
+                  size={18}
+                  aria-hidden="true"
                 />
-                <span>
-                  {label}
-                  <Square
-                    className="choice-square"
-                    size={18}
-                    aria-hidden="true"
-                  />
-                  <SquareCheck
-                    className="choice-square-checked"
-                    size={18}
-                    aria-hidden="true"
-                  />
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
+                <SquareCheck
+                  className="choice-square-checked"
+                  size={18}
+                  aria-hidden="true"
+                />
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       <small className="mt-2 block text-muted">
-        요일·시간·계절은 아는 정보만 선택해주세요.
+        요일·시간·계절은 아는 정보만 선택해주세요. 요일을 비워두면 선택한 계절의
+        모든 날짜에 표시됩니다.
       </small>
     </>
   );

@@ -7,7 +7,12 @@ import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import pg from "pg";
 import { db } from "../src/lib/db";
-import { loginAccount, purgeExpiredAccountData, oneYearAfter, withdrawnNickname } from "../src/lib/account-retention";
+import {
+  loginAccount,
+  purgeExpiredAccountData,
+  oneYearAfter,
+  withdrawnNickname,
+} from "../src/lib/account-retention";
 import { presenceOccurrence, visitorAlias } from "../src/lib/presence";
 
 const originalUrl = process.env.DATABASE_URL;
@@ -51,15 +56,14 @@ try {
   await admin.query('CREATE DATABASE "' + databaseName + '"');
   created = true;
   process.env.DATABASE_URL = testUrl.toString();
-  process.env.ABUSE_HMAC_SECRET = "isolated-test-secret-" + randomBytes(32).toString("hex");
+  process.env.ABUSE_HMAC_SECRET =
+    "isolated-test-secret-" + randomBytes(32).toString("hex");
   const env = { ...process.env, APP_URL: base, DEMO_MODE: "false" };
-  // Historical migrations have an unrelated fresh-install ordering issue. Bootstrap
-  // only this disposable database, then execute the new migration independently.
-  const migration = spawn(
-    process.execPath,
-    ["node_modules/prisma/build/index.js", "db", "push"],
-    { env, stdio: "pipe", windowsHide: true },
-  );
+  const migration = spawn(process.execPath, ["scripts/migrate.cjs"], {
+    env,
+    stdio: "pipe",
+    windowsHide: true,
+  });
   let migrationOutput = "";
   migration.stdout?.on("data", (chunk) => {
     migrationOutput += chunk;
@@ -75,24 +79,16 @@ try {
         .replace(/postgres(?:ql)?:\/\/\S+/g, "[database URL]"),
     );
   assert.equal(migrationExit, 0, "Disposable database migrations failed");
-  const setup = new pg.Client({ connectionString: testUrl.toString() });
-  await setup.connect();
-  try {
-    await setup.query('DROP TABLE "PresenceEvent"');
-    await setup.query(
-      'ALTER TABLE "Presence" DROP COLUMN "occurrence"; ALTER TABLE "VisitorPresence" DROP COLUMN "occurrence"',
-    );
-    await setup.query(
-      await readFile(
-        "prisma/migrations/202610120001_presence_events/migration.sql",
-        "utf8",
-      ),
-    );
-    await setup.query('DROP TABLE "AccountSecurityEvent"; DROP TABLE "NicknameChangeLog"; ALTER TABLE "Like" DROP COLUMN "abuseIdentityId"; ALTER TABLE "User" DROP COLUMN "abuseIdentityId", DROP COLUMN "abuseLinkExpiresAt", DROP COLUMN "withdrawnAt"; DROP TABLE "AbuseIdentity"');
-    await setup.query(await readFile("prisma/migrations/202610130001_account_retention/migration.sql", "utf8"));
-  } finally {
-    await setup.end();
-  }
+  const repeatMigration = spawn(process.execPath, ["scripts/migrate.cjs"], {
+    env,
+    stdio: "ignore",
+    windowsHide: true,
+  });
+  assert.equal(
+    (await once(repeatMigration, "exit"))[0],
+    0,
+    "Migration rerun must preserve initialized database",
+  );
   server = spawn(
     process.execPath,
     [
@@ -116,7 +112,9 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   assert(ready, "Isolated test server did not start");
-  const user = await db().user.create({ data: { nickname: "확인하는이웃", kakaoId: "test-kakao-identity" } });
+  const user = await db().user.create({
+    data: { nickname: "확인하는이웃", kakaoId: "test-kakao-identity" },
+  });
   const token = randomBytes(32).toString("hex");
   await db().session.create({
     data: {
@@ -296,11 +294,23 @@ try {
     (await call(url + "/presence-history", memberCookie)).status,
     404,
   );
-  const adminDeletedBefore = await db().post.findUnique({ where: { id: post.id } });
+  const adminDeletedBefore = await db().post.findUnique({
+    where: { id: post.id },
+  });
   assert.equal((await call(url, memberCookie, "PATCH", {})).status, 403);
-  assert.equal((await call(url + "/like", memberCookie, "PUT", { liked: true })).status, 403);
-  assert.equal((await call(url + "/comments", memberCookie, "POST", { body: "차단" })).status, 403);
-  assert.deepEqual(await db().post.findUnique({ where: { id: post.id } }), adminDeletedBefore);
+  assert.equal(
+    (await call(url + "/like", memberCookie, "PUT", { liked: true })).status,
+    403,
+  );
+  assert.equal(
+    (await call(url + "/comments", memberCookie, "POST", { body: "차단" }))
+      .status,
+    403,
+  );
+  assert.deepEqual(
+    await db().post.findUnique({ where: { id: post.id } }),
+    adminDeletedBefore,
+  );
   await db().post.update({
     where: { id: post.id },
     data: { adminDeleted: false, userDeleted: true },
@@ -315,79 +325,271 @@ try {
     404,
   );
   assert.equal((await call(url, memberCookie, "PATCH", {})).status, 404);
-  const deletedComment = await db().comment.create({ data: { postId: post.id, authorId: user.id, body: "삭제 차단 검사" } });
+  const deletedComment = await db().comment.create({
+    data: { postId: post.id, authorId: user.id, body: "삭제 차단 검사" },
+  });
   const before = await db().post.findUnique({ where: { id: post.id } });
-  const eventsBefore = await db().presenceEvent.count({ where: { postId: post.id } });
-  assert.equal((await call(url + "/like", memberCookie, "PUT", { liked: true })).status, 404);
-  assert.equal((await call(url + "/comments", memberCookie, "POST", { body: "차단" })).status, 404);
-  assert.equal((await call("comments/" + deletedComment.id, memberCookie, "DELETE")).status, 403);
+  const eventsBefore = await db().presenceEvent.count({
+    where: { postId: post.id },
+  });
+  assert.equal(
+    (await call(url + "/like", memberCookie, "PUT", { liked: true })).status,
+    404,
+  );
+  assert.equal(
+    (await call(url + "/comments", memberCookie, "POST", { body: "차단" }))
+      .status,
+    404,
+  );
+  assert.equal(
+    (await call("comments/" + deletedComment.id, memberCookie, "DELETE"))
+      .status,
+    403,
+  );
   assert.equal((await call(url, memberCookie, "DELETE")).status, 404);
-  assert.deepEqual(await db().post.findUnique({ where: { id: post.id } }), before);
-  assert.equal(await db().presenceEvent.count({ where: { postId: post.id } }), eventsBefore);
+  assert.deepEqual(
+    await db().post.findUnique({ where: { id: post.id } }),
+    before,
+  );
+  assert.equal(
+    await db().presenceEvent.count({ where: { postId: post.id } }),
+    eventsBefore,
+  );
   assert.equal(await db().comment.count({ where: { postId: post.id } }), 1);
   assert.equal(await db().like.count({ where: { postId: post.id } }), 0);
 
-  const old = await db().post.create({ data: {
-    authorId: user.id, title: "오래된 오늘 장터", body: "최신 30개 밖의 유효 일정", category: "MARKET",
-    latitude: 37.64, longitude: 126.83, createdAt: new Date("2020-01-01"), weekdays: [],
-  } });
-  await db().post.createMany({ data: Array.from({ length: 35 }, (_, index) => ({
-    authorId: user.id, title: "새 공고 " + index, body: "분류 검사", category: "NOTICE" as const,
-  })) });
+  const old = await db().post.create({
+    data: {
+      authorId: user.id,
+      title: "오래된 오늘 장터",
+      body: "최신 30개 밖의 유효 일정",
+      category: "MARKET",
+      latitude: 37.64,
+      longitude: 126.83,
+      createdAt: new Date("2020-01-01"),
+      weekdays: [],
+    },
+  });
+  await db().post.createMany({
+    data: Array.from({ length: 35 }, (_, index) => ({
+      authorId: user.id,
+      title: "새 공고 " + index,
+      body: "분류 검사",
+      category: "NOTICE" as const,
+    })),
+  });
   const bootstrap = (await call("bootstrap")).data;
   assert.equal(bootstrap.posts.length, 30);
   assert(!bootstrap.posts.some((p: { id: string }) => p.id === old.id));
-  assert((await call("posts?category=MARKET")).data.posts.some((p: { id: string }) => p.id === old.id));
-  assert((await call("map-posts?today=true")).data.posts.some((p: { id: string }) => p.id === old.id));
+  assert(
+    (await call("posts?category=MARKET")).data.posts.some(
+      (p: { id: string }) => p.id === old.id,
+    ),
+  );
+  assert(
+    (await call("map-posts?today=true")).data.posts.some(
+      (p: { id: string }) => p.id === old.id,
+    ),
+  );
   assert.equal((await call("posts/" + old.id)).status, 200);
   assert.equal((await call("posts?category=WRONG")).status, 400);
   assert.equal((await call("map-posts?today=WRONG")).status, 400);
   const notices = (await call("posts?category=NOTICE")).data;
-  const nextNotices = (await call("posts?category=NOTICE&cursor=" + notices.nextCursor)).data;
+  const nextNotices = (
+    await call("posts?category=NOTICE&cursor=" + notices.nextCursor)
+  ).data;
   assert.equal(notices.posts.length, 30);
   assert.equal(nextNotices.posts.length, 5);
   assert.equal(nextNotices.nextCursor, null);
-  assert(nextNotices.posts.every((p: { category: string }) => p.category === "NOTICE"));
-  await db().post.createMany({ data: Array.from({ length: 105 }, (_, index) => ({
-    authorId: user.id, title: "지도 검사 " + index, body: "홈 카드 제한과 무관", category: "MARKET" as const,
-    latitude: 37.64, longitude: 126.83, weekdays: [],
-  })) });
+  assert(
+    nextNotices.posts.every(
+      (p: { category: string }) => p.category === "NOTICE",
+    ),
+  );
+  await db().post.createMany({
+    data: Array.from({ length: 105 }, (_, index) => ({
+      authorId: user.id,
+      title: "지도 검사 " + index,
+      body: "홈 카드 제한과 무관",
+      category: "MARKET" as const,
+      latitude: 37.64,
+      longitude: 126.83,
+      weekdays: [],
+    })),
+  });
   const mapFirst = (await call("map-posts?category=MARKET&today=true")).data;
-  const mapNext = (await call("map-posts?category=MARKET&today=true&cursor=" + mapFirst.nextCursor)).data;
+  const mapNext = (
+    await call(
+      "map-posts?category=MARKET&today=true&cursor=" + mapFirst.nextCursor,
+    )
+  ).data;
   assert.equal(mapFirst.posts.length, 100);
   assert.equal(mapNext.posts.length, 6);
   assert.equal(mapNext.nextCursor, null);
-  assert.equal(new Set([...mapFirst.posts, ...mapNext.posts].map(p => p.id)).size, 106);
+  assert.equal(
+    new Set([...mapFirst.posts, ...mapNext.posts].map((p) => p.id)).size,
+    106,
+  );
   await db().post.update({ where: { id: old.id }, data: { hidden: true } });
-  assert(!(await call("map-posts?category=MARKET&cursor=" + mapFirst.nextCursor)).data.posts.some((p: { id: string }) => p.id === old.id));
-  const historyPost = await db().post.create({ data: { authorId: user.id, title: "기록 페이지 검사", body: "임시", category: "FOOD" } });
+  assert(
+    !(
+      await call("map-posts?category=MARKET&cursor=" + mapFirst.nextCursor)
+    ).data.posts.some((p: { id: string }) => p.id === old.id),
+  );
+  const historyPost = await db().post.create({
+    data: {
+      authorId: user.id,
+      title: "기록 페이지 검사",
+      body: "임시",
+      category: "FOOD",
+    },
+  });
   const boundary = new Date(Date.now() - 28 * 86400000).toISOString();
-  await db().presenceEvent.createMany({ data: Array.from({ length: 64 }, (_, i) => ({
-    postId: historyPost.id, visitorHash: hash, state: "ARRIVED" as const, occurrence: "WEEKLY:2026-09-01",
-    observedAt: new Date(new Date(boundary).getTime() + (i - 31) * 1000),
-  })) });
+  await db().presenceEvent.createMany({
+    data: Array.from({ length: 64 }, (_, i) => ({
+      postId: historyPost.id,
+      visitorHash: hash,
+      state: "ARRIVED" as const,
+      occurrence: "WEEKLY:2026-09-01",
+      observedAt: new Date(new Date(boundary).getTime() + (i - 31) * 1000),
+    })),
+  });
   const historyUrl = `posts/${historyPost.id}/presence-history?boundary=${encodeURIComponent(boundary)}`;
   const recentFirst = (await call(historyUrl + "&scope=recent")).data;
-  const recentNext = (await call(historyUrl + "&scope=recent&cursor=" + recentFirst.nextCursor)).data;
+  const recentNext = (
+    await call(historyUrl + "&scope=recent&cursor=" + recentFirst.nextCursor)
+  ).data;
   assert.equal(recentFirst.logs.length, 30);
   assert.equal(recentNext.logs.length, 3);
   assert.equal(recentNext.nextCursor, null);
   assert.equal(recentNext.hasOlder, true);
   const olderFirst = (await call(historyUrl + "&scope=older")).data;
-  const olderNext = (await call(historyUrl + "&scope=older&cursor=" + olderFirst.nextCursor)).data;
+  const olderNext = (
+    await call(historyUrl + "&scope=older&cursor=" + olderFirst.nextCursor)
+  ).data;
   assert.equal(olderFirst.logs.length, 30);
   assert.equal(olderNext.logs.length, 1);
   assert.equal(olderNext.nextCursor, null);
   assert.equal(olderNext.hasOlder, false);
-  assert.equal(new Set([...recentFirst.logs, ...recentNext.logs, ...olderFirst.logs, ...olderNext.logs].map(log => log.id)).size, 64);
-  assert.equal((await call(historyUrl + "&scope=older&cursor=" + recentFirst.logs[0].id)).status, 400);
-  assert.equal((await call(`posts/${historyPost.id}/presence-history?scope=recent&boundary=bad`)).status, 400);
-  assert.equal((await call("account", "", "DELETE", { confirm: true })).status, 401);
-  assert.equal((await call("account", memberCookie, "DELETE", { confirm: false })).status, 400);
+  assert.equal(
+    new Set(
+      [
+        ...recentFirst.logs,
+        ...recentNext.logs,
+        ...olderFirst.logs,
+        ...olderNext.logs,
+      ].map((log) => log.id),
+    ).size,
+    64,
+  );
+  assert.equal(
+    (await call(historyUrl + "&scope=older&cursor=" + recentFirst.logs[0].id))
+      .status,
+    400,
+  );
+  assert.equal(
+    (
+      await call(
+        `posts/${historyPost.id}/presence-history?scope=recent&boundary=bad`,
+      )
+    ).status,
+    400,
+  );
+  // Hold the same locks as withdrawal/deletion while an already-authenticated request waits.
+  const raceUser = await db().user.create({ data: { nickname: "동시성검증" } });
+  const raceToken = randomBytes(32).toString("hex");
+  await db().session.create({
+    data: {
+      userId: raceUser.id,
+      tokenHash: createHash("sha256").update(raceToken).digest("hex"),
+      expiresAt: new Date(Date.now() + 3600000),
+    },
+  });
+  const raceCookie = "village_session=" + raceToken;
+  const blocker = new pg.Client({ connectionString: testUrl.toString() });
+  await blocker.connect();
+  async function waitForBlockedWrite() {
+    for (let i = 0; i < 100; i++) {
+      const waiting = await blocker.query(
+        "SELECT 1 FROM pg_locks WHERE locktype='advisory' AND NOT granted AND database=(SELECT oid FROM pg_database WHERE datname=current_database())",
+      );
+      if (waiting.rowCount) return;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    throw new Error("Write did not wait for the shared mutation lock");
+  }
+  try {
+    await blocker.query("BEGIN");
+    await blocker.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      "account:" + raceUser.id,
+    ]);
+    const pendingPost = call("posts", raceCookie, "POST", {
+      title: "차단대상",
+      body: "탈퇴 이후 저장 금지",
+      category: "FOOD",
+      mapX: null,
+      mapY: null,
+    });
+    await waitForBlockedWrite();
+    await blocker.query('UPDATE "User" SET "withdrawnAt"=now() WHERE id=$1', [
+      raceUser.id,
+    ]);
+    await blocker.query("COMMIT");
+    assert.equal((await pendingPost).status, 401);
+    assert.equal(
+      await db().post.count({ where: { authorId: raceUser.id } }),
+      0,
+    );
+    await blocker.query("BEGIN");
+    await blocker.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      "post:" + historyPost.id,
+    ]);
+    const pendingComment = call(
+      `posts/${historyPost.id}/comments`,
+      memberCookie,
+      "POST",
+      { body: "삭제 이후 저장 금지" },
+    );
+    await waitForBlockedWrite();
+    await blocker.query('UPDATE "Post" SET "adminDeleted"=true WHERE id=$1', [
+      historyPost.id,
+    ]);
+    await blocker.query("COMMIT");
+    assert.equal((await pendingComment).status, 403);
+    assert.equal(
+      await db().comment.count({ where: { postId: historyPost.id } }),
+      0,
+    );
+    await db().post.update({
+      where: { id: historyPost.id },
+      data: { adminDeleted: false },
+    });
+  } finally {
+    await blocker.query("ROLLBACK");
+    await blocker.end();
+  }
+  console.log(
+    "PASS empty database migration + rerun; withdrawal/deletion blocked in-flight writes",
+  );
+  assert.equal(
+    (await call("account", "", "DELETE", { confirm: true })).status,
+    401,
+  );
+  assert.equal(
+    (await call("account", memberCookie, "DELETE", { confirm: false })).status,
+    400,
+  );
   await db().like.create({ data: { userId: user.id, postId: old.id } });
-  const authoredBefore = await db().post.count({ where: { authorId: user.id } });
-  const commentsBefore = await db().comment.count({ where: { authorId: user.id } });
-  assert.equal((await call("account", memberCookie, "DELETE", { confirm: true })).status, 200);
+  const authoredBefore = await db().post.count({
+    where: { authorId: user.id },
+  });
+  const commentsBefore = await db().comment.count({
+    where: { authorId: user.id },
+  });
+  assert.equal(
+    (await call("account", memberCookie, "DELETE", { confirm: true })).status,
+    200,
+  );
   const retired = await db().user.findUniqueOrThrow({ where: { id: user.id } });
   assert(retired.withdrawnAt);
   assert.equal(retired.kakaoId, null);
@@ -395,54 +597,159 @@ try {
   assert.equal(retired.building, null);
   assert.equal(await db().session.count({ where: { userId: user.id } }), 0);
   assert.equal(await db().like.count({ where: { userId: user.id } }), 1);
-  assert.equal(await db().post.count({ where: { authorId: user.id } }), authoredBefore);
-  assert.equal(await db().comment.count({ where: { authorId: user.id } }), commentsBefore);
+  assert.equal(
+    await db().post.count({ where: { authorId: user.id } }),
+    authoredBefore,
+  );
+  assert.equal(
+    await db().comment.count({ where: { authorId: user.id } }),
+    commentsBefore,
+  );
   assert.equal((await call("bootstrap", memberCookie)).data.user, null);
-  assert.equal((await call(`posts/${historyPost.id}`)).data.author, withdrawnNickname(user.id));
-  const joined = await Promise.all([loginAccount("test-kakao-identity"), loginAccount("test-kakao-identity")]);
+  assert.equal(
+    (await call(`posts/${historyPost.id}`)).data.author,
+    withdrawnNickname(user.id),
+  );
+  const joined = await Promise.all([
+    loginAccount("test-kakao-identity"),
+    loginAccount("test-kakao-identity"),
+  ]);
   assert.equal(joined[0].id, joined[1].id);
   const rejoined = joined[0];
   assert.notEqual(rejoined.id, user.id);
   assert.equal(rejoined.abuseIdentityId, retired.abuseIdentityId);
   const sessionToken = randomBytes(32).toString("hex");
-  await db().session.create({ data: { userId: rejoined.id, tokenHash: createHash("sha256").update(sessionToken).digest("hex"), expiresAt: new Date(Date.now() + 3600000) } });
+  await db().session.create({
+    data: {
+      userId: rejoined.id,
+      tokenHash: createHash("sha256").update(sessionToken).digest("hex"),
+      expiresAt: new Date(Date.now() + 3600000),
+    },
+  });
   const rejoinedCookie = "village_session=" + sessionToken;
-  assert.equal((await call("account-audit?userId=" + rejoined.id, rejoinedCookie)).status, 403);
-  await db().user.update({ where: { id: rejoined.id }, data: { permission: 0 } });
-  const audit = await call("account-audit?userId=" + rejoined.id, rejoinedCookie);
+  assert.equal(
+    (await call("account-audit?userId=" + rejoined.id, rejoinedCookie)).status,
+    403,
+  );
+  await db().user.update({
+    where: { id: rejoined.id },
+    data: { permission: 0 },
+  });
+  const audit = await call(
+    "account-audit?userId=" + rejoined.id,
+    rejoinedCookie,
+  );
   assert.equal(audit.status, 200);
   assert.equal(audit.data.accounts.length, 2);
   assert(!JSON.stringify(audit.data).includes(retired.abuseIdentityId!));
-  await db().user.update({ where: { id: rejoined.id }, data: { permission: 1 } });
+  await db().user.update({
+    where: { id: rejoined.id },
+    data: { permission: 1 },
+  });
   await db().post.update({ where: { id: old.id }, data: { hidden: false } });
   const attempts = await Promise.all([
     call(`posts/${old.id}/like`, rejoinedCookie, "PUT", { liked: true }),
     call(`posts/${old.id}/like`, rejoinedCookie, "PUT", { liked: true }),
   ]);
-  assert.deepEqual(attempts.map(r => r.status), [409, 409]);
+  assert.deepEqual(
+    attempts.map((r) => r.status),
+    [409, 409],
+  );
   assert.equal(await db().like.count({ where: { postId: old.id } }), 1);
-  assert.equal(await db().accountSecurityEvent.count({ where: { userId: rejoined.id, reason: "DUPLICATE_LIKE" } }), 2);
-  assert.equal((await call("profile", rejoinedCookie, "PATCH", { nickname: "새 닉네임", building: "2001동" })).status, 200);
-  assert.equal((await call("profile", rejoinedCookie, "PATCH", { nickname: "새 닉네임", building: "2002동" })).status, 200);
-  assert.equal(await db().nicknameChangeLog.count({ where: { userId: rejoined.id, reason: "USER_EDIT" } }), 1);
-  await db().nicknameChangeLog.updateMany({ where: { userId: user.id }, data: { expiresAt: new Date(0) } });
-  await db().user.update({ where: { id: user.id }, data: { abuseLinkExpiresAt: new Date(0) } });
+  assert.equal(
+    await db().accountSecurityEvent.count({
+      where: { userId: rejoined.id, reason: "DUPLICATE_LIKE" },
+    }),
+    2,
+  );
+  assert.equal(
+    (
+      await call("profile", rejoinedCookie, "PATCH", {
+        nickname: "새 닉네임",
+        building: "2001동",
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await call("profile", rejoinedCookie, "PATCH", {
+        nickname: "새 닉네임",
+        building: "2002동",
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    await db().nicknameChangeLog.count({
+      where: { userId: rejoined.id, reason: "USER_EDIT" },
+    }),
+    1,
+  );
+  await db().nicknameChangeLog.updateMany({
+    where: { userId: user.id },
+    data: { expiresAt: new Date(0) },
+  });
+  await db().user.update({
+    where: { id: user.id },
+    data: { abuseLinkExpiresAt: new Date(0) },
+  });
+  assert.equal(
+    (await call(`posts/${old.id}/like`, rejoinedCookie, "PUT", { liked: true }))
+      .status,
+    200,
+    "Expired identity link must detach before the daily cleanup",
+  );
   await purgeExpiredAccountData();
-  assert.equal(await db().nicknameChangeLog.count({ where: { userId: user.id } }), 0);
-  assert.equal((await db().user.findUniqueOrThrow({ where: { id: user.id } })).abuseIdentityId, null);
-  assert.equal((await db().like.findUniqueOrThrow({ where: { userId_postId: { userId: user.id, postId: old.id } } })).abuseIdentityId, null);
-  assert.equal((await call("account", rejoinedCookie, "DELETE", { confirm: true })).status, 200);
-  const scrubbed = await db().nicknameChangeLog.findMany({ where: { userId: rejoined.id } });
-  assert(scrubbed.every(log => !log.before && (!log.after || log.after === withdrawnNickname(rejoined.id))));
+  assert.equal(
+    await db().nicknameChangeLog.count({ where: { userId: user.id } }),
+    0,
+  );
+  assert.equal(
+    (await db().user.findUniqueOrThrow({ where: { id: user.id } }))
+      .abuseIdentityId,
+    null,
+  );
+  assert.equal(
+    (
+      await db().like.findUniqueOrThrow({
+        where: { userId_postId: { userId: user.id, postId: old.id } },
+      })
+    ).abuseIdentityId,
+    null,
+  );
+  assert.equal(
+    (await call("account", rejoinedCookie, "DELETE", { confirm: true })).status,
+    200,
+  );
+  const scrubbed = await db().nicknameChangeLog.findMany({
+    where: { userId: rejoined.id },
+  });
+  assert(
+    scrubbed.every(
+      (log) =>
+        !log.before &&
+        (!log.after || log.after === withdrawnNickname(rejoined.id)),
+    ),
+  );
   await db().abuseIdentity.updateMany({ data: { expiresAt: new Date(0) } });
   await purgeExpiredAccountData();
   assert.equal(await db().abuseIdentity.count(), 0);
   assert.equal(await db().accountSecurityEvent.count(), 0);
   assert.equal(await db().like.count({ where: { userId: user.id } }), 1);
-  assert.equal(oneYearAfter(new Date("2024-02-29T00:00:00Z")).toISOString(), "2025-02-28T00:00:00.000Z");
-  console.log("PASS retained withdrawal, identity-based concurrent duplicate likes, profile audit, nickname scrub and expiry cleanup");
-  console.log("PASS four-week history boundary, recent/older cursors, 64 distinct records and invalid cursor rejection");
-  console.log("PASS remaining section 3: deleted mutations unchanged, category cursors, old selected map post, 106 map entries independent of home cards");
+  assert.equal(
+    oneYearAfter(new Date("2024-02-29T00:00:00Z")).toISOString(),
+    "2025-02-28T00:00:00.000Z",
+  );
+  console.log(
+    "PASS retained withdrawal, identity-based concurrent duplicate likes, profile audit, nickname scrub and expiry cleanup",
+  );
+  console.log(
+    "PASS four-week history boundary, recent/older cursors, 64 distinct records and invalid cursor rejection",
+  );
+  console.log(
+    "PASS remaining section 3: deleted mutations unchanged, category cursors, old selected map post, 106 map entries independent of home cards",
+  );
   console.log(
     "PASS isolated DB/API: logs, guest aliases, member names, privacy, cooldown, visit reset, pagination, permissions",
   );

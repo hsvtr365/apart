@@ -36,9 +36,9 @@ test("React screens, report, profile and comments", async ({ page }) => {
     .click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByLabel("댓글 내용").fill("첫 댓글");
-  await page.getByRole("button", { name: "게시", exact: true }).click();
+  await page.getByRole("button", { name: "등록", exact: true }).click();
   await expect(page.getByText("첫 댓글", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "삭제", exact: true }).click();
+  await page.getByRole("button", { name: "댓글 삭제", exact: true }).click();
   await expect(page.getByText("첫 댓글", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "상세 닫기" }).click();
   await page.getByRole("link", { name: "내 정보", exact: true }).click();

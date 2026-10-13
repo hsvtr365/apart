@@ -33,6 +33,7 @@ type Store = {
   feeds: Record<string, Feed>;
   loadFeed: (category: string) => Promise<void>;
   revision: number;
+  updatedPost: Post | null;
   now: number;
   data: Bootstrap | null;
   error: string;
@@ -45,6 +46,7 @@ type Store = {
   detail: (
     id: string,
     cursor?: string,
+    signal?: AbortSignal,
   ) => Promise<{ post: Post; nextCursor: string | null }>;
   more: (category?: string) => Promise<void>;
 };
@@ -62,6 +64,7 @@ export function Provider({ children }: { children: ReactNode }) {
     [busy, setBusy] = useState(false);
   const [feeds, setFeeds] = useState<Record<string, Feed>>({});
   const [revision, setRevision] = useState(0);
+  const [updatedPost, setUpdatedPost] = useState<Post | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const feedRef = useRef(feeds);
   const dataRef = useRef(data);
@@ -79,55 +82,97 @@ export function Provider({ children }: { children: ReactNode }) {
     feedRef.current = value;
     setFeeds(value);
   }, []);
-  const reload = useCallback(() => enqueue(async () => {
-    try {
-      const day = todayContext().today;
-      const value = await request<Bootstrap>("/api/bootstrap");
-      if (value.mode === "demo") {
-        if (!dataRef.current) setData(value);
-        return;
-      }
-      const caches: Record<string, Feed> = {};
-      const keys = new Set(["all", ...Object.keys(feedRef.current)]);
-      for (const category of keys) {
-        const previous = feedRef.current[category];
-        const pages = previous?.pages ?? 1;
-        let page = category === "all" ? value : await request<Feed>("/api/posts?category=" + category.toUpperCase());
-        const posts = [...page.posts];
-        let loaded = 1;
-        while (loaded < pages && page.nextCursor) {
-          page = await request<Feed>(feedUrl(category, page.nextCursor));
-          posts.push(...page.posts.filter(p => !posts.some(existing => existing.id === p.id)));
-          loaded++;
+  const reload = useCallback(
+    () =>
+      enqueue(async () => {
+        try {
+          const day = todayContext().today;
+          const value = await request<Bootstrap>("/api/bootstrap");
+          if (value.mode === "demo") {
+            if (!dataRef.current) setData(value);
+            return;
+          }
+          const caches: Record<string, Feed> = {};
+          const keys = new Set(["all", ...Object.keys(feedRef.current)]);
+          for (const category of keys) {
+            const previous = feedRef.current[category];
+            const pages = previous?.pages ?? 1;
+            let page =
+              category === "all"
+                ? value
+                : await request<Feed>(
+                    "/api/posts?category=" + category.toUpperCase(),
+                  );
+            const posts = [...page.posts];
+            let loaded = 1;
+            while (loaded < pages && page.nextCursor) {
+              page = await request<Feed>(feedUrl(category, page.nextCursor));
+              posts.push(
+                ...page.posts.filter(
+                  (p) => !posts.some((existing) => existing.id === p.id),
+                ),
+              );
+              loaded++;
+            }
+            caches[category] = {
+              posts,
+              nextCursor: page.nextCursor,
+              pages: loaded,
+            };
+          }
+          saveFeeds(caches);
+          setData({
+            ...value,
+            posts: caches.all.posts,
+            nextCursor: caches.all.nextCursor,
+          });
+          refreshedDay.current = day;
+          lastRefresh.current = Date.now();
+          setNow(Date.now());
+          setRevision((value) => value + 1);
+          setError("");
+        } catch (e) {
+          if (dataRef.current)
+            setMessage("새로고침 실패: " + (e as Error).message);
+          else setError((e as Error).message);
         }
-        caches[category] = { posts, nextCursor: page.nextCursor, pages: loaded };
-      }
-      saveFeeds(caches);
-      setData({ ...value, posts: caches.all.posts, nextCursor: caches.all.nextCursor });
-      refreshedDay.current = day;
-      lastRefresh.current = Date.now();
-      setNow(Date.now());
-      setRevision(value => value + 1);
-      setError("");
-    } catch (e) {
-      if (dataRef.current) setMessage("새로고침 실패: " + (e as Error).message);
-      else setError((e as Error).message);
-    }
-  }), [enqueue, saveFeeds]);
-  const loadFeed = useCallback((category: string) => enqueue(async () => {
-    if (!dataRef.current || dataRef.current.mode === "demo" || feedRef.current[category]) return;
-    const page = await request<Feed>(feedUrl(category));
-    saveFeeds({ ...feedRef.current, [category]: { ...page, pages: 1 } });
-  }), [enqueue, saveFeeds]);
-  useEffect(() => { void reload(); }, [reload]);
+      }),
+    [enqueue, saveFeeds],
+  );
+  const loadFeed = useCallback(
+    (category: string) =>
+      enqueue(async () => {
+        if (
+          !dataRef.current ||
+          dataRef.current.mode === "demo" ||
+          feedRef.current[category]
+        )
+          return;
+        const page = await request<Feed>(feedUrl(category));
+        saveFeeds({ ...feedRef.current, [category]: { ...page, pages: 1 } });
+      }),
+    [enqueue, saveFeeds],
+  );
+  useEffect(() => {
+    void reload();
+  }, [reload]);
   useEffect(() => {
     const refresh = (reentry = false) => {
       setNow(Date.now());
       if (document.hidden || dataRef.current?.mode !== "live") return;
-      const posts = [...dataRef.current.posts, ...(dataRef.current.todayPosts ?? [])];
-      if (todayContext().today !== refreshedDay.current ||
+      const posts = [
+        ...dataRef.current.posts,
+        ...(dataRef.current.todayPosts ?? []),
+      ];
+      if (
+        todayContext().today !== refreshedDay.current ||
         (reentry && Date.now() - lastRefresh.current > 15_000) ||
-        posts.some(post => post.presenceOccurrence && post.presenceOccurrence !== presenceOccurrence(post)))
+        posts.some(
+          (post) =>
+            post.presenceOccurrence &&
+            post.presenceOccurrence !== presenceOccurrence(post),
+        )
+      )
         void reload();
     };
     const onVisible = () => refresh(true);
@@ -192,17 +237,20 @@ export function Provider({ children }: { children: ReactNode }) {
           ];
         }
         if (kind === "edit-post" && p) {
-          if (p.adminDeleted) throw new Error("관리자가 삭제처리한 글은 수정할 수 없습니다.");
+          if (p.adminDeleted)
+            throw new Error("관리자가 삭제처리한 글은 수정할 수 없습니다.");
           if (p.authorId !== next.user!.id && next.user!.permission !== 0)
             throw new Error("본인 글만 수정할 수 있어요.");
           Object.assign(p, payload as PostInput);
         }
         if (kind === "admin-delete-post" && p) {
-          if (next.user!.permission !== 0) throw new Error("관리자 권한이 필요합니다.");
+          if (next.user!.permission !== 0)
+            throw new Error("관리자 권한이 필요합니다.");
           p.adminDeleted = true;
         }
         if (kind === "delete-post" && p) {
-          if (p.authorId !== next.user!.id) throw new Error("본인 글만 삭제할 수 있어요.");
+          if (p.authorId !== next.user!.id)
+            throw new Error("본인 글만 삭제할 수 있어요.");
           p.userDeleted = true;
         }
         if (kind === "comment" && p) {
@@ -244,7 +292,43 @@ export function Provider({ children }: { children: ReactNode }) {
       };
       const [url, method, body] = config[kind];
       await request(url, { method, body: JSON.stringify(body) });
-      await reload();
+      if (["like", "presence", "comment"].includes(kind)) {
+        await enqueue(async () => {
+          const post = await request<Post>(`/api/posts/${id}`);
+          const replace = (posts: Post[]) =>
+            posts.map((old) => (old.id === id ? post : old));
+          const caches = Object.fromEntries(
+            Object.entries(feedRef.current).map(([key, feed]) => [
+              key,
+              { ...feed, posts: replace(feed.posts) },
+            ]),
+          );
+          saveFeeds(caches);
+          setData((value) =>
+            value
+              ? {
+                  ...value,
+                  posts: replace(value.posts),
+                  todayPosts: replace(value.todayPosts ?? []),
+                }
+              : value,
+          );
+          setUpdatedPost(post);
+        });
+      } else if (kind === "read") {
+        setData((value) =>
+          value
+            ? {
+                ...value,
+                notifications: value.notifications.map((n) =>
+                  !id || n.id === id
+                    ? { ...n, readAt: new Date().toISOString() }
+                    : n,
+                ),
+              }
+            : value,
+        );
+      } else await reload();
     } finally {
       setBusy(false);
     }
@@ -282,7 +366,7 @@ export function Provider({ children }: { children: ReactNode }) {
       setBusy(false);
     }
   }
-  async function detail(id: string, cursor?: string) {
+  async function detail(id: string, cursor?: string, signal?: AbortSignal) {
     if (data?.mode === "demo") {
       const p = data.posts.find((p) => p.id === id);
       if (!p) throw new Error("삭제되었거나 없는 글입니다.");
@@ -290,6 +374,7 @@ export function Provider({ children }: { children: ReactNode }) {
     }
     const p = await request<Post & { nextCursor: string | null }>(
       `/api/posts/${id}${cursor ? "?cursor=" + encodeURIComponent(cursor) : ""}`,
+      { signal },
     );
     return { post: p, nextCursor: p.nextCursor };
   }
@@ -299,12 +384,22 @@ export function Provider({ children }: { children: ReactNode }) {
       if (!current?.nextCursor) return;
       const result = await request<Feed>(feedUrl(category, current.nextCursor));
       const next = {
-        posts: [...current.posts, ...result.posts.filter(p => !current.posts.some(x => x.id === p.id))],
+        posts: [
+          ...current.posts,
+          ...result.posts.filter(
+            (p) => !current.posts.some((x) => x.id === p.id),
+          ),
+        ],
         nextCursor: result.nextCursor,
         pages: current.pages + 1,
       };
       saveFeeds({ ...feedRef.current, [category]: next });
-      if (category === "all") setData(value => value ? { ...value, posts: next.posts, nextCursor: next.nextCursor } : value);
+      if (category === "all")
+        setData((value) =>
+          value
+            ? { ...value, posts: next.posts, nextCursor: next.nextCursor }
+            : value,
+        );
     });
   }
   return (
@@ -314,6 +409,7 @@ export function Provider({ children }: { children: ReactNode }) {
         feeds,
         loadFeed,
         revision,
+        updatedPost,
         now,
         error,
         message,

@@ -55,7 +55,7 @@
 
 ## 동시성 및 접근 제어
 
-프로필 변경·탈퇴·좋아요는 회원별 PostgreSQL advisory transaction lock을 공유한다. 로그인·식별 연결·좋아요는 HMAC별 lock과 DB UNIQUE 제약으로 동시 재가입·동시 클릭을 직렬화한다. 탈퇴 시점 이후 세션이 DB에 남거나 새로 만들어져도 `currentUser()`가 withdrawnAt을 검사해 접근을 거절한다.
+프로필 변경·탈퇴·좋아요·게시물·댓글·현장 확인·업로드 최종 저장은 회원별 PostgreSQL advisory transaction lock을 공유한다. 게시물 삭제와 변경은 게시물별 lock도 공유하며 잠금 후 현재 상태를 검사한다. 로그인·식별 연결·좋아요는 HMAC별 lock과 DB UNIQUE 제약으로 동시 재가입·동시 클릭을 직렬화한다. 탈퇴 시점 이후 세션이 DB에 남거나 새로 만들어져도 `currentUser()`가 withdrawnAt을 검사해 접근을 거절한다.
 
 관리자 조회: `GET /api/account-audit?userId=회원ID`. permission=0만 허용하며 해당 계정의 최근 닉네임 로그와 연결 계정·가입/탈퇴/중복 좋아요 이벤트를 반환한다. 각 목록은 최신 100건으로 제한한다. 원본 카카오 ID와 HMAC 값은 반환하지 않는다. 만료된 로그와 계정 연결은 정리 작업 이전에도 조회에서 제외한다. 전용 관리 UI는 추가하지 않았다.
 
@@ -66,7 +66,7 @@
 - `deploy/account-retention-cron.sh`가 기존 다른 cron을 유지하면서 지정 작업만 교체한다. 중복 실행은 flock으로 차단한다.
 - 삭제 순서: 만료 닉네임 로그·보안 이벤트 삭제 → 탈퇴 계정/좋아요의 만료 식별 연결 해제 → 만료 AbuseIdentity 삭제.
 - 회원 행·글·댓글·좋아요 자체는 삭제하지 않는다. 정리 로그에는 처리 건수만 출력한다.
-- 만료 데이터의 실제 삭제는 정상 cron 기준 최대 하루 지연될 수 있다. 로그인·좋아요·탈퇴에서도 추가 정리를 실행한다.
+- 만료 데이터의 실제 삭제는 정상 cron 기준 최대 하루 지연될 수 있다. 로그인·좋아요·탈퇴에서는 해당 HMAC의 만료 연결만 검사·제거한다. 전 계정 로그 정리는 일일 cron에서 실행한다. 중복 좋아요를 409로 거절할 때도 부정 이용 감사 이벤트는 commit한다.
 - `pm2_start.sh`에서 `provision-abuse-secret.cjs`로 서버 .env의 비밀키를 생성하고 migration·빌드·cron 설치를 실행한다. 이미 설정된 키는 교체하지 않는다.
 - migration: `202610130001_account_retention`.
 
