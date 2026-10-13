@@ -21,6 +21,11 @@ enum Role {
 model User {
   id String @id @default(cuid())
   kakaoId String? @unique
+  withdrawnAt DateTime?
+  abuseIdentityId String?
+  abuseIdentity AbuseIdentity? @relation(fields: [abuseIdentityId], references: [id], onDelete: SetNull)
+  abuseLinkExpiresAt DateTime?
+  nicknameLogs NicknameChangeLog[]
   nickname String @db.VarChar(12)
   building String? @db.VarChar(8)
   role Role @default(USER)
@@ -34,6 +39,8 @@ model User {
   sessions Session[]
   notifications Notification[]
   uploads Upload[]
+  @@index([abuseIdentityId])
+  @@index([abuseLinkExpiresAt])
 }
 model Session {
   tokenHash String @id
@@ -106,6 +113,9 @@ model Like {
   postId String
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+  abuseIdentityId String?
+  abuseIdentity AbuseIdentity? @relation(fields: [abuseIdentityId], references: [id], onDelete: SetNull)
+  @@unique([abuseIdentityId, postId])
   @@id([userId, postId])
 }
 model Presence {
@@ -172,4 +182,37 @@ model CollectionCandidate {
   createdAt DateTime @default(now())
   // Candidates are never auto-published. Review workflow belongs to the operator.
   @@unique([source, externalId])
+}
+
+model AbuseIdentity {
+  id String @id @db.VarChar(64)
+  expiresAt DateTime?
+  users User[]
+  likes Like[]
+  events AccountSecurityEvent[]
+  @@index([expiresAt])
+}
+model NicknameChangeLog {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  before String? @db.VarChar(12)
+  after String? @db.VarChar(12)
+  reason String @db.VarChar(32)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+model AccountSecurityEvent {
+  id String @id @default(cuid())
+  identityId String
+  identity AbuseIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  userId String
+  reason String @db.VarChar(32)
+  postId String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  @@index([identityId, createdAt])
+  @@index([expiresAt])
 }

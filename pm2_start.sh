@@ -13,9 +13,11 @@ else
   echo "package-lock.json unchanged; skipping npm ci"
   npm --prefix front run db:generate
 fi
+(cd front && node scripts/provision-abuse-secret.cjs)
 npm --prefix front run db:migrate
 npm --prefix front run build
 pm2 startOrReload ecosystem.config.cjs --only apart
 pm2 save
+bash deploy/account-retention-cron.sh
 curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:28004/api/bootstrap >/dev/null
 echo "apart is running on 127.0.0.1:28004"

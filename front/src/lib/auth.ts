@@ -21,7 +21,7 @@ export async function currentUser() {
     where: { tokenHash: hash(token) },
     include: { user: true },
   });
-  return session && session.expiresAt > new Date() ? session.user : null;
+  return session && !session.user.withdrawnAt && session.expiresAt > new Date() ? session.user : null;
 }
 export async function startSession(userId: string) {
   const token = randomBytes(32).toString("hex");

@@ -7,6 +7,7 @@ import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import pg from "pg";
 import { db } from "../src/lib/db";
+import { loginAccount, purgeExpiredAccountData, oneYearAfter } from "../src/lib/account-retention";
 import { presenceOccurrence, visitorAlias } from "../src/lib/presence";
 
 const originalUrl = process.env.DATABASE_URL;
@@ -50,6 +51,7 @@ try {
   await admin.query('CREATE DATABASE "' + databaseName + '"');
   created = true;
   process.env.DATABASE_URL = testUrl.toString();
+  process.env.ABUSE_HMAC_SECRET = "isolated-test-secret-" + randomBytes(32).toString("hex");
   const env = { ...process.env, APP_URL: base, DEMO_MODE: "false" };
   // Historical migrations have an unrelated fresh-install ordering issue. Bootstrap
   // only this disposable database, then execute the new migration independently.
@@ -86,6 +88,8 @@ try {
         "utf8",
       ),
     );
+    await setup.query('DROP TABLE "AccountSecurityEvent"; DROP TABLE "NicknameChangeLog"; ALTER TABLE "Like" DROP COLUMN "abuseIdentityId"; ALTER TABLE "User" DROP COLUMN "abuseIdentityId", DROP COLUMN "abuseLinkExpiresAt", DROP COLUMN "withdrawnAt"; DROP TABLE "AbuseIdentity"');
+    await setup.query(await readFile("prisma/migrations/202610130001_account_retention/migration.sql", "utf8"));
   } finally {
     await setup.end();
   }
@@ -112,7 +116,7 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   assert(ready, "Isolated test server did not start");
-  const user = await db().user.create({ data: { nickname: "확인하는이웃" } });
+  const user = await db().user.create({ data: { nickname: "확인하는이웃", kakaoId: "test-kakao-identity" } });
   const token = randomBytes(32).toString("hex");
   await db().session.create({
     data: {
@@ -384,14 +388,59 @@ try {
   const authoredBefore = await db().post.count({ where: { authorId: user.id } });
   const commentsBefore = await db().comment.count({ where: { authorId: user.id } });
   assert.equal((await call("account", memberCookie, "DELETE", { confirm: true })).status, 200);
-  assert.equal(await db().user.findUnique({ where: { id: user.id } }), null);
+  const retired = await db().user.findUniqueOrThrow({ where: { id: user.id } });
+  assert(retired.withdrawnAt);
+  assert.equal(retired.kakaoId, null);
+  assert.equal(retired.nickname, "탈퇴한 이용자");
+  assert.equal(retired.building, null);
   assert.equal(await db().session.count({ where: { userId: user.id } }), 0);
-  assert.equal(await db().like.count({ where: { userId: user.id } }), 0);
-  assert.equal(await db().post.count({ where: { authorId: "retired-neighbor" } }), authoredBefore);
-  assert.equal(await db().comment.count({ where: { authorId: "retired-neighbor" } }), commentsBefore);
+  assert.equal(await db().like.count({ where: { userId: user.id } }), 1);
+  assert.equal(await db().post.count({ where: { authorId: user.id } }), authoredBefore);
+  assert.equal(await db().comment.count({ where: { authorId: user.id } }), commentsBefore);
   assert.equal((await call("bootstrap", memberCookie)).data.user, null);
-  assert.equal((await call(`posts/${historyPost.id}`)).data.author, "탈퇴한 이웃");
-  console.log("PASS withdrawal: confirmation required, account/session/likes removed, authored content retained anonymously");
+  assert.equal((await call(`posts/${historyPost.id}`)).data.author, "탈퇴한 이용자");
+  const joined = await Promise.all([loginAccount("test-kakao-identity"), loginAccount("test-kakao-identity")]);
+  assert.equal(joined[0].id, joined[1].id);
+  const rejoined = joined[0];
+  assert.notEqual(rejoined.id, user.id);
+  assert.equal(rejoined.abuseIdentityId, retired.abuseIdentityId);
+  const sessionToken = randomBytes(32).toString("hex");
+  await db().session.create({ data: { userId: rejoined.id, tokenHash: createHash("sha256").update(sessionToken).digest("hex"), expiresAt: new Date(Date.now() + 3600000) } });
+  const rejoinedCookie = "village_session=" + sessionToken;
+  assert.equal((await call("account-audit?userId=" + rejoined.id, rejoinedCookie)).status, 403);
+  await db().user.update({ where: { id: rejoined.id }, data: { permission: 0 } });
+  const audit = await call("account-audit?userId=" + rejoined.id, rejoinedCookie);
+  assert.equal(audit.status, 200);
+  assert.equal(audit.data.accounts.length, 2);
+  assert(!JSON.stringify(audit.data).includes(retired.abuseIdentityId!));
+  await db().user.update({ where: { id: rejoined.id }, data: { permission: 1 } });
+  await db().post.update({ where: { id: old.id }, data: { hidden: false } });
+  const attempts = await Promise.all([
+    call(`posts/${old.id}/like`, rejoinedCookie, "PUT", { liked: true }),
+    call(`posts/${old.id}/like`, rejoinedCookie, "PUT", { liked: true }),
+  ]);
+  assert.deepEqual(attempts.map(r => r.status), [409, 409]);
+  assert.equal(await db().like.count({ where: { postId: old.id } }), 1);
+  assert.equal(await db().accountSecurityEvent.count({ where: { userId: rejoined.id, reason: "DUPLICATE_LIKE" } }), 2);
+  assert.equal((await call("profile", rejoinedCookie, "PATCH", { nickname: "새 닉네임", building: "2001동" })).status, 200);
+  assert.equal((await call("profile", rejoinedCookie, "PATCH", { nickname: "새 닉네임", building: "2002동" })).status, 200);
+  assert.equal(await db().nicknameChangeLog.count({ where: { userId: rejoined.id, reason: "USER_EDIT" } }), 1);
+  await db().nicknameChangeLog.updateMany({ where: { userId: user.id }, data: { expiresAt: new Date(0) } });
+  await db().user.update({ where: { id: user.id }, data: { abuseLinkExpiresAt: new Date(0) } });
+  await purgeExpiredAccountData();
+  assert.equal(await db().nicknameChangeLog.count({ where: { userId: user.id } }), 0);
+  assert.equal((await db().user.findUniqueOrThrow({ where: { id: user.id } })).abuseIdentityId, null);
+  assert.equal((await db().like.findUniqueOrThrow({ where: { userId_postId: { userId: user.id, postId: old.id } } })).abuseIdentityId, null);
+  assert.equal((await call("account", rejoinedCookie, "DELETE", { confirm: true })).status, 200);
+  const scrubbed = await db().nicknameChangeLog.findMany({ where: { userId: rejoined.id } });
+  assert(scrubbed.every(log => !log.before && (!log.after || log.after === "탈퇴한 이용자")));
+  await db().abuseIdentity.updateMany({ data: { expiresAt: new Date(0) } });
+  await purgeExpiredAccountData();
+  assert.equal(await db().abuseIdentity.count(), 0);
+  assert.equal(await db().accountSecurityEvent.count(), 0);
+  assert.equal(await db().like.count({ where: { userId: user.id } }), 1);
+  assert.equal(oneYearAfter(new Date("2024-02-29T00:00:00Z")).toISOString(), "2025-02-28T00:00:00.000Z");
+  console.log("PASS retained withdrawal, identity-based concurrent duplicate likes, profile audit, nickname scrub and expiry cleanup");
   console.log("PASS four-week history boundary, recent/older cursors, 64 distinct records and invalid cursor rejection");
   console.log("PASS remaining section 3: deleted mutations unchanged, category cursors, old selected map post, 106 map entries independent of home cards");
   console.log(

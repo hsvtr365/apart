@@ -22,6 +22,7 @@ import { getPosts, getTodayPosts, todayPostWhere, comments, notifications } from
 import { demoData } from "@/lib/demo";
 import { visitorHash } from "@/lib/visitor";
 import { presenceOccurrence, visitorAlias } from "@/lib/presence";
+import { loginAccount, withdrawAccount, changeProfile, setAccountLike } from "@/lib/account-retention";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const json = (data: unknown, status = 200) =>
@@ -180,14 +181,7 @@ async function handle(
         if (!profile.ok) throw new Error("Profile failed");
         const kakao = await profile.json();
         if (!kakao.id) throw new Error("Missing user id");
-        const user = await db().user.upsert({
-          where: { kakaoId: String(kakao.id) },
-          create: {
-            kakaoId: String(kakao.id),
-            nickname: "이웃" + randomBytes(3).toString("hex"),
-          },
-          update: {},
-        });
+        const user = await loginAccount(String(kakao.id));
         await startSession(user.id);
         return NextResponse.redirect(origin() + destination);
       } catch {
@@ -220,6 +214,19 @@ async function handle(
     }
     const user = await currentUser();
     if (method === "GET") {
+      if (resource === "account-audit") {
+        if (!user || user.permission !== 0) throw new HttpError("관리자 권한이 필요합니다.", 403);
+        const targetId = z.string().min(1).max(100).parse(req.nextUrl.searchParams.get("userId"));
+        const target = await db().user.findUnique({ where: { id: targetId } });
+        if (!target) throw new HttpError("계정을 찾을 수 없습니다.", 404);
+        const now = new Date();
+        const linked = target.abuseIdentityId && (!target.abuseLinkExpiresAt || target.abuseLinkExpiresAt > now);
+        return json({
+          accounts: linked ? await db().user.findMany({ where: { abuseIdentityId: target.abuseIdentityId, OR: [{ abuseLinkExpiresAt: null }, { abuseLinkExpiresAt: { gt: now } }] }, select: { id: true, nickname: true, withdrawnAt: true }, take: 100 }) : [{ id: target.id, nickname: target.nickname, withdrawnAt: target.withdrawnAt }],
+          nicknameLogs: await db().nicknameChangeLog.findMany({ where: { userId: target.id, expiresAt: { gt: now } }, orderBy: { createdAt: "desc" }, take: 100 }),
+          securityEvents: linked ? await db().accountSecurityEvent.findMany({ where: { identityId: target.abuseIdentityId!, expiresAt: { gt: now } }, select: { userId: true, reason: true, postId: true, createdAt: true, expiresAt: true }, orderBy: { createdAt: "desc" }, take: 100 }) : [],
+        });
+      }
       if ((resource === "posts" || resource === "map-posts") && !id) {
         const params = req.nextUrl.searchParams;
         const category = z.enum(["FOOD", "NOTICE", "MARKET"]).optional().parse(params.get("category") ?? undefined);
@@ -428,27 +435,13 @@ async function handle(
     }
     if (resource === "account" && method === "DELETE") {
       z.object({ confirm: z.literal(true) }).parse(await body(req));
-      await db().$transaction(async tx => {
-        const retired = await tx.user.upsert({
-          where: { id: "retired-neighbor" },
-          create: { id: "retired-neighbor", nickname: "탈퇴한 이웃", permission: 1 },
-          update: {},
-        });
-        await tx.post.updateMany({ where: { authorId: user.id }, data: { authorId: retired.id } });
-        await tx.comment.updateMany({ where: { authorId: user.id }, data: { authorId: retired.id } });
-        await tx.presenceEvent.updateMany({ where: { userId: user.id }, data: { userId: retired.id } });
-        await tx.user.delete({ where: { id: user.id } });
-      });
+      await withdrawAccount(user.id);
       (await cookies()).delete("village_session");
       return json({ ok: true });
     }
     if (resource === "profile" && method === "PATCH") {
       const input = profileSchema.parse(await body(req));
-      const updated = await db().user.update({
-        where: { id: user.id },
-        data: input,
-        select: { id: true, nickname: true, building: true, permission: true },
-      });
+      const updated = await changeProfile(user.id, input);
       return json(updated);
     }
     if (resource === "notifications" && method === "PATCH") {
@@ -561,16 +554,8 @@ async function handle(
         const { liked } = z
           .object({ liked: z.boolean() })
           .parse(await body(req));
-        if (liked)
-          await db().like.upsert({
-            where: { userId_postId: { userId: user.id, postId: id } },
-            create: { userId: user.id, postId: id },
-            update: {},
-          });
-        else
-          await db().like.deleteMany({
-            where: { userId: user.id, postId: id },
-          });
+        if (!(await setAccountLike(user.id, id, liked)))
+          throw new HttpError("이 카카오 계정으로 이미 좋아요한 글입니다. 재가입해도 중복 집계되지 않아요.", 409);
         return json({ ok: true });
       }
 
