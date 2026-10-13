@@ -1605,3 +1605,8 @@ header a:first-child {
  .detail-presence .presence-state { min-height:68px; font-size:16px; }
  .detail-schedule-card { padding:12px; margin:14px 0; }
 }
+.detail-presence .presence-state { display:grid; grid-template-columns:28px auto; align-content:center; justify-content:center; align-items:center; gap:7px 10px; }
+.detail-presence .presence-state > svg { width:28px; height:28px; border-radius:50%; background:white; color:var(--color-brand); padding:5px; stroke-width:3; }
+.detail-presence .presence-gone > svg { background:#626b65; color:white; }
+.detail-presence .presence-state > small { grid-column:1 / -1; font-size:12px; font-weight:400; line-height:1.4; }
+.detail-presence .presence-gone[aria-pressed="true"] > svg { background:white; color:#626b65; }

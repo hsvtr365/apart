@@ -22,7 +22,7 @@ export function PostStatus({ post }: { post: Post }) {
         <span className={`visit-status-tag ${status.schedule === "오늘와요" ? "visit-today" : "visit-not-today"}`}><span aria-hidden="true">●</span> {status.schedule === "오늘와요" ? "오늘 와요" : "오늘 안와요"}</span>
         {post.category === "FOOD" && <span className="detail-last-report"><Eye size={17} aria-hidden="true" />{report ? <>{clock(report.observedAt)}{now - new Date(report.observedAt).getTime() >= STALE_REPORT_MS && " · 오래된 제보"}</> : "아직 확인 없음"}</span>}
       </div>
-      {post.category === "FOOD" && <div className="detail-presence"><Presence post={post} /></div>}
+      {post.category === "FOOD" && <div className="detail-presence"><Presence post={post} detail /></div>}
       <div className="detail-schedule-card"><CalendarDays size={24} aria-hidden="true" /><div><h2>방문 일정</h2><p>{schedule}</p></div></div>
     </>}
   </section>;

@@ -8,9 +8,11 @@ import { PresenceHistoryDialog } from "./presence-history";
 export function Presence({
   post,
   map = false,
+  detail = false,
 }: {
   post: Post;
   map?: boolean;
+  detail?: boolean;
 }) {
   const { act, notify, busy } = useVillage();
   const [open, setOpen] = useState(false);
@@ -35,13 +37,14 @@ export function Presence({
                   .catch((e) => notify(e.message))
               }
             >
-              {map && (
+              {(map || detail) && (
                 <Icon
                   name={state === "ARRIVED" ? "check" : "close"}
                   strokeWidth="2.5"
                 />
               )}
-              {state === "ARRIVED" ? "있어요" : "없어요"}
+              <span>{state === "ARRIVED" ? "있어요" : "없어요"}</span>
+              {detail && <small>{state === "ARRIVED" ? "현장에 있어요" : "지금은 없어요"}</small>}
             </button>
           ))}
         <button
