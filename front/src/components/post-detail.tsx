@@ -5,7 +5,8 @@ import { Report } from "./report";
 import { useVillage } from "./store";
 import { PostDetailBody } from "./post-detail-body";
 import { Icon } from "./icons";
-import { ImageViewer } from "./image-viewer";
+import { PostStatus } from "./post-status";
+import { DetailPhotos } from "./detail-photos";
 import { LoadingMask } from "./loading-mask";
 import type { Post } from "@/lib/types";
 export function PostDetail({
@@ -54,7 +55,7 @@ export function PostDetail({
   return (
     <dialog
       {...dialogProps}
-      className="detail-dialog"
+      className="detail-dialog post-detail-dialog"
       aria-label="게시물 상세"
     >
       {!editing && <div className="post-detail-header">
@@ -97,10 +98,15 @@ export function PostDetail({
           } : undefined} />
         </div>
       ) : (
-        <div className={post.imageUrl ? "detail-layout" : ""}>
-          {post.imageUrl && <ImageViewer src={post.imageUrl} sources={post.imageUrls} alt={post.title} />}
-          <div className="detail-body">
+        <div className="detail-layout redesigned-detail">
+          <div className="detail-primary">
+            {post.imageUrl && <DetailPhotos post={post} />}
             <PostDetailBody post={post} />
+          </div>
+          <div className="detail-secondary">
+            <PostStatus post={post} />
+            <div className="detail-comments">
+              <h2>댓글 <span>{post.commentCount}</span></h2>
             {post.comments.map((c) => (
               <div className="border-b border-line py-2" key={c.id}>
                 <div className="flex items-center justify-between gap-2">
@@ -130,7 +136,7 @@ export function PostDetail({
             )}
             {!post.adminDeleted && (data?.user ? (
               <form
-                className="mt-3 flex items-end gap-2"
+                className="detail-comment-form"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (!text.trim()) return;
@@ -147,12 +153,12 @@ export function PostDetail({
                   rows={2}
                   maxLength={500}
                   required
-                  placeholder="댓글을 남겨주세요"
+                  placeholder="현장 정보나 후기를 남겨주세요"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                 />
                 <button className="btn shrink-0" disabled={busy}>
-                  게시
+                  등록
                 </button>
               </form>
             ) : (
@@ -160,6 +166,7 @@ export function PostDetail({
                 로그인하고 댓글 쓰기
               </a>
             ))}
+            </div>
           </div>
         </div>
       )}

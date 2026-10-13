@@ -1,35 +1,15 @@
 "use client";
-import Link from "next/link";
-import { Icon } from "./icons";
-import { PostStatus } from "./post-status";
-import { Presence } from "./presence";
+import { UserRound } from "lucide-react";
 import { PostActions } from "./post-actions";
-import { categories, clock, type Post } from "@/lib/types";
+import { clock, type Post } from "@/lib/types";
 export function PostDetailBody({ post }: { post: Post }) {
   return <article className="post-detail-content">
-      <div className="flex items-center justify-between gap-2 pb-2">
-        <div className="flex flex-wrap items-center gap-x-2">
-          <b className="post-author-name">{post.author}</b>
-          {post.authorBuilding && <small>{post.authorBuilding}</small>}
-          <small
-            title="등록 시각"
-          >
-            등록 · {clock(post.createdAt)}
-          </small>
-        </div>
-        <span className={`category-tag category-${post.category.toLowerCase()}`}>
-          {categories[post.category]}
-        </span>
-      </div>
-            <p className="whitespace-pre-line break-words">{post.body}</p>
-      <div className="mt-2 flex items-center gap-2">
-        {post.category !== "NOTICE" && <Link className="icon-btn bg-soft text-brand" href={"/map/" + post.id} aria-label="지도에서 위치 보기"><Icon name="pin" /></Link>}
-        {post.category === "FOOD" && <Presence post={post} />}
-      </div>
-      <PostActions post={post} />
-      <PostStatus post={post} />
-      {post.category === "NOTICE" && post.noticeStartDate && post.noticeEndDate && (
-        <p className="text-xs text-muted mt-2">공고 기간 · {post.noticeStartDate} ~ {post.noticeEndDate}</p>
-      )}
-    </article>;
+    <p className="detail-post-text">{post.body}</p>
+    <div className="detail-author">
+      <UserRound size={22} aria-hidden="true" /><b>{post.author}</b>
+      {post.authorBuilding && <span className="author-building-tag">{post.authorBuilding}</span>}
+      <time dateTime={post.createdAt}>· {clock(post.createdAt)}</time>
+    </div>
+    <PostActions post={post} />
+  </article>;
 }

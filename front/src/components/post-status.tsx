@@ -1,4 +1,6 @@
 "use client";
+import { CalendarDays, Eye } from "lucide-react";
+import { Presence } from "./presence";
 import { postStatus, STALE_REPORT_MS } from "@/lib/freshness";
 import { clock, weekdayLabels, seasonLabels, type Post } from "@/lib/types";
 import { useVillage } from "./store";
@@ -13,17 +15,15 @@ export function PostStatus({ post }: { post: Post }) {
     post.departureTime ? `${post.departureTime} 출발 예정` : "",
     post.seasons?.map(season => seasonLabels[season]).join("·"),
   ].filter(Boolean).join(" / ");
-  return <div className="my-3 text-xs text-muted" aria-label="일정과 현장 확인">
-    {post.category === "NOTICE" ? <><p>{status.schedule}</p>{status.observation && <p>{status.observation}</p>}</> : <>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={`visit-status-tag ${status.schedule === "오늘와요" ? "visit-today" : "visit-not-today"}`}>{status.schedule}</span>
-        <span>{schedule}</span>
+  return <section className="detail-status" aria-label="일정과 현장 확인">
+    {post.category === "NOTICE" ? <><p>{status.schedule}</p>{status.observation && <p>{status.observation}</p>}
+      {post.noticeStartDate && <p>{post.noticeStartDate} ~ {post.noticeEndDate}</p>}</> : <>
+      <div className="detail-status-top">
+        <span className={`visit-status-tag ${status.schedule === "오늘와요" ? "visit-today" : "visit-not-today"}`}><span aria-hidden="true">●</span> {status.schedule === "오늘와요" ? "오늘 와요" : "오늘 안와요"}</span>
+        {post.category === "FOOD" && <span className="detail-last-report"><Eye size={17} aria-hidden="true" />{report ? <>{clock(report.observedAt)}{now - new Date(report.observedAt).getTime() >= STALE_REPORT_MS && " · 오래된 제보"}</> : "아직 확인 없음"}</span>}
       </div>
-      {post.category === "FOOD" && (report ? <div className="mt-2 flex flex-wrap items-center gap-1">
-        <span>마지막 확인: {clock(report.observedAt)}</span>
-        <span className={`visit-status-tag ${report.state === "ARRIVED" ? "visit-today" : "visit-not-today"}`}>{report.state === "ARRIVED" ? "있어요" : "없어요"}</span>
-        {now - new Date(report.observedAt).getTime() >= STALE_REPORT_MS && <span>· 오래된 제보</span>}
-      </div> : <p className="mt-2">아직 제보가 없어요.</p>)}
+      {post.category === "FOOD" && <div className="detail-presence"><Presence post={post} /></div>}
+      <div className="detail-schedule-card"><CalendarDays size={24} aria-hidden="true" /><div><h2>방문 일정</h2><p>{schedule}</p></div></div>
     </>}
-  </div>;
+  </section>;
 }
