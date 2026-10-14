@@ -21,6 +21,8 @@ Google Search Console URL 접두어 속성, 네이버 서치어드바이저, Bin
 
 Cloudflare의 Search/AI 검색봇 정책과 WAF를 별도로 확인한다. 원본 robots.txt가 Cloudflare 규칙과 합쳐질 수 있으므로 외부 응답을 검사한다. ChatGPT 검색용 OAI-SearchBot과 학습용 GPTBot의 정책은 독립적이다. 모든 AI 봇의 일괄 차단 해제는 필요하지 않다.
 
+Cloudflare Cache Rule `apart SEO files - bypass edge cache`는 `http.host eq "apart.jujeop.com"`이고 경로가 `/robots.txt` 또는 `/sitemap.xml`인 요청만 캐시하지 않는다. 검색 제어 파일의 배포 변경을 Cloudflare 캐시 지연 없이 반영하기 위한 규칙이다. 다른 호스트의 캐시 정책은 바꾸지 않는다.
+
 ## 검증
 
 `cd front`에서 `npm test`, `npm run build`, `npm run test:api` 실행. 마지막 명령은 별도 임시 DB를 만들고 정상/오류 페이지, SSR 본문, 검색봇별 HTTP 상태, 비공개 글 분리, robots 및 사이트맵을 검증한 뒤 임시 DB를 삭제한다. 운영 DB에는 테스트 데이터를 쓰지 않는다.
@@ -34,4 +36,6 @@ Cloudflare의 Search/AI 검색봇 정책과 WAF를 별도로 확인한다. 원�
 - Google: 사이트맵 처리 완료, 발견된 페이지 21개. 네이버: 제출 목록 등록 확인. Bing: Submitted / Processing 확인.
 - 단위 테스트 22개, production build, 임시 DB/API 통합 검증 통과. 외부 HTTPS에서도 본문 HTML·canonical·noindex·404·robots·21 URL 사이트맵을 확인했다.
 - 실제 브라우저에서 상세 진입·모달 전환·닫기·분류 전환을 확인했고 확인 구간의 클라이언트 오류는 없었다.
-- Cloudflare 관리자 정책 자체는 변경하지 않았다. 외부 robots.txt는 앱의 규칙을 정상 반환하고 Google의 실제 사이트맵 수집도 성공했다.
+- 처음에는 Cloudflare 관리자 정책을 변경하지 않았다. `jujeop.com` 영역을 공유하는 다른 호스트에 영향을 줄 수 있고, 외부 robots.txt와 Google의 실제 사이트맵 수집이 정상임을 확인했기 때문이다.
+- 후속 점검에서 Cloudflare의 Search·Agent·Training 정책은 모두 Allow, Bot Fight Mode와 AI Labyrinth는 꺼짐, Custom WAF 규칙은 0개였다. `apart.jujeop.com`의 최근 AI 크롤러 요청 66건 중 58건은 성공, 8건은 404였으며 차단 응답은 없었다. robots.txt는 200이고 Cloudflare 진단에서 robots·사이트맵·AI 크롤러 규칙은 통과했다.
+- Cloudflare Cache Rule `apart SEO files - bypass edge cache`를 활성화했다. 외부에서 두 URL이 200이고 `cf-cache-status: DYNAMIC`임을 확인했다. 검색봇 허용 정책은 이미 목표 상태라 변경하지 않았고, `www` 등 다른 호스트의 정책도 변경하지 않았다.
