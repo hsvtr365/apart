@@ -10,6 +10,7 @@ import { Report } from "./report";
 import { Account } from "./account";
 import { PostDetail } from "./post-detail";
 import { LoadingMask } from "./loading-mask";
+import type { Post } from "@/lib/types";
 import {
   Home as HomeIcon,
   Map,
@@ -17,7 +18,15 @@ import {
   Plus,
   UserRound,
 } from "lucide-react";
-export function VillageApp() {
+export function VillageApp({
+  initialPost,
+  initialFeed,
+  initialCategory,
+}: {
+  initialPost?: Post | null;
+  initialFeed?: { posts: Post[]; nextCursor: string | null };
+  initialCategory?: string;
+}) {
   const { data, error, message, reload, more, notify, feeds, loadFeed } =
     useVillage();
   const router = useRouter();
@@ -66,7 +75,8 @@ export function VillageApp() {
           ),
           nextCursor: null,
         }
-      : feeds[category];
+      : (feeds[category] ??
+        (initialCategory === category ? initialFeed : undefined));
   const feed = (
     <>
       <h1 className="page-title">생활 피드</h1>
@@ -120,9 +130,9 @@ export function VillageApp() {
       {section === "home" && (
         <header className="shrink-0 border-b border-line">
           <div className="mx-auto flex h-13 max-w-295 items-center justify-between px-4 md:px-8">
-            <Link href="/" className="font-bold text-lg">
-              햇빛마을20단지
-            </Link>
+            <h1 className="font-bold text-lg">
+              <Link href="/">햇빛마을20단지</Link>
+            </h1>
             <a
               href="https://open.kakao.com/o/gG05eXOi"
               className="open-chat-link"
@@ -205,6 +215,7 @@ export function VillageApp() {
         <PostDetail
           key={postId}
           id={postId}
+          initialPost={initialPost?.id === postId ? initialPost : undefined}
           onClose={() =>
             hasBackground.current ? router.back() : router.replace("/feed")
           }

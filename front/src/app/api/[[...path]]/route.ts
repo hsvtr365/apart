@@ -18,12 +18,11 @@ import {
 import { postSchema, profileSchema, commentSchema } from "@/lib/validation";
 import {
   getPosts,
-  getTodayPosts,
   todayPostWhere,
   comments,
   notifications,
 } from "@/lib/queries";
-import { demoData } from "@/lib/demo";
+import { getBootstrap } from "@/lib/bootstrap";
 import { visitorHash } from "@/lib/visitor";
 import { presenceOccurrence, visitorAlias } from "@/lib/presence";
 import {
@@ -76,29 +75,8 @@ async function handle(
     if (resource === "health")
       return json({ ok: true, mode: demo ? "demo" : "live" });
     if (resource === "bootstrap" && method === "GET") {
-      if (demo) return json(demoData());
-      await visitorHash(true);
-      const user = await currentUser();
-      const [feed, todayPosts, userNotifications] = await Promise.all([
-        getPosts(user?.id),
-        getTodayPosts(user?.id),
-        user ? notifications(user.id) : Promise.resolve([]),
-      ]);
-      return json({
-        mode: "live",
-        user: user
-          ? {
-              id: user.id,
-              nickname: user.nickname,
-              building: user.building,
-              permission: user.permission,
-            }
-          : null,
-        ...feed,
-        todayPosts,
-        notifications: userNotifications,
-        kakaoReady: !!process.env.KAKAO_CLIENT_ID,
-      });
+      if (!demo) await visitorHash(true);
+      return json(await getBootstrap());
     }
     if (demo)
       throw new HttpError("데모 모드에서는 서버에 저장하지 않습니다.", 409);

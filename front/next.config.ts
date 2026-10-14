@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   poweredByHeader: false,
+  // Resolve metadata/notFound before headers for every crawler and browser.
+  htmlLimitedBots: /.*/,
   serverExternalPackages: ["@prisma/adapter-pg", "pg"],
   async headers() {
     return [

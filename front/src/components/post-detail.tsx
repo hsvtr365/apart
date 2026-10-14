@@ -13,9 +13,11 @@ import type { Post } from "@/lib/types";
 export function PostDetail({
   id,
   onClose,
+  initialPost,
 }: {
   id: string;
   onClose: () => void;
+  initialPost?: Post;
 }) {
   const { data, detail, act, notify, busy } = useVillage();
   const [editing, setEditing] = useState(false),
@@ -35,7 +37,7 @@ export function PostDetail({
   });
   const post: Post | null = page
     ? { ...page.value, comments: page.items }
-    : null;
+    : (initialPost ?? null);
   const next = page?.nextCursor;
   const dialogProps = useDetailDialog(onClose);
   const close = useRef(onClose);
@@ -43,6 +45,7 @@ export function PostDetail({
   return (
     <dialog
       {...dialogProps}
+      open={!!initialPost}
       className="detail-dialog post-detail-dialog"
       aria-label="게시물 상세"
     >

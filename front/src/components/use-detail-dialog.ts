@@ -25,7 +25,11 @@ export function useDetailDialog(onClose: () => void) {
   useEffect(() => {
     const previous = document.activeElement;
     const element = ref.current;
-    if (element && !element.open) element.showModal();
+    if (element) {
+      // SSR detail is visible without JavaScript; upgrade it to a modal on hydration.
+      if (element.open) element.close();
+      element.showModal();
+    }
     return () => {
       element?.close();
       if (previous instanceof HTMLElement && previous.isConnected)

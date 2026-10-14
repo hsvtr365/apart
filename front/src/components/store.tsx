@@ -57,15 +57,29 @@ function feedUrl(category: string, cursor?: string) {
   return "/api/posts?" + params;
 }
 const Context = createContext<Store | null>(null);
-export function Provider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<Bootstrap | null>(null),
+export function Provider({
+  children,
+  initialData,
+  initialNow,
+}: {
+  children: ReactNode;
+  initialData: Bootstrap;
+  initialNow: number;
+}) {
+  const [data, setData] = useState<Bootstrap | null>(initialData),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
-  const [feeds, setFeeds] = useState<Record<string, Feed>>({});
+  const [feeds, setFeeds] = useState<Record<string, Feed>>({
+    all: {
+      posts: initialData.posts,
+      nextCursor: initialData.nextCursor,
+      pages: 1,
+    },
+  });
   const [revision, setRevision] = useState(0);
   const [updatedPost, setUpdatedPost] = useState<Post | null>(null);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(initialNow);
   const feedRef = useRef(feeds);
   const dataRef = useRef(data);
   dataRef.current = data;
