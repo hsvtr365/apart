@@ -292,6 +292,15 @@ export function Home() {
   }
   return (
     <>
+      <div className="pt-4 text-sm leading-relaxed text-muted">
+        <p>
+          고양시 행신동 햇빛마을20단지의 먹거리·요일장 일정과 생활 공고를 이웃과
+          나눕니다.
+        </p>
+        <Link className="underline" href="/about">
+          생활정보 이용 안내·자주 묻는 질문
+        </Link>
+      </div>
       <div className="pt-3">
         <VillageMap posts={mapPosts} />
       </div>

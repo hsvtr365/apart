@@ -10,6 +10,9 @@ import { Report } from "./report";
 import { Account } from "./account";
 import { PostDetail } from "./post-detail";
 import { LoadingMask } from "./loading-mask";
+import { SiteGuide } from "./site-guide";
+import { Breadcrumbs } from "./breadcrumbs";
+import { publicPages } from "@/lib/seo";
 import type { Post } from "@/lib/types";
 import {
   Home as HomeIcon,
@@ -43,6 +46,8 @@ export function VillageApp({
   const previousBackground = useRef(background.current);
   const positions = useRef<Record<string, number>>({});
   const category = ["food", "notice", "market"].includes(id) ? id : "all";
+  const feedPath = category === "all" ? "/feed" : "/feed/" + category;
+  const feedInfo = publicPages[feedPath as keyof typeof publicPages];
   const [feedError, setFeedError] = useState("");
   const [loadingMore, setLoadingMore] = useState(false);
   useEffect(() => {
@@ -79,7 +84,9 @@ export function VillageApp({
         (initialCategory === category ? initialFeed : undefined));
   const feed = (
     <>
-      <h1 className="page-title">생활 피드</h1>
+      <Breadcrumbs path={feedPath} />
+      <h1 className="page-title">{feedInfo.title}</h1>
+      <p className="mb-4 text-sm text-muted">{feedInfo.description}</p>
       <FeedTabs selected={category} />
       {feedError && (
         <div role="alert">
@@ -175,6 +182,8 @@ export function VillageApp({
           >
             {section === "home" ? (
               <Home />
+            ) : section === "about" ? (
+              <SiteGuide />
             ) : section === "report" ? (
               <Report />
             ) : section === "my" ? (
@@ -182,18 +191,28 @@ export function VillageApp({
             ) : (
               feed
             )}
+            {section === "feed" && (
+              <footer className="py-5 text-sm text-muted">
+                <Link className="underline" href="/about">
+                  생활정보 이용 안내·자주 묻는 질문
+                </Link>
+              </footer>
+            )}
           </main>
         )}
       </div>
-      {data && section !== "report" && section !== "my" && (
-        <button
-          className="refresh-news"
-          onClick={() => void reload()}
-          aria-label="소식 새로고침"
-        >
-          ↻ 새로고침
-        </button>
-      )}
+      {data &&
+        section !== "report" &&
+        section !== "my" &&
+        section !== "about" && (
+          <button
+            className="refresh-news"
+            onClick={() => void reload()}
+            aria-label="소식 새로고침"
+          >
+            ↻ 새로고침
+          </button>
+        )}
       <nav className="bottom-nav" aria-label="하단 주요 메뉴">
         {links.map(([href, NavIcon, label]) => {
           const active =

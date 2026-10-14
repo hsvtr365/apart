@@ -134,7 +134,11 @@ try {
     },
   });
   const url = "posts/" + post.id;
-  const seoPage = async (path: string, cookie = "", agent = "OAI-SearchBot") => {
+  const seoPage = async (
+    path: string,
+    cookie = "",
+    agent = "OAI-SearchBot",
+  ) => {
     const response = await fetch(base + path, {
       headers: { Cookie: cookie, "User-Agent": agent },
       redirect: "manual",
@@ -147,43 +151,113 @@ try {
     const visible = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
     assert(visible.includes(post.body), "Body must be in SSR HTML: " + path);
     const canonical = html.match(/<link rel="canonical" href="([^"]+)"/)?.[1];
-    assert.equal(new URL(canonical ?? "", base).href, new URL(path, "https://apart.jujeop.com").href, path);
-    assert.match(response.headers.get("cache-control") ?? "", /private|no-store/);
-    assert.match(html, /<meta name="robots" content="index, follow"/);
+    assert.equal(
+      new URL(canonical ?? "", base).href,
+      new URL(path, "https://apart.jujeop.com").href,
+      path,
+    );
+    assert.match(
+      response.headers.get("cache-control") ?? "",
+      /private|no-store/,
+    );
+    assert.match(html, /<meta name="robots" content="index, follow[,\"]/);
+    const structured = JSON.parse(
+      html.match(
+        /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
+      )?.[1] ?? "null",
+    );
+    assert(
+      structured?.["@graph"],
+      "Missing server-rendered structured data: " + path,
+    );
+    if (path.startsWith("/post/")) {
+      const article = structured["@graph"].find(
+        (item: { "@type": string }) =>
+          item["@type"] === "DiscussionForumPosting",
+      );
+      assert.equal(article.text, post.body);
+      assert.equal(article.author.name, user.nickname);
+      assert.equal(article.datePublished, post.createdAt.toISOString());
+      assert.equal(article.dateModified, post.updatedAt.toISOString());
+    }
   }
+  const guide = await seoPage("/about");
+  assert.equal(guide.response.status, 200);
+  assert(
+    guide.html
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+      .includes("자주 묻는 질문"),
+  );
+  assert(
+    (await seoPage("/sitemap.xml")).html.includes(
+      "https://apart.jujeop.com/about",
+    ),
+  );
   const noticeFeed = await seoPage("/feed/notice");
-  assert(!noticeFeed.html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "").includes(post.body));
-  for (const agent of ["Mozilla/5.0", "Googlebot", "OAI-SearchBot", "bingbot", "Yeti"]) {
-    for (const path of ["/post/missing-seo-post", "/feed/wrong-category", "/my/extra"]) {
+  assert(
+    !noticeFeed.html
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+      .includes(post.body),
+  );
+  for (const agent of [
+    "Mozilla/5.0",
+    "Googlebot",
+    "OAI-SearchBot",
+    "bingbot",
+    "Yeti",
+  ]) {
+    for (const path of [
+      "/post/missing-seo-post",
+      "/feed/wrong-category",
+      "/my/extra",
+    ]) {
       const { response, html } = await seoPage(path, "", agent);
       assert.equal(response.status, 404, agent + " " + path);
       assert.match(html, /name="robots" content="noindex"/);
     }
   }
   for (const path of ["/my", "/report", "/map/" + post.id]) {
-    assert.match((await seoPage(path)).html, /name="robots" content="noindex, follow"/);
+    assert.match(
+      (await seoPage(path)).html,
+      /name="robots" content="noindex, follow"/,
+    );
   }
-  for (const [path, destination] of [["/home", "/"], ["/feed/all", "/feed"]]) {
+  for (const [path, destination] of [
+    ["/home", "/"],
+    ["/feed/all", "/feed"],
+  ]) {
     const { response } = await seoPage(path);
     assert.equal(response.status, 308);
     assert.equal(response.headers.get("location"), destination);
   }
-  assert.match((await seoPage("/robots.txt")).html, /Sitemap: https:\/\/apart\.jujeop\.com\/sitemap.xml/);
+  assert.match(
+    (await seoPage("/robots.txt")).html,
+    /Sitemap: https:\/\/apart\.jujeop\.com\/sitemap.xml/,
+  );
   assert((await seoPage("/sitemap.xml")).html.includes("/post/" + post.id));
   for (const flag of ["hidden", "adminDeleted", "userDeleted"] as const) {
     await db().post.update({ where: { id: post.id }, data: { [flag]: true } });
     const anonymous = await seoPage("/post/" + post.id);
     assert.equal(anonymous.response.status, 404, flag);
     assert(!anonymous.html.includes(post.body), "Private body leaked: " + flag);
-    assert(!(await seoPage("/sitemap.xml")).html.includes("/post/" + post.id), flag);
+    assert(
+      !(await seoPage("/sitemap.xml")).html.includes("/post/" + post.id),
+      flag,
+    );
     if (flag !== "userDeleted") {
       const owner = await seoPage("/post/" + post.id, memberCookie);
       assert.equal(owner.response.status, 200, flag + " owner");
       assert.match(owner.html, /name="robots" content="noindex, follow"/);
+      assert(
+        !owner.html.includes('<script type="application/ld+json">'),
+        "Private structured data leaked: " + flag,
+      );
     }
     await db().post.update({ where: { id: post.id }, data: { [flag]: false } });
   }
-  console.log("PASS SSR content, canonical, crawler/browser 404, noindex, redirects, robots, live sitemap and private-post isolation");
+  console.log(
+    "PASS SSR content, canonical, crawler/browser 404, noindex, redirects, robots, live sitemap and private-post isolation",
+  );
   const visitor = (await call("bootstrap")).cookie;
   const hash = createHash("sha256").update(visitor.split("=")[1]).digest("hex");
   assert.equal(

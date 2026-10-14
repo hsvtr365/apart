@@ -4,7 +4,13 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { VillageApp } from "@/components/village-app";
 import { getBootstrap } from "@/lib/bootstrap";
 import { getPosts } from "@/lib/queries";
-import { isPublicPost, pageMetadata, validPagePath } from "@/lib/seo";
+import {
+  isPublicPost,
+  pageMetadata,
+  pageStructuredData,
+  serializeJsonLd,
+  validPagePath,
+} from "@/lib/seo";
 import type { Category } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -52,11 +58,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const pathname = "/" + ((await params).path ?? []).join("/");
   const { post, feed, category } = await resolvePage(pathname);
+  const structuredData = pageStructuredData(pathname, post);
   return (
-    <VillageApp
-      initialPost={post}
-      initialFeed={feed}
-      initialCategory={category}
-    />
+    <>
+      {structuredData && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
+        />
+      )}
+      <VillageApp
+        initialPost={post}
+        initialFeed={feed}
+        initialCategory={category}
+      />
+    </>
   );
 }

@@ -5,8 +5,18 @@ export const categories = {
 } as const;
 export type Category = keyof typeof categories;
 export const weekdayLabels = ["월", "화", "수", "목", "금", "토", "일"];
-export const seasonLabels: Record<string, string> = { SPRING: "봄", SUMMER: "여름", AUTUMN: "가을", WINTER: "겨울" };
-export type User = { id: string; nickname: string; building: string | null; permission?: number };
+export const seasonLabels: Record<string, string> = {
+  SPRING: "봄",
+  SUMMER: "여름",
+  AUTUMN: "가을",
+  WINTER: "겨울",
+};
+export type User = {
+  id: string;
+  nickname: string;
+  building: string | null;
+  permission?: number;
+};
 export type Comment = {
   id: string;
   body: string;
@@ -42,6 +52,7 @@ export type Post = {
   departureTime: string | null;
   createdAt: string;
   authorId: string;
+  updatedAt?: string;
   author: string;
   likes: number;
   authorBuilding?: string | null;

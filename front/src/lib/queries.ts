@@ -76,8 +76,9 @@ export async function getPosts(
       .map((p) => p.postId),
   );
   const reports = (p: (typeof page)[number]) =>
-    [...p.presences, ...p.visitorPresences, ...p.presenceEvents]
-      .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime());
+    [...p.presences, ...p.visitorPresences, ...p.presenceEvents].sort(
+      (a, b) => b.observedAt.getTime() - a.observedAt.getTime(),
+    );
   const latest = (p: (typeof page)[number]) =>
     reports(p)
       .filter(
@@ -112,6 +113,7 @@ export async function getPosts(
       arrivalTime: p.arrivalTime,
       departureTime: p.departureTime,
       createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
       authorId: p.authorId,
       author: p.author.nickname,
       authorBuilding: p.author.building,
@@ -121,10 +123,12 @@ export async function getPosts(
       comments: [],
       presenceConfirmed: confirmed.has(p.id),
       presenceOccurrence: occurrences.get(p.id),
-      lastPresenceReport: reports(p)[0] ? {
-        state: reports(p)[0].state,
-        observedAt: reports(p)[0].observedAt.toISOString(),
-      } : null,
+      lastPresenceReport: reports(p)[0]
+        ? {
+            state: reports(p)[0].state,
+            observedAt: reports(p)[0].observedAt.toISOString(),
+          }
+        : null,
       presence: latest(p)?.state ?? null,
       observedAt: latest(p)?.observedAt.toISOString() ?? null,
     })),
@@ -151,7 +155,11 @@ export function todayPostWhere(): Prisma.PostWhereInput {
   ];
   return {
     OR: [
-      { category: "NOTICE", noticeStartDate: { lte: today }, noticeEndDate: { gte: today } },
+      {
+        category: "NOTICE",
+        noticeStartDate: { lte: today },
+        noticeEndDate: { gte: today },
+      },
       { category: { in: ["FOOD", "MARKET"] }, OR: foodOrMarket },
     ],
   };

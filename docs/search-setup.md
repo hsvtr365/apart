@@ -13,7 +13,17 @@
 - `/sitemap.xml`은 공개 페이지와 공개 게시글, 실제 수정 시각을 동적으로 제공한다. 글의 숨김·삭제가 다음 요청에 반영된다. 50,000 URL에 도달하기 전에 사이트맵 분할이 필요하다.
 - `/robots.txt`는 검색봇의 공개 페이지 접근을 허용하고 사이트맵을 안내한다. noindex 페이지의 크롤링은 차단하지 않는다.
 
-## 소유권 확인 및 운영
+## SEO·AEO 콘텐츠 보강
+
+- `/about`에 지역·서비스 범위, 일정과 현장 확인의 차이, 제보 방법, 자주 묻는 질문과 기관 원문 확인처를 제공한다. 홈과 피드에서 연결하고 사이트맵에 포함한다.
+- 분류별 제목·설명을 실제 화면에 표시하고 게시글까지 이어지는 경로 링크를 제공한다.
+- 공개 페이지에 WebSite·WebPage/CollectionPage/AboutPage·BreadcrumbList, 공개 게시글에 DiscussionForumPosting JSON-LD를 서버 렌더링한다. 게시글의 실제 본문·작성자 닉네임·작성/수정일·실제 이미지만 사용한다. 계정 ID와 동 정보는 구조화 데이터에 넣지 않는다.
+- 게시글 작성/수정 시각을 화면과 Open Graph에도 제공한다. 색인 가능한 페이지에 `max-image-preview:large`, `max-snippet:-1`을 제공한다.
+- 숨김·삭제·개인 페이지와 데모는 구조화 데이터 대상에서 제외한다. 사용자 본문의 `<`를 JSON-LD에서 이스케이프해 script 종료 태그 삽입을 막는다.
+- 별도 AI 전용 파일, 허구의 기관·평점·행사 정보, 노출용 중복 페이지는 만들지 않는다. 실제 방문 일정·현장 확인·원문 출처를 지속적으로 보완하는 것이 운영 과제다.
+- 근거: [Google AI 검색 안내](https://developers.google.com/search/docs/appearance/ai-features), [게시판 구조화 데이터](https://developers.google.com/search/docs/appearance/structured-data/discussion-forum), [경로 구조화 데이터](https://developers.google.com/search/docs/appearance/structured-data/breadcrumb). 구조화 데이터는 검색엔진의 이해를 돕지만 노출과 순위를 보장하지 않는다.
+
+## 소유권 확인 및 운영 설정
 
 `front/.env`의 `GOOGLE_SITE_VERIFICATION`, `NAVER_SITE_VERIFICATION`, `BING_SITE_VERIFICATION`에 각 서비스가 발급한 메타태그의 content 값을 넣고 재빌드·재시작한다. 전체 메타태그를 넣지 않는다.
 

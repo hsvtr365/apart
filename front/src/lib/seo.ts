@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { Post } from "./types";
+import { categories, type Post } from "./types";
 
 export const SITE_URL = "https://apart.jujeop.com";
 export const SITE_NAME = "햇빛마을20단지";
@@ -11,6 +11,11 @@ export const publicPostWhere = {
   userDeleted: false,
 };
 export const publicPages = {
+  "/about": {
+    title: "생활정보 이용 안내와 자주 묻는 질문",
+    description:
+      "고양시 행신동 햇빛마을20단지의 먹거리·요일장 일정, 단지 공고, 현장 확인과 이웃 제보 이용 방법을 안내합니다.",
+  },
   "/": {
     title: "햇빛마을20단지 생활정보 | 고양시 행신동",
     description: SITE_DESCRIPTION,
@@ -50,7 +55,8 @@ export function validPagePath(path: string[]) {
   if (!path.length) return true;
   const [section, id] = path;
   if (path.length > 2) return false;
-  if (["home", "my", "report"].includes(section)) return path.length === 1;
+  if (["home", "my", "report", "about"].includes(section))
+    return path.length === 1;
   if (section === "feed")
     return (
       path.length === 1 || ["all", "food", "notice", "market"].includes(id)
@@ -86,9 +92,23 @@ export function pageMetadata(path: string, post?: Post | null): Metadata {
     title: path === "/" ? { absolute: title } : title,
     description,
     alternates: { canonical: SITE_URL + canonical },
-    robots: { index, follow: true },
+    robots: {
+      index,
+      follow: true,
+      ...(index
+        ? { "max-image-preview": "large" as const, "max-snippet": -1 }
+        : {}),
+    },
     openGraph: {
-      type: "website",
+      ...(post && isPublicPost(post)
+        ? {
+            type: "article" as const,
+            publishedTime: post.createdAt,
+            modifiedTime: post.updatedAt ?? post.createdAt,
+            authors: [post.author],
+            section: categories[post.category],
+          }
+        : { type: "website" as const }),
       locale: "ko_KR",
       siteName: SITE_NAME,
       title,
@@ -103,4 +123,96 @@ export function pageMetadata(path: string, post?: Post | null): Metadata {
       images: [image],
     },
   };
+}
+
+export function pageBreadcrumbs(path: string, post?: Post | null) {
+  const items = [{ name: SITE_NAME, path: "/" }];
+  if (path === "/") return items;
+  if (post && path.startsWith("/post/")) {
+    items.push({ name: "생활 피드", path: "/feed" });
+    const categoryPath = "/feed/" + post.category.toLowerCase();
+    items.push({
+      name: publicPages[categoryPath as keyof typeof publicPages].title,
+      path: categoryPath,
+    });
+    items.push({ name: post.title, path });
+  } else {
+    const info = publicPages[path as keyof typeof publicPages];
+    if (!info) return [];
+    if (path.startsWith("/feed/"))
+      items.push({ name: "생활 피드", path: "/feed" });
+    items.push({ name: info.title, path });
+  }
+  return items;
+}
+
+export function pageStructuredData(path: string, post?: Post | null) {
+  const info = publicPages[path as keyof typeof publicPages];
+  if (
+    process.env.DEMO_MODE === "true" ||
+    (!info && !(path.startsWith("/post/") && post && isPublicPost(post)))
+  )
+    return null;
+  const url = SITE_URL + path;
+  const graph: Record<string, unknown>[] = [
+    {
+      "@type": "WebSite",
+      "@id": SITE_URL + "/#website",
+      url: SITE_URL + "/",
+      name: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      inLanguage: "ko-KR",
+    },
+    {
+      "@type":
+        path === "/about"
+          ? "AboutPage"
+          : path.startsWith("/feed")
+            ? "CollectionPage"
+            : "WebPage",
+      "@id": url + "#webpage",
+      url,
+      name: post?.title ?? info?.title,
+      description: post
+        ? post.body.replace(/\s+/g, " ").trim().slice(0, 160)
+        : info?.description,
+      inLanguage: "ko-KR",
+      isPartOf: { "@id": SITE_URL + "/#website" },
+      ...(post ? { mainEntity: { "@id": url + "#post" } } : {}),
+      ...(path !== "/" ? { breadcrumb: { "@id": url + "#breadcrumb" } } : {}),
+    },
+  ];
+  if (path !== "/")
+    graph.push({
+      "@type": "BreadcrumbList",
+      "@id": url + "#breadcrumb",
+      itemListElement: pageBreadcrumbs(path, post).map((item, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: item.name,
+        item: SITE_URL + item.path,
+      })),
+    });
+  if (post)
+    graph.push({
+      "@type": "DiscussionForumPosting",
+      "@id": url + "#post",
+      url,
+      mainEntityOfPage: { "@id": url + "#webpage" },
+      headline: post.title,
+      text: post.body,
+      articleSection: categories[post.category],
+      datePublished: post.createdAt,
+      dateModified: post.updatedAt ?? post.createdAt,
+      author: { "@type": "Person", name: post.author },
+      inLanguage: "ko-KR",
+      ...(post.imageUrl
+        ? { image: new URL(post.imageUrl, SITE_URL).href }
+        : {}),
+    });
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
+export function serializeJsonLd(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
