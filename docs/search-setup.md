@@ -26,3 +26,12 @@ Cloudflare의 Search/AI 검색봇 정책과 WAF를 별도로 확인한다. 원�
 `cd front`에서 `npm test`, `npm run build`, `npm run test:api` 실행. 마지막 명령은 별도 임시 DB를 만들고 정상/오류 페이지, SSR 본문, 검색봇별 HTTP 상태, 비공개 글 분리, robots 및 사이트맵을 검증한 뒤 임시 DB를 삭제한다. 운영 DB에는 테스트 데이터를 쓰지 않는다.
 
 배포 후 외부 주소에서도 본문·메타태그·404·robots·사이트맵을 확인한다. 검색 서비스 등록 및 제출은 색인 생성이나 순위를 보장하지 않는다.
+
+## 2026-10-14 적용 결과
+
+- `787b349`를 main에 반영하고 OCI의 apart 프로세스에 배포했다.
+- Google·네이버·Bing 모두 HTML 메타태그로 소유권 확인을 완료하고 사이트맵을 제출했다. 인증값은 운영 `.env`에 보관한다.
+- Google: 사이트맵 처리 완료, 발견된 페이지 21개. 네이버: 제출 목록 등록 확인. Bing: Submitted / Processing 확인.
+- 단위 테스트 22개, production build, 임시 DB/API 통합 검증 통과. 외부 HTTPS에서도 본문 HTML·canonical·noindex·404·robots·21 URL 사이트맵을 확인했다.
+- 실제 브라우저에서 상세 진입·모달 전환·닫기·분류 전환을 확인했고 확인 구간의 클라이언트 오류는 없었다.
+- Cloudflare 관리자 정책 자체는 변경하지 않았다. 외부 robots.txt는 앱의 규칙을 정상 반환하고 Google의 실제 사이트맵 수집도 성공했다.
