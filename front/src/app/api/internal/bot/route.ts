@@ -50,7 +50,9 @@ export async function POST(req: Request) {
           startDate: p.startDate, finishDate: p.finishDate, noticeStartDate: p.noticeStartDate, noticeEndDate: p.noticeEndDate,
           arrivalTime: p.arrivalTime, departureTime: p.departureTime,
           scheduled: p.category === "NOTICE" ? null : occursToday(p, target),
-          presence: latest ? { state: latest.state, observedAt: latest.observedAt } : null };
+          presence: latest?.state ?? null,
+          observedAt: latest?.observedAt ?? null,
+          lastPresenceReport: latest ? { state: latest.state, observedAt: latest.observedAt } : null };
       });
       return respond({ today: todayContext(now).today, posts, truncated: rows.length > 100 || posts.length === 15 });
     }
@@ -63,6 +65,8 @@ export async function POST(req: Request) {
     const raw = JSON.parse(z.string().max(12000).parse(form.get("post")));
     const incoming = form.getAll("files");
     if (!incoming.length || incoming.length > 6 || incoming.some(f => !(f instanceof File))) throw new HttpError("사진 1~6장이 필요합니다.");
+    if ((incoming as File[]).reduce((sum, file) => sum + file.size, 0) > 16 * 1024 * 1024)
+      throw new HttpError("사진 합계는 16MB 이하여야 합니다.", 413);
     const hashes = [];
     for (const file of incoming as File[]) {
       if (file.size > 8 * 1024 * 1024) throw new HttpError("8MB 이하의 사진을 선택해주세요.", 413);
