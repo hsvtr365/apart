@@ -1,0 +1,25 @@
+import {test,expect} from '@playwright/test';
+import {demoData} from '../../src/lib/demo';
+test.use({channel:'chrome'});
+test('report notice choice auto-switches at one month and restores short-period manual choice',async({page})=>{
+ await page.route('**/api/bootstrap',r=>r.fulfill({json:demoData()}));
+ await page.setViewportSize({width:390,height:844});
+ await page.goto((process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:28004') + '/report');
+ await page.getByRole('radio',{name:'공고',exact:true}).check();
+ await page.locator('[name=noticeStartDate]').fill('2026-10-21');
+ await page.locator('[name=noticeEndDate]').fill('2026-11-20');
+ const short=page.getByRole('radio',{name:'단기공고',exact:true});
+ const routine=page.getByRole('radio',{name:'일상공고',exact:true});
+ await expect(short).toBeChecked();
+ await routine.check();await expect(page.locator('[name=noticeKind]')).toHaveValue('ROUTINE');
+ await short.check();
+ await page.locator('[name=noticeEndDate]').fill('2026-11-21');
+ await expect(routine).toBeChecked();await expect(short).toBeDisabled();
+ await expect(page.locator('[name=noticeKind]')).toHaveValue('ROUTINE');
+ await expect(page.getByText('게시 기간이 한 달 이상이므로 일상공고로 자동 분류됩니다.')).toBeVisible();
+ await page.screenshot({path:'test-results/notice-kind-mobile.png',fullPage:true});
+ await page.locator('[name=noticeEndDate]').fill('2026-11-20');
+ await expect(short).toBeChecked();await expect(short).toBeEnabled();
+ await page.getByRole('radio',{name:'먹거리',exact:true}).check();
+ await expect(page.locator('[name=noticeKind]')).toBeDisabled();
+});

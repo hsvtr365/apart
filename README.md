@@ -59,3 +59,5 @@ UI 구현 기준은 [UI 가이드](docs/ui-guide.md), 2026-10-13 검토 후 수�
 ## Mac 카카오톡 봇
 
 Mac 통합 봇 소스와 실행 방법은 [kakaoBot/README.md](kakaoBot/README.md)에 있다. 사이트의 봇 전용 API는 `front/`에서 관리한다. Mac 실행 설정과 수신 데이터는 로컬에 보관하며 Git에 포함하지 않는다.
+
+공고 제보의 단기/일상 선택과 한 달 자동 분류 규칙은 [공고 종류](docs/notice-kind.md)에 정리했습니다.

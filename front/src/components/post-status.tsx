@@ -23,7 +23,7 @@ export function PostStatus({ post }: { post: Post }) {
     <section className="detail-status" aria-label="일정과 현장 확인">
       {post.category === "NOTICE" ? (
         <>
-          <p>{status.schedule}</p>
+          <p>{post.noticeKind === "ROUTINE" ? "일상공고" : "단기공고"} · {status.schedule}</p>
           {status.observation && <p>{status.observation}</p>}
           {post.noticeStartDate && (
             <p>

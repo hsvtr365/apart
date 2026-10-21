@@ -16,7 +16,8 @@ const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => {
   return !isNaN(+d) && todayContext(d).today === v;
 });
 const searchInput = z.object({ query: z.string().trim().max(100).default(""),
-  category: z.enum(["FOOD", "NOTICE", "MARKET"]).nullable().default(null), date: date.nullable().default(null) });
+  category: z.enum(["FOOD", "NOTICE", "MARKET"]).nullable().default(null), date: date.nullable().default(null),
+  noticeScope: z.enum(["SHORT", "ROUTINE", "ALL"]).default("SHORT") });
 
 export async function POST(req: Request) {
   if (!botAuthorized(req.headers.get("authorization"))) return respond({ error: "Unauthorized" }, 401);
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
       const tokens = input.query.split(/\s+/).filter(Boolean).slice(0, 6);
       const rows = await db().post.findMany({ where: {
         hidden: false, adminDeleted: false, userDeleted: false,
+        ...(input.noticeScope !== "ALL" ? { OR: [{ category: { not: "NOTICE" as const } }, { noticeKind: input.noticeScope }] } : {}),
         ...(input.category ? { category: input.category } : {}),
         AND: tokens.map(token => ({ OR: [{ title: { contains: token, mode: "insensitive" as const } }, { body: { contains: token, mode: "insensitive" as const } }] })),
       }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 101,
@@ -45,7 +47,7 @@ export async function POST(req: Request) {
         const latest = [...p.presenceEvents, ...p.presences, ...p.visitorPresences]
           .filter(e => (e.occurrence ?? presenceOccurrence(p, e.observedAt)) === occurrence)
           .sort((a, b) => +b.observedAt - +a.observedAt)[0];
-        return { id: p.id, title: p.title, body: p.body, category: p.category,
+        return { id: p.id, title: p.title, body: p.body, category: p.category, noticeKind: p.noticeKind,
           scheduleType: p.scheduleType, weekdays: p.weekdays, seasons: p.seasons,
           startDate: p.startDate, finishDate: p.finishDate, noticeStartDate: p.noticeStartDate, noticeEndDate: p.noticeEndDate,
           arrivalTime: p.arrivalTime, departureTime: p.departureTime,

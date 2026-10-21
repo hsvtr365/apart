@@ -87,3 +87,13 @@ test("weekly and one-time schedules keep only their own fields", () => {
   assert.deepEqual(once.seasons,[]);
   assert.equal(once.finishDate,"2026-10-10");
 });
+
+test("notice kinds enforce one calendar month and preserve explicit routine choice", () => {
+  const base = {title:"공고",body:"내용",category:"NOTICE",mapX:null,mapY:null,noticeStartDate:"2026-10-21",noticeEndDate:"2026-11-20",noticeKind:"SHORT"};
+  assert.equal(postSchema.parse(base).noticeKind,"SHORT");
+  assert.equal(postSchema.parse({...base,noticeEndDate:"2026-11-21"}).noticeKind,"ROUTINE");
+  assert.equal(postSchema.parse({...base,noticeKind:"ROUTINE"}).noticeKind,"ROUTINE");
+  assert.equal(postSchema.parse({...base,noticeStartDate:"2026-01-31",noticeEndDate:"2026-02-28"}).noticeKind,"ROUTINE");
+  assert.equal(postSchema.parse({...base,category:"FOOD"}).noticeKind,null);
+  assert(!postSchema.safeParse({...base,noticeKind:"WRONG"}).success);
+});

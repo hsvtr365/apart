@@ -71,6 +71,7 @@ model Post {
   finishDate String? @db.VarChar(10)
   noticeStartDate String? @db.VarChar(10)
   noticeEndDate String? @db.VarChar(10)
+  noticeKind String? @db.VarChar(7)
   seasons String[] @default([])
   arrivalTime String? @db.VarChar(5)
   departureTime String? @db.VarChar(5)

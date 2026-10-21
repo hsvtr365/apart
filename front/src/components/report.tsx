@@ -112,6 +112,7 @@ export function Report({
           "WEEKLY") as PostInput["scheduleType"],
         noticeStartDate: String(fields.get("noticeStartDate") || "") || null,
         noticeEndDate: String(fields.get("noticeEndDate") || "") || null,
+        noticeKind: category === "NOTICE" ? fields.get("noticeKind") as "SHORT" | "ROUTINE" : null,
         startDate: String(fields.get("startDate") || "") || null,
         finishDate: String(fields.get("finishDate") || "") || null,
         weekdays: fields.getAll("weekdays").map(Number),

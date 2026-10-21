@@ -5,11 +5,12 @@ const dateOK = value => value === null || (typeof value === 'string' && /^\d{4}-
 export function searchInput(input) {
   if (!input || typeof input !== 'object' || typeof input.query !== 'string' || input.query.length > 100
     || ![null, 'FOOD', 'NOTICE', 'MARKET'].includes(input.category) || !dateOK(input.date)) throw new BotError('search-input-invalid');
-  return { query: input.query.trim(), category: input.category, date: input.date };
+  if (input.noticeScope !== undefined && !["SHORT", "ROUTINE", "ALL"].includes(input.noticeScope)) throw new BotError("search-input-invalid");
+  return { query: input.query.trim(), category: input.category, date: input.date, ...(input.noticeScope ? { noticeScope: input.noticeScope } : {}) };
 }
 export function publicResults(data) {
   if (!data || !dateOK(data.today) || !Array.isArray(data.posts) || data.posts.length > 500) throw new BotError('app-response-invalid');
-  const fields = ['id', 'title', 'body', 'category', 'scheduleType', 'startDate', 'finishDate', 'noticeStartDate', 'noticeEndDate',
+  const fields = ['id', 'title', 'body', 'category', 'scheduleType', 'startDate', 'finishDate', 'noticeStartDate', 'noticeEndDate', 'noticeKind',
     'weekdays', 'seasons', 'arrivalTime', 'departureTime', 'presence', 'observedAt', 'presenceConfirmed'];
   const posts = data.posts.filter(p => p && !p.hidden && !p.adminDeleted && !p.userDeleted && !p.deletedAt
     && typeof p.id === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(p.id)

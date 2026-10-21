@@ -14,7 +14,7 @@ import { acquireLock } from '../src/process-lock.mjs';
 const photo = { mime: 'image/png', base64: Buffer.from('test').toString('base64') };
 const post = { title: '점검 공고', body: '시설 점검 안내', category: 'NOTICE', scheduleType: 'WEEKLY',
   noticeStartDate: '2026-10-21', noticeEndDate: '2026-10-30' };
-const env = { ALLOWED_ROOM_IDS: 'room,room2', BOT_SENDER_ID: 'bot', BOT_NAME: '마을봇', APP_PUBLIC_URL: 'https://apart.jujeop.com' };
+const env = { ALLOWED_ROOM_IDS: 'room,room2', BOT_SENDER_ID: 'bot', BOT_NAME: '뽀롱봇', APP_PUBLIC_URL: 'https://apart.jujeop.com' };
 const event = (id, text, extra = {}) => ({ id, roomId: 'room', senderId: 'alice', text, ...extra });
 function setup(overrides = {}) {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'mac-bot-'));
@@ -51,9 +51,9 @@ test('photos alone, negated registration, and other rooms/users do not publish o
   try {
     await t.engine.process(event('1', '', { images: [photo] }));
     assert.equal(t.calls.describe, 0); assert.equal(t.calls.publish, 0);
-    assert.match((await t.engine.process(event('2', '@마을봇 등록', { senderId: 'bob' }))).reply, /사진/);
-    assert.match((await t.engine.process(event('3', '@마을봇 등록', { roomId: 'room2' }))).reply, /사진/);
-    await t.engine.process(event('4', '@마을봇 등록하지 마'));
+    assert.match((await t.engine.process(event('2', '@뽀롱봇 등록', { senderId: 'bob' }))).reply, /사진/);
+    assert.match((await t.engine.process(event('3', '@뽀롱봇 등록', { roomId: 'room2' }))).reply, /사진/);
+    await t.engine.process(event('4', '@뽀롱봇 등록하지 마'));
     assert.equal(t.calls.publish, 0);
     assert.equal(registrationIntent('등록된 공고 있어?'), false);
     assert.equal(registrationIntent('이 공고 등록해줘'), true);
@@ -65,7 +65,7 @@ test('missing and conflicting dates require clarification before any publication
     const t = setup({ ai: { draft: async () => ({ post: raw }) } });
     try {
       assert.ok(normalizePost(raw).question);
-      assert.match((await t.engine.process(event('1', '@마을봇 이 공고 등록해줘', { images: [photo] }))).reply, /날짜|기간|종료일|시작일/);
+      assert.match((await t.engine.process(event('1', '@뽀롱봇 이 공고 등록해줘', { images: [photo] }))).reply, /날짜|기간|종료일|시작일/);
       assert.equal(t.calls.publish, 0);
     } finally { t.close(); }
   }
@@ -77,9 +77,9 @@ test('expiry, cancellation and restart discard ordinary in-memory photos', async
     try {
       await t.engine.process(event('1', '', { images: [photo] }));
       if (action === 'expire') t.advance(601000);
-      if (action === 'cancel') await t.engine.process(event('2', '@마을봇 취소'));
+      if (action === 'cancel') await t.engine.process(event('2', '@뽀롱봇 취소'));
       if (action === 'restart') t.restart();
-      assert.match((await t.engine.process(event('3', '@마을봇 등록'))).reply, /사진/);
+      assert.match((await t.engine.process(event('3', '@뽀롱봇 등록'))).reply, /사진/);
       assert.equal(t.calls.publish, 0);
     } finally { t.close(); }
   }
@@ -88,7 +88,7 @@ test('expiry, cancellation and restart discard ordinary in-memory photos', async
 test('AI outage returns a safe reply without publishing; duplicate and simultaneous requests are cached', async () => {
   const t = setup({ ai: { describe: async () => { throw new BotError('ai-unavailable'); } } });
   try {
-    const e = event('1', '@마을봇 등록', { images: [photo] });
+    const e = event('1', '@뽀롱봇 등록', { images: [photo] });
     const [a, b] = await Promise.all([t.engine.process(e), t.engine.process(e)]);
     assert.deepEqual(a, b); assert.equal(a.code, 'ai-unavailable'); assert.equal(t.calls.publish, 0);
     assert.deepEqual(await t.engine.process(e), a);
@@ -106,12 +106,12 @@ test('a lost site response and full restart reuse exactly the same durable publi
   } } });
   let replacement;
   try {
-    const response = await t.engine.process(event('1', '@마을봇 등록', { images: [photo] }));
+    const response = await t.engine.process(event('1', '@뽀롱봇 등록', { images: [photo] }));
     assert.match(response.reply, /아직 확인|재시도/);
     t.engine.close(); t.store.close();
     replacement = openStore(t.dir);
     const restarted = createEngine({ env, ai: t.ai, app: t.app, store: replacement });
-    assert.match((await restarted.process(event('2', '@마을봇 재시도'))).reply, /durablePost/);
+    assert.match((await restarted.process(event('2', '@뽀롱봇 재시도'))).reply, /durablePost/);
     assert.equal(creates, 1); assert.equal(keys.length, 2); assert.equal(keys[0], keys[1]);
     assert.deepEqual(replacement.operation(keys[0])?.payload ?? {}, {});
     assert.equal(statSync(path.join(t.dir, 'events.sqlite')).mode & 0o777, 0o600);
@@ -123,7 +123,7 @@ test('a lost site response and full restart reuse exactly the same durable publi
 
 test('successful registration followed by uncertain Kakao send never republishes', async () => {
   const t = setup(), inbox = new Inbox(':memory:');
-  const raw = { id: '1', roomId: 'room', senderId: 'alice', messageType: 1, text: '@마을봇 등록' };
+  const raw = { id: '1', roomId: 'room', senderId: 'alice', messageType: 1, text: '@뽀롱봇 등록' };
   try {
     await t.engine.process(event('photo', '', { images: [photo] }));
     inbox.accept('room', [raw]);
@@ -131,7 +131,7 @@ test('successful registration followed by uncertain Kakao send never republishes
       send: async () => { throw new Error('send-uncertain'); } }), /send-uncertain/);
     inbox.accept('room', [raw]);
     assert.equal(await deliverOne({ inbox, source: { rooms: ['room'], selfId: 'bot' }, processEvent: () => assert.fail('reprocessed') }), false);
-    assert.match((await t.engine.process(event('1', '@마을봇 등록'))).reply, /created1/);
+    assert.match((await t.engine.process(event('1', '@뽀롱봇 등록'))).reply, /created1/);
     assert.equal(t.calls.publish, 1);
   } finally { inbox.close(); t.close(); }
 });
@@ -142,9 +142,9 @@ test('duplicate photos require the same sender explicit confirmation and a disti
     keys.push(key); forced.push(force); return force ? { id: 'newPost' } : { id: 'existing', candidate: true };
   } } });
   try {
-    assert.match((await t.engine.process(event('1', '@마을봇 등록', { images: [photo] }))).reply, /existing/);
-    assert.match((await t.engine.process(event('2', '@마을봇 중복이어도 등록', { senderId: 'bob' }))).reply, /요청이 없습니다/);
-    assert.match((await t.engine.process(event('3', '@마을봇 중복이어도 등록'))).reply, /newPost/);
+    assert.match((await t.engine.process(event('1', '@뽀롱봇 등록', { images: [photo] }))).reply, /existing/);
+    assert.match((await t.engine.process(event('2', '@뽀롱봇 중복이어도 등록', { senderId: 'bob' }))).reply, /요청이 없습니다/);
+    assert.match((await t.engine.process(event('3', '@뽀롱봇 중복이어도 등록'))).reply, /newPost/);
     assert.deepEqual(forced, [false, true]); assert.notEqual(keys[0], keys[1]);
   } finally { t.close(); }
 });
@@ -157,7 +157,7 @@ test('hidden/deleted posts and private fields never reach the AI answer or Kakao
     { id: 'public', title: '먹거리', body: '예정', category: 'FOOD', scheduleType: 'ONCE', startDate: '2026-10-21', authorId: 'private', email: 'private@example.com' },
   ] }) }, ai: { answer: async data => { evidence = data; return '일정상 예정입니다.'; } } });
   try {
-    const result = await t.engine.process(event('1', '@마을봇 오늘 먹거리 있어?'));
+    const result = await t.engine.process(event('1', '@뽀롱봇 오늘 먹거리 있어?'));
     assert.deepEqual(evidence.posts.map(p => p.id), ['public']);
     assert.equal(evidence.posts[0].email, undefined); assert.equal(evidence.posts[0].authorId, undefined);
     assert.match(result.reply, /예정/); assert.match(result.reply, /현장 제보: 확인된 자료 없음/);
@@ -188,4 +188,59 @@ test('process lock prevents two programs sharing a state directory', () => {
   try { const filename = path.join(dir, 'bot.lock'), release = acquireLock(filename);
     assert.throws(() => acquireLock(filename), /bot-already-running/); release(); acquireLock(filename)();
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('natural short registration commands are recognized without turning questions into writes', () => {
+  for (const value of ['이공고 등록해', '이 공고 등록해!', '사진 등록해요', '등록해줄래?', '이 공고 게시해', '등록해줘']) assert.equal(registrationIntent(value), true, value);
+  for (const value of ['등록된 공고 있어?', '등록해야 하나?', '등록해도 돼?', '등록하지 마', '등록 취소']) assert.equal(registrationIntent(value), false, value);
+});
+
+test('registration synonyms accept spacing and punctuation but reject queries and cancellation', () => {
+  for (const value of ['공고 등록.', '공고 등록해', '공고올려줘', '공고올려', '공고 업로드', '공고등록',
+    '공고등록!', '이 공고를 업로드해줘', '사진 등록', '이공고 등록해', '공고 올려 주세요']) {
+    assert.equal(registrationIntent(value), true, value);
+  }
+  for (const value of ['공고 등록하지 마', '공고 올리지 마', '공고 업로드 하지 마', '공고 등록 취소',
+    '등록된 공고 있어?', '공고 등록 방법', '공고 업로드 방법', '공고 올려도 돼?', '공고 등록해도 돼?']) {
+    assert.equal(registrationIntent(value), false, value);
+  }
+});
+
+test('general chat uses AI without site access and keeps short per-user expiring context', async () => {
+  const seen = [];
+  const t = setup({ ai: { route: async () => ({ kind: 'chat' }), chat: async data => { seen.push(data); return '**짧은 이야기**\n토끼가 웃었습니다.'; } },
+    app: { search: async () => assert.fail('chat queried site'), publish: async () => assert.fail('chat published') } });
+  try {
+    const first = event('chat1', '@뽀롱봇 재미있는 이야기 해줘');
+    const answer = await t.engine.process(first);
+    assert.equal(answer.reply, '짧은 이야기\n토끼가 웃었습니다.');
+    assert.deepEqual(await t.engine.process(first), answer);
+    assert.equal(seen.length, 1);
+    await t.engine.process(event('chat2', '@뽀롱봇 다른 이야기'));
+    assert.equal(seen[1].history.length, 1);
+    await t.engine.process(event('chat3', '@뽀롱봇 안녕', { senderId: 'bob' }));
+    assert.deepEqual(seen[2].history, []);
+    await t.engine.process(event('chat4', '@뽀롱봇 안녕', { roomId: 'room2' }));
+    assert.deepEqual(seen[3].history, []);
+    t.advance(600001);
+    await t.engine.process(event('chat5', '@뽀롱봇 안녕'));
+    assert.deepEqual(seen[4].history, []);
+    assert.equal(t.calls.publish, 0);
+  } finally { t.close(); }
+});
+
+test('site intent and active registration retain their guarded paths; chat AI failures fail safely', async () => {
+  const t = setup({ ai: { route: async () => ({ kind: 'site' }), chat: async () => assert.fail('site used chat') } });
+  try {
+    await t.engine.process(event('site', '@뽀롱봇 오늘 먹거리 있어?'));
+    assert.equal(t.calls.search, 1);
+    t.ai.route = async () => assert.fail('registration classified as chat');
+    await t.engine.process(event('register', '@뽀롱봇 공고 등록', { images: [photo] }));
+    assert.equal(t.calls.publish, 1);
+  } finally { t.close(); }
+  const fail = setup({ ai: { route: async () => ({ kind: 'chat' }), chat: async () => { throw new BotError('ai-unavailable'); } } });
+  try {
+    assert.match((await fail.engine.process(event('failedchat', '@뽀롱봇 이야기 해줘'))).reply, /분석하지 못했습니다/);
+    assert.equal(fail.calls.search, 0); assert.equal(fail.calls.publish, 0);
+  } finally { fail.close(); }
 });

@@ -17,8 +17,10 @@ export function parseMessage(line) {
 }
 
 export class KakaoSource {
-  constructor(bin, rooms, selfId) {
+  constructor(bin, rooms, selfId, { allowSelfCommands = false, botName = '뽀롱봇' } = {}) {
     this.bin = bin;
+    this.allowSelfCommands = allowSelfCommands;
+    this.botName = botName;
     this.rooms = rooms.map(numericId);
     this.selfId = numericId(selfId);
   }
@@ -40,7 +42,7 @@ export class KakaoSource {
   async poll(roomId, cursor) {
     this.checkRoom(roomId);
     if (cursor !== '0') numericId(cursor);
-    const rows = await this.query(`SELECT CAST(logId AS TEXT), CAST(chatId AS TEXT), CAST(authorId AS TEXT), type, message FROM NTChatMessage WHERE chatId=${roomId} AND logId>${cursor} AND authorId<>${this.selfId} ORDER BY logId ASC LIMIT 50`);
+    const rows = await this.query(`SELECT CAST(logId AS TEXT), CAST(chatId AS TEXT), CAST(authorId AS TEXT), type, message FROM NTChatMessage WHERE chatId=${roomId} AND logId>${cursor} ${this.allowSelfCommands ? '' : `AND authorId<>${this.selfId}`} ORDER BY logId ASC LIMIT 50`);
     return rows.map(([id, roomId, senderId, messageType, text]) => ({
       id: numericId(id), roomId: numericId(roomId), senderId: numericId(senderId), messageType, text: text ?? '',
     }));
@@ -48,7 +50,7 @@ export class KakaoSource {
   async photo(event) {
     this.checkRoom(event.roomId);
     numericId(event.id); numericId(event.senderId);
-    const rows = await this.query(`SELECT type, attachment, supplement, extra, localFilePath FROM NTChatMessage WHERE chatId=${event.roomId} AND logId=${event.id} AND authorId=${event.senderId} AND authorId<>${this.selfId} LIMIT 7`);
+    const rows = await this.query(`SELECT type, attachment, supplement, extra, localFilePath FROM NTChatMessage WHERE chatId=${event.roomId} AND logId=${event.id} AND authorId=${event.senderId} ${this.allowSelfCommands ? '' : `AND authorId<>${this.selfId}`} LIMIT 7`);
     return rows.map(([messageType, attachment, supplement, extra, localFilePath]) => ({ messageType, attachment, supplement, extra, localFilePath }));
   }
   async assertPolicy() {
@@ -63,6 +65,7 @@ export class KakaoSource {
   async send(event, reply) {
     this.checkRoom(event.roomId);
     if (typeof reply !== 'string' || !reply.trim() || reply.length > 10000) throw new Error('invalid-reply');
+    if (this.allowSelfCommands) reply = `[${this.botName}]\n${reply}`;
     await this.assertPolicy();
     const before = await this.latest(event.roomId, true);
     try { await exec(this.bin, ['send', event.roomId, reply], { timeout: 60_000, maxBuffer: 1024 * 1024 }); }

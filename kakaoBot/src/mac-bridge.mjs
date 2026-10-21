@@ -1,3 +1,4 @@
+import { allowOwnEvent } from './self-commands.mjs';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
@@ -52,7 +53,7 @@ export async function deliverOne({ inbox, source, processEvent, send = (e, reply
   const row = inbox.pending();
   if (!row) return false;
   const raw = JSON.parse(row.payload);
-  if (!source.rooms.includes(raw.roomId) || raw.senderId === source.selfId || ![1, 2, 27].includes(raw.messageType)) {
+  if (!source.rooms.includes(raw.roomId) || (raw.senderId === source.selfId && !allowOwnEvent(raw, source.allowSelfCommands, source.botName)) || ![1, 2, 27].includes(raw.messageType)) {
     inbox.finish(row.id, 'ignored'); return true;
   }
   if (raw.messageType === 27) {
@@ -89,7 +90,9 @@ export async function main(env = process.env) {
   if (process.platform !== 'darwin') throw new Error('macOS-required');
   const rooms = (env.ALLOWED_ROOM_IDS || '').split(',').filter(Boolean).map(numericId);
   if (!rooms.length || new Set(rooms).size !== rooms.length) throw new Error('configure-rooms');
-  const source = new KakaoSource(env.KAKAOCLI_BIN || 'kakaocli', rooms, env.BOT_SENDER_ID);
+  const source = new KakaoSource(env.KAKAOCLI_BIN || 'kakaocli', rooms, env.BOT_SENDER_ID, {
+    allowSelfCommands: env.ALLOW_SELF_COMMANDS === 'true', botName: env.BOT_NAME || '뽀롱봇',
+  });
   await source.assertPolicy();
   const dir = path.resolve(env.MAC_STATE_DIR || './data/mac');
   mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -116,7 +119,7 @@ export async function main(env = process.env) {
       if (inbox.cursor(room) === undefined) inbox.setCursor(room, await source.latest(room));
     }
     console.log(JSON.stringify({ event: 'mac-bot-ready', rooms, selfId: source.selfId, appConfigured: app.configured,
-      model: env.GEMMA_MODEL || 'gemma4:26b', qwenEnabled: false }));
+      model: env.GEMMA_MODEL || 'gemma4:26b', qwenEnabled: false, allowSelfCommands: source.allowSelfCommands }));
     if (checkOnly) {
       console.log(JSON.stringify({ event: 'inbox-status', counts: inbox.counts(), publications: store.counts() })); return;
     }

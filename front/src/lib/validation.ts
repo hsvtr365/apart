@@ -1,3 +1,4 @@
+import { isLongNotice } from "./notice-kind";
 import { z } from "zod";
 const text = (max: number) =>
   z
@@ -25,6 +26,7 @@ export const postSchema = z
     finishDate: calendarDate,
     noticeStartDate: calendarDate,
     noticeEndDate: calendarDate,
+    noticeKind: z.enum(["SHORT", "ROUTINE"]).nullable().default(null),
     mapX: z.number().min(0).max(100).nullable(),
     mapY: z.number().min(0).max(100).nullable(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
@@ -44,8 +46,8 @@ export const postSchema = z
   .refine(v => v.category === "NOTICE" || v.scheduleType !== "ONCE" || !!v.startDate, "1회 일정의 열리는 날을 선택해주세요.")
   .refine(v => v.category === "NOTICE" || v.scheduleType !== "ONCE" || !v.finishDate || !v.startDate || v.finishDate >= v.startDate, "가는 날은 열리는 날 이후로 선택해주세요.")
   .transform(v => v.category === "NOTICE"
-    ? {...v, scheduleType: "WEEKLY" as const, startDate: null, finishDate: null, weekdays: [], seasons: [], arrivalTime: null, departureTime: null, mapX: null, mapY: null, latitude: null, longitude: null}
-    : {...v, noticeStartDate: null, noticeEndDate: null, ...(v.scheduleType === "WEEKLY" ? {startDate: null, finishDate: null} : {weekdays: [], seasons: []})})
+    ? {...v, noticeKind: isLongNotice(v.noticeStartDate, v.noticeEndDate) ? "ROUTINE" : (v.noticeKind ?? "SHORT"), scheduleType: "WEEKLY" as const, startDate: null, finishDate: null, weekdays: [], seasons: [], arrivalTime: null, departureTime: null, mapX: null, mapY: null, latitude: null, longitude: null}
+    : {...v, noticeKind: null, noticeStartDate: null, noticeEndDate: null, ...(v.scheduleType === "WEEKLY" ? {startDate: null, finishDate: null} : {weekdays: [], seasons: []})})
   .refine(
     (v) => (v.latitude == null) === (v.longitude == null),
     "지도 위치를 다시 선택해주세요.",

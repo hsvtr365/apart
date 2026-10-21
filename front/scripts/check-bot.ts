@@ -28,7 +28,7 @@ try {
   process.env.APP_BOT_SECRET = secret;
   const child = spawn(process.execPath, ["scripts/migrate.cjs"], { env: process.env, stdio: "ignore", windowsHide: true });
   assert.equal((await once(child, "exit"))[0], 0, "Disposable migration failed");
-  const author = await db().user.create({ data: { nickname: "마을봇" } });
+  const author = await db().user.create({ data: { nickname: "뽀롱봇" } });
   process.env.BOT_AUTHOR_ID = author.id;
   const headers = { Authorization: "Bearer " + secret };
   const search = (value: unknown, auth = true) => POST(new Request("http://localhost/api/internal/bot", {
@@ -53,6 +53,7 @@ try {
   assert.equal(await db().upload.count(), 1);
   assert.equal(await db().botPublication.count(), 1);
   const row = await db().post.findUniqueOrThrow({ where: { id: a.id }, include: { images: true } });
+  assert.equal(row.noticeKind, "SHORT");
   assert.equal(row.images.length, 1);
   assert.match(row.images[0].url, /\.webp$/);
   assert.equal((await (await search({ query: "テスト" })).json()).posts.length, 0);
@@ -62,6 +63,12 @@ try {
     assert.equal((await (await search({})).json()).posts.length, 0);
     await db().post.update({ where: { id: a.id }, data: { [field]: false } });
   }
+  await db().post.update({ where: { id: a.id }, data: { noticeKind: "ROUTINE" } });
+  assert.equal((await (await search({ category: "NOTICE" })).json()).posts.length, 0);
+  const routine = await (await search({ category: "NOTICE", noticeScope: "ROUTINE" })).json();
+  assert.equal(routine.posts.length, 1);
+  assert.equal(routine.posts[0].noticeKind, "ROUTINE");
+  assert.equal((await (await search({ category: "NOTICE", noticeScope: "ALL" })).json()).posts.length, 1);
   console.log("PASS bot API: authentication, calendar validation, image conversion, atomic duplicate publication, hidden/deleted filtering");
 } finally {
   await db().$disconnect();

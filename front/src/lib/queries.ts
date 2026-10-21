@@ -108,6 +108,7 @@ export async function getPosts(
       finishDate: p.finishDate,
       noticeStartDate: p.noticeStartDate,
       noticeEndDate: p.noticeEndDate,
+      noticeKind: p.noticeKind as "SHORT" | "ROUTINE" | null,
       weekdays: p.weekdays,
       seasons: p.seasons,
       arrivalTime: p.arrivalTime,

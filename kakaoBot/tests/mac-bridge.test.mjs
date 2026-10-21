@@ -8,7 +8,7 @@ import { KakaoSource, numericId } from '../src/mac-source.mjs';
 import { originalURL, isPublicAddress, readLocalOriginal, resolvePhotos, inspectImage, MAX_IMAGE, MAX_TOTAL } from '../src/mac-media.mjs';
 
 const room = '18497328562223036', sender = '6101118734436341752', id = '3956165960946077697';
-const event = { id, roomId: room, senderId: sender, messageType: 1, text: '@마을봇 중계 수신 테스트' };
+const event = { id, roomId: room, senderId: sender, messageType: 1, text: '@뽀롱봇 중계 수신 테스트' };
 const source = { rooms: [room], selfId: '162909104' };
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
 const url = 'https://talk.kakaocdn.net/dna/one/two/signed/photo.png?credential=c&expires=123&signature=s';
@@ -147,4 +147,23 @@ test('local image paths cannot escape approved roots or follow symlinks', async 
     await assert.rejects(readLocalOriginal(file, [root], png.length - 1), /media-local-size-invalid/);
     await assert.rejects(readLocalOriginal('file://' + file, [root], png.length), /media-path-denied/);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('own-account receive mode admits tagged commands and photos but excludes reply echoes', async () => {
+  const ownSource = new KakaoSource('/unused', [room], source.selfId, { allowSelfCommands: true });
+  let sql;
+  ownSource.query = async q => { sql = q; return [[id, room, source.selfId, 1, '@뽀롱봇 질문']]; };
+  await ownSource.poll(room, '0');
+  assert.ok(!sql.includes('authorId<>'));
+  for (const [messageType, text, expected] of [[1, '@뽀롱봇 질문', 1], [1, '일반 대화', 0],
+    [1, '[뽀롱봇]\n@뽀롱봇 질문을 보내세요', 0], [1, '@뽀롱봇아 질문', 0], [2, '', 1]]) {
+    const inbox = new Inbox(':memory:');
+    let processed = 0;
+    try {
+      inbox.accept(room, [{ ...event, senderId: source.selfId, messageType, text }]);
+      await deliverOne({ inbox, source: { ...ownSource, photo: async () => [] }, media: async () => ({ images: [] }),
+        processEvent: async () => { processed++; return { ignored: true }; }, send: async () => assert.fail('unexpected send') });
+      assert.equal(processed, expected);
+    } finally { inbox.close(); }
+  }
 });

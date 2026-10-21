@@ -1,3 +1,6 @@
+import { isLongNotice } from './notice-kind.mjs';
+import { filterNotices, noticeScope } from './notices.mjs';
+import { allowOwnEvent } from './self-commands.mjs';
 import { createHash } from 'node:crypto';
 import { BotError } from './errors.mjs';
 import { publicResults, searchInput } from './app.mjs';
@@ -39,8 +42,10 @@ export function normalizePost(raw) {
   if (p.category === 'NOTICE') {
     if (!p.noticeStartDate || !p.noticeEndDate) return { question: '공고를 게시할 시작일과 종료일을 연도와 함께 알려주세요.' };
     if (p.noticeEndDate < p.noticeStartDate) return { question: '공고 종료일이 시작일보다 빠릅니다. 올바른 게시 기간을 알려주세요.' };
+    p.noticeKind = isLongNotice(p.noticeStartDate, p.noticeEndDate) || raw.noticeKind === "ROUTINE" ? "ROUTINE" : "SHORT";
     Object.assign(p, { scheduleType: 'WEEKLY', startDate: null, finishDate: null, weekdays: [], seasons: [], arrivalTime: null, departureTime: null });
   } else {
+    p.noticeKind = null;
     p.noticeStartDate = null; p.noticeEndDate = null;
     if (p.scheduleType === 'ONCE') {
       if (!p.startDate || (p.finishDate && p.finishDate < p.startDate)) return { question: '일정의 정확한 시작일과 종료일을 알려주세요.' };
@@ -54,34 +59,42 @@ export function normalizePost(raw) {
   return { post: { ...p, mapX: null, mapY: null, latitude: null, longitude: null, imageUrl: null } };
 }
 export function registrationIntent(text) {
-  if (/등록\s*하지|저장\s*하지|등록\s*금지|등록\s*취소|취소/.test(text)) return false;
-  return /^(?:등록|공고 등록|사진 등록)$/.test(text.trim())
-    || /등록해\s*(?:줘|주세요)|등록\s*부탁|올려\s*(?:줘|주세요)|게시해\s*(?:줘|주세요)/.test(text);
+  const compact = text.replace(/\s+/g, '').replace(/[.!?。！？~]+$/g, '');
+  if (/(?:등록|저장|업로드|게시|올리)(?:하지|하지마|금지|취소)|올리지|취소/.test(compact)) return false;
+  // Bare action labels are commands only when the entire phrase matches.
+  if (/^(?:(?:이|해당)?(?:공고|사진|게시물)(?:을|를)?)?(?:등록|업로드)$/.test(compact)) return true;
+  // Short imperative forms; informational questions remain read-only.
+  if (/(?:등록|게시|업로드)해(?:요|줘|주세요|줄래|줄수있어|줄수있나요)?$/.test(compact)
+    || /올려(?:요|줘|주세요|줄래|줄수있어|줄수있나요)?$/.test(compact)) return true;
+  return /등록해\s*(?:줘|주세요)|등록\s*부탁|올려\s*(?:줘|주세요)|게시해\s*(?:줘|주세요)/.test(text);
 }
+
 const todayInKorea = time => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date(time));
 function evidence(post) {
   const planned = post.category === 'NOTICE' ? `공고 게시 기간 ${post.noticeStartDate ?? '미상'}~${post.noticeEndDate ?? '미상'}`
     : `예정 ${post.scheduleType === 'ONCE' ? post.startDate ?? '날짜 미상' : `매주 ${(post.weekdays ?? []).map(n => '월화수목금토일'[n]).join('·')}`} ${post.arrivalTime ?? '시각 미상'}`;
   const report = post.lastPresenceReport ?? (post.presence && post.observedAt ? { state: post.presence, observedAt: post.observedAt } : null);
+  if (post.category === 'NOTICE') return '';
   return `${planned} / 현장 제보: ${report && ['ARRIVED', 'GONE'].includes(report.state) ? `${report.state === 'ARRIVED' ? '도착' : '철수'} (${report.observedAt})` : '확인된 자료 없음'}`;
 }
 
 export function createEngine({ env, ai, app, store, now = Date.now }) {
-  const sessions = new Map(), rates = new Map(), inflight = new Map();
+  const sessions = new Map(), chats = new Map(), rates = new Map(), inflight = new Map();
   const allowed = new Set((env.ALLOWED_ROOM_IDS ?? '').split(',').filter(Boolean));
-  const prefix = `@${env.BOT_NAME || '마을봇'}`;
+  const prefix = `@${env.BOT_NAME || '뽀롱봇'}`;
   const publicURL = new URL(env.APP_PUBLIC_URL || 'https://apart.jujeop.com');
   if (publicURL.protocol !== 'https:' || publicURL.username || publicURL.password || publicURL.pathname !== '/') throw new BotError('public-url-invalid');
   const link = id => `${publicURL.origin}/post/${encodeURIComponent(id)}`;
   let tail = Promise.resolve();
   async function processOne(raw) {
     const e = validateEvent(raw);
-    if (!allowed.has(e.roomId) || e.senderId === env.BOT_SENDER_ID || e.isFromMe) return { ignored: true };
+    if (!allowed.has(e.roomId) || ((e.senderId === env.BOT_SENDER_ID || e.isFromMe) && !allowOwnEvent(e, env.ALLOW_SELF_COMMANDS === 'true', env.BOT_NAME || '뽀롱봇'))) return { ignored: true };
     const key = keyOf(e.roomId, e.senderId, e.id), user = keyOf(e.roomId, e.senderId), time = now();
     const prior = store.get(key);
     if (prior) return prior;
     const reply = (message, code) => { const result = { reply: message, ...(code ? { code } : {}) }; store.put(key, result); return result; };
     for (const [id, s] of sessions) if (time - s.at > 600_000) sessions.delete(id);
+    for (const [id, c] of chats) if (time - c.at > 600_000) chats.delete(id);
     for (const [id, r] of rates) if (time - r.at > 60_000) rates.delete(id);
     let state = sessions.get(user);
     const trimmed = e.text.trim(), called = trimmed.startsWith(prefix) && (!trimmed[prefix.length] || /\s/.test(trimmed[prefix.length]));
@@ -164,13 +177,41 @@ export function createEngine({ env, ai, app, store, now = Date.now }) {
           payload: { post, images: forceDuplicate ? state.candidatePayload.images : state.images, forceDuplicate } });
         return await publish(op);
       }
+      const history = chats.get(user)?.turns ?? [];
+      const route = ai.route ? await ai.route({ question: text, history }) : { kind: 'site' };
+      if (!route || !['site', 'chat'].includes(route.kind)) throw new BotError('ai-response-invalid');
+      if (route.kind === 'chat') {
+        const response = await ai.chat({ question: text, history });
+        if (typeof response !== 'string' || !response.trim()) throw new BotError('ai-response-invalid');
+        const clean = response.replace(/[*_`#]/g, '').replace(/\n{3,}/g, '\n\n').trim().slice(0, 400);
+        if (!clean) throw new BotError('ai-response-invalid');
+        chats.set(user, { at: time, turns: [...history, { question: text.slice(0, 500), answer: clean }].slice(-3) });
+        if (chats.size > 100) chats.delete(chats.keys().next().value);
+        return reply(clean);
+      }
       const input = searchInput(await ai.search({ question: text, today: todayInKorea(time) }));
+      const scope = noticeScope(text);
+      input.noticeScope = scope.toUpperCase();
       const found = publicResults(await app.search(input));
-      if (!found.posts.length) return reply('조회 범위에서 확인할 자료가 없습니다. 검색어를 바꿔주세요.');
-      const answer = await ai.answer({ question: text, ...found });
-      if (typeof answer !== 'string') throw new BotError('ai-response-invalid');
-      const facts = found.posts.slice(0, 5).map(p => `${p.title}: ${evidence(p)}\n${link(p.id)}`).join('\n');
-      return reply(`${answer.replace(/https?:\/\/\S+/g, '').slice(0, 800)}\n\n${facts}${found.truncated ? '\n조회 결과가 많아 일부만 표시했습니다.' : ''}`);
+      const beforeFilter = found.posts.length;
+      found.posts = await filterNotices(found.posts, scope, ai, store);
+      if (!found.posts.length) {
+        if (beforeFilter || input.category === 'NOTICE') return reply(`조회 범위에 ${scope === 'routine' ? '일상' : scope === 'all' ? '' : '단기'}공고가 없습니다.${scope === 'short' ? ' 일상공고는 “일상공고 알려줘”로 볼 수 있어요.' : ''}${found.truncated ? ' 일부 자료만 조회되어 검색어를 좁혀 다시 확인해주세요.' : ''}`);
+        return reply('조회 범위에서 확인할 자료가 없습니다. 검색어를 바꿔주세요.');
+      }
+      const posts = found.posts.slice(0, 4);
+      const answer = await ai.answer({ question: text, ...found, posts });
+      if (!answer || (typeof answer !== 'string' && !Array.isArray(answer.items))) throw new BotError('ai-response-invalid');
+      const plain = value => String(value ?? '').replace(/https?:\/\/\S+/g, '')
+        .replace(/[*_`#]/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\s+/g, ' ').trim();
+      const lines = posts.map(p => {
+        const item = answer.items?.find(i => i?.id === p.id && typeof i.summary === 'string');
+        const summary = plain(item?.summary ?? p.body).slice(0, 60);
+        const facts = evidence(p);
+        return `${plain(p.title).slice(0, 40)}${summary ? `\n${summary}` : ''}${facts ? `\n${facts}` : ''}\n${link(p.id)}`;
+      });
+      return reply(lines.join('\n\n') + (found.truncated || found.posts.length > posts.length ? '\n\n일부만 표시했습니다. 검색어를 좁혀주세요.' : ''));
+
     } catch (error) {
       const code = error instanceof BotError ? error.code : 'processing-failed';
       if (store.pending(user)) return reply(`사이트 등록 결과를 아직 확인하지 못했습니다. ${prefix} 재시도로 같은 요청을 확인·재시도할 수 있습니다.`, code);
@@ -187,7 +228,7 @@ export function createEngine({ env, ai, app, store, now = Date.now }) {
     task.finally(() => inflight.delete(key)).catch(() => {});
     return task;
   }
-  return { process, close: () => sessions.clear() };
+  return { process, close: () => { sessions.clear(); chats.clear(); } };
 }
 
 function mergeImages(previous, added, sessions, user) {

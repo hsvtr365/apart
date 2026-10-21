@@ -46,6 +46,7 @@ export type Post = {
   finishDate: string | null;
   noticeStartDate?: string | null;
   noticeEndDate?: string | null;
+  noticeKind?: "SHORT" | "ROUTINE" | null;
   weekdays: number[];
   seasons: string[];
   arrivalTime: string | null;
@@ -111,6 +112,7 @@ export type PostInput = {
   finishDate: string | null;
   noticeStartDate?: string | null;
   noticeEndDate?: string | null;
+  noticeKind?: "SHORT" | "ROUTINE" | null;
   weekdays: number[];
   seasons: string[];
   arrivalTime: string | null;
