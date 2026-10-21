@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.village20.mac-bot</string>
+  <key>ProgramArguments</key><array>
+    <string>__NODE_ABSOLUTE_PATH__</string><string>--env-file=.env.mac</string><string>src/mac-bridge.mjs</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/suji/app/kakaoBot</string>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+  <key>LimitLoadToSessionType</key><string>Aqua</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>ExitTimeOut</key><integer>15</integer>
+  <key>StandardOutPath</key><string>/Users/suji/app/kakaoBot/data/mac/bot.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/suji/app/kakaoBot/data/mac/bot.err.log</string>
+</dict></plist>

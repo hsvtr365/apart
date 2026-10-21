@@ -55,3 +55,7 @@ Nginx 설정 원본은 deploy/apart.nginx.conf입니다. 인증서 파일이 발
 계정 탈퇴·닉네임 변경 로그·부정 이용 식별값 1년 보관과 중복 좋아요 차단 구현은 [설계문서](docs/account-retention.md)에 정리했습니다. 탈퇴 계정과 활동은 유지하고 카카오 원본 ID·동·세션을 삭제합니다. 일일 정리 cron은 운영 배포 스크립트가 설치합니다.
 
 UI 구현 기준은 [UI 가이드](docs/ui-guide.md), 2026-10-13 검토 후 수정 사항은 [조치 내역](docs/audit-fixes-2026-10-13.md)을 참고합니다. 새 DB와 기존 DB 모두 `cd front && npm run db:migrate`를 사용합니다. 빈 DB 초기화의 역사적 migration 의존 순서 보정은 이 명령에 포함되어 있습니다.
+
+## Mac 카카오톡 봇
+
+Mac 통합 봇 소스와 실행 방법은 [kakaoBot/README.md](kakaoBot/README.md)에 있다. 사이트의 봇 전용 API는 `front/`에서 관리한다. Mac 실행 설정과 수신 데이터는 로컬에 보관하며 Git에 포함하지 않는다.

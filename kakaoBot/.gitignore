@@ -1,0 +1,10 @@
+.env
+.env.mac
+data/
+media/
+*.log
+
+# Local Kakao CLI checkout and compiled runtime; reproduce using pinned commit + patch.
+vendor/
+node_modules/
+.DS_Store

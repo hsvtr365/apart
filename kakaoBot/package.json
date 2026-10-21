@@ -1,0 +1,14 @@
+{
+  "name": "village20-kakao-bot",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.22.0" },
+  "scripts": {
+    "start": "node --env-file=.env.mac src/mac-bridge.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check:ai": "node --env-file=.env.mac scripts/check-ai.mjs",
+    "status": "node --env-file=.env.mac scripts/status.mjs",
+    "bridge:mac": "node --env-file=.env.mac src/mac-bridge.mjs",
+    "bridge:check": "node --env-file=.env.mac src/mac-bridge.mjs --check"
+  }
+}

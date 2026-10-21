@@ -17,3 +17,6 @@ plan/
 kakaoBot/data/
 kakaoBot/media/
 kakaoBot/node_modules/
+
+# Safe Mac bot configuration template
+!kakaoBot/.env.mac.example

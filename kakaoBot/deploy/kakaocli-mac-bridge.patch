@@ -1,0 +1,239 @@
+diff --git a/Sources/KakaoCore/Automation/AXHelpers.swift b/Sources/KakaoCore/Automation/AXHelpers.swift
+index ad04134..1076b5e 100644
+--- a/Sources/KakaoCore/Automation/AXHelpers.swift
++++ b/Sources/KakaoCore/Automation/AXHelpers.swift
+@@ -190,6 +190,7 @@ public enum AXHelpers {
+     /// KakaoTalk chat list: AXTable > AXRow > AXCell > AXStaticText(id="_NS:18" or "_NS:40")
+     /// Newer KakaoTalk versions emit `_NS:40` for the chat name label; older builds use `_NS:18`.
+     public static func findChatRow(_ table: AXUIElement, chatName: String, exact: Bool = false) -> AXUIElement? {
++        var matches: [AXUIElement] = []
+         for row in children(table) {
+             guard role(row) == "AXRow" else { continue }
+             for cell in children(row) {
+@@ -198,15 +199,15 @@ public enum AXHelpers {
+                     let childId = identifier(child)
+                     if role(child) == "AXStaticText" && (childId == "_NS:40" || childId == "_NS:18") {
+                         let name = value(child) ?? ""
+-                        let matches = exact ? name == chatName : name.localizedCaseInsensitiveContains(chatName)
+-                        if matches {
+-                            return row
++                        let matched = exact ? name == chatName : name.localizedCaseInsensitiveContains(chatName)
++                        if matched {
++                            matches.append(row)
+                         }
+                     }
+                 }
+             }
+         }
+-        return nil
++        return matches.count == 1 ? matches[0] : nil
+     }
+ 
+     /// Read the chat-name label of a chat-list row (the `_NS:40` / `_NS:18`
+@@ -448,6 +449,7 @@ public enum AXHelpers {
+             down.flags = flags
+             up.flags = flags
+             down.post(tap: .cghidEventTap)
++            usleep(30000)
+             up.post(tap: .cghidEventTap)
+         }
+     }
+@@ -462,11 +464,11 @@ public enum AXHelpers {
+     public static func doubleClickElement(_ element: AXUIElement) {
+         guard let pos = position(element), let sz = size(element) else { return }
+         let center = CGPoint(x: pos.x + sz.width / 2, y: pos.y + sz.height / 2)
+-        for _ in 0..<2 {
++        for clickCount in 1...2 {
+             if let mouseDown = CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: center, mouseButton: .left),
+                let mouseUp = CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: center, mouseButton: .left) {
+-                mouseDown.setIntegerValueField(.mouseEventClickState, value: 2)
+-                mouseUp.setIntegerValueField(.mouseEventClickState, value: 2)
++                mouseDown.setIntegerValueField(.mouseEventClickState, value: Int64(clickCount))
++                mouseUp.setIntegerValueField(.mouseEventClickState, value: Int64(clickCount))
+                 mouseDown.post(tap: .cghidEventTap)
+                 usleep(20000)
+                 mouseUp.post(tap: .cghidEventTap)
+diff --git a/Sources/KakaoCore/Automation/KakaoAutomator.swift b/Sources/KakaoCore/Automation/KakaoAutomator.swift
+index 5810e5a..b3a1ded 100644
+--- a/Sources/KakaoCore/Automation/KakaoAutomator.swift
++++ b/Sources/KakaoCore/Automation/KakaoAutomator.swift
+@@ -22,20 +22,33 @@ public final class KakaoAutomator {
+         let app = try AXHelpers.appElement(bundleId: Self.bundleId)
+ 
+         let windows = AXHelpers.windows(app)
++        let existing = windows.filter {
++            AXHelpers.identifier($0) != "Main Window"
++                && (AXHelpers.title($0) ?? "").precomposedStringWithCanonicalMapping == chatName.precomposedStringWithCanonicalMapping
++        }
++        if !selfChat && existing.count == 1 {
++            try sendInWindow(existing[0], message: message, closeAfter: false)
++            return
++        }
++        if !selfChat && existing.count > 1 {
++            throw AutomationError.sendFailed("Multiple windows match the target room")
++        }
+         guard let mainWindow = windows.first(where: { AXHelpers.identifier($0) == "Main Window" }) else {
+             throw AutomationError.noWindows
+         }
+ 
+-        // 3. Close any existing chat windows to avoid sending to the wrong one
+-        for w in windows where AXHelpers.identifier(w) != "Main Window" {
+-            _ = AXHelpers.closeWindow(w)
+-        }
+-        if windows.count > 1 {
++        // Existing unrelated windows are never closed or used for sending.
++        // Preserve badge-based self-chat behavior; this route has no room title.
++        if selfChat {
++            for w in windows where AXHelpers.identifier(w) != "Main Window" {
++                _ = AXHelpers.closeWindow(w)
++            }
+             Thread.sleep(forTimeInterval: 0.3)
+         }
+ 
+         // 4. Ensure we're on the Chats tab
+-        if let chatroomsTab = AXHelpers.findFirst(mainWindow, role: "AXCheckBox", identifier: "chatrooms") {
++        if let chatroomsTab = AXHelpers.findFirst(mainWindow, role: "AXCheckBox", identifier: "chatrooms")
++            ?? AXHelpers.findFirst(mainWindow, role: "AXButton", identifier: "chatrooms") {
+             _ = AXHelpers.performAction(chatroomsTab, kAXPressAction as String)
+             Thread.sleep(forTimeInterval: 0.3)
+         }
+@@ -52,7 +65,7 @@ public final class KakaoAutomator {
+             }
+             row = selfRow
+         } else {
+-            guard let chatRow = AXHelpers.findChatRow(table, chatName: chatName) else {
++            guard let chatRow = AXHelpers.findChatRow(table, chatName: chatName, exact: true) else {
+                 throw AutomationError.chatNotFound(chatName)
+             }
+             row = chatRow
+@@ -62,11 +75,15 @@ public final class KakaoAutomator {
+         //    Falls back to scroll-into-view + double-click if selection fails.
+         var opened = false
+         if AXHelpers.selectRow(row, in: table) {
++            _ = AXHelpers.focus(table)
+             Thread.sleep(forTimeInterval: 0.2)
+             AXHelpers.pressKey(keyCode: 36) // Enter to open
+             Thread.sleep(forTimeInterval: 0.5)
+             let checkWindows = AXHelpers.windows(app)
+-            opened = checkWindows.contains { AXHelpers.identifier($0) != "Main Window" }
++            opened = checkWindows.contains {
++                AXHelpers.identifier($0) != "Main Window"
++                    && (selfChat || AXHelpers.verifyChatHeader($0, expected: chatName).matched)
++            }
+         }
+         if !opened {
+             if let scrollArea = AXHelpers.chatListScrollArea(mainWindow) {
+@@ -82,7 +99,10 @@ public final class KakaoAutomator {
+         while Date() < windowDeadline {
+             Thread.sleep(forTimeInterval: 0.5)
+             let updatedWindows = AXHelpers.windows(app)
+-            chatWindow = updatedWindows.first(where: { AXHelpers.identifier($0) != "Main Window" })
++            chatWindow = updatedWindows.first(where: {
++                AXHelpers.identifier($0) != "Main Window"
++                    && (selfChat || AXHelpers.verifyChatHeader($0, expected: chatName).matched)
++            })
+             if chatWindow != nil { break }
+         }
+         guard let chatWindow else {
+@@ -105,10 +125,16 @@ public final class KakaoAutomator {
+             }
+         }
+ 
+-        // 8. Find the message input field
++        try sendInWindow(chatWindow, message: message, closeAfter: false)
++    }
++
++    private func sendInWindow(_ chatWindow: AXUIElement, message: String, closeAfter: Bool) throws {
+         guard let inputField = findInputField(in: chatWindow) else {
+             throw AutomationError.inputFieldNotFound
+         }
++        if let draft = AXHelpers.value(inputField), !draft.isEmpty {
++            throw AutomationError.sendFailed("Target input contains an unsent draft")
++        }
+ 
+         // 9. Focus and type the message
+         _ = AXHelpers.performAction(chatWindow, kAXRaiseAction as String)
+@@ -118,18 +144,20 @@ public final class KakaoAutomator {
+ 
+         if AXHelpers.setValue(inputField, message) {
+             Thread.sleep(forTimeInterval: 0.2)
+-            AXHelpers.pressKey(keyCode: 36) // Return key
+         } else {
+             _ = AXHelpers.focus(inputField)
+             Thread.sleep(forTimeInterval: 0.1)
+             AXHelpers.typeText(message)
+             Thread.sleep(forTimeInterval: 0.2)
+-            AXHelpers.pressKey(keyCode: 36) // Return key
+         }
++        guard AXHelpers.value(inputField) == message else {
++            throw AutomationError.sendFailed("Input text verification failed before Return")
++        }
++        AXHelpers.pressKey(keyCode: 36)
+ 
+         // 10. Close the chat window
+         Thread.sleep(forTimeInterval: 0.3)
+-        _ = AXHelpers.closeWindow(chatWindow)
++        if closeAfter { _ = AXHelpers.closeWindow(chatWindow) }
+     }
+ 
+     /// Find the message input AXTextArea in a chat window.
+diff --git a/Sources/KakaoCore/Database/DatabaseReader.swift b/Sources/KakaoCore/Database/DatabaseReader.swift
+index 97696e3..be939a3 100644
+--- a/Sources/KakaoCore/Database/DatabaseReader.swift
++++ b/Sources/KakaoCore/Database/DatabaseReader.swift
+@@ -105,7 +105,8 @@ public final class DatabaseReader: @unchecked Sendable {
+                    r.lastLogId, r.lastUpdatedAt, r.countOfNewMessage,
+                    u.displayName, u.friendNickName, u.nickName,
+                    r.displayMemberIds,
+-                   \(Self.chatMetaNameSubquery) AS metaName
++                   COALESCE(\(Self.chatMetaNameSubquery),
++                       (SELECT NULLIF(linkName, '') FROM NTOpenLink WHERE linkId = r.linkId)) AS metaName
+             FROM NTChatRoom r
+             LEFT JOIN NTUser u ON r.directChatMemberUserId = u.userId AND u.linkId = 0
+             ORDER BY r.lastUpdatedAt DESC
+@@ -150,7 +151,8 @@ public final class DatabaseReader: @unchecked Sendable {
+                    r.lastLogId, r.lastUpdatedAt, r.countOfNewMessage,
+                    u.displayName, u.friendNickName, u.nickName,
+                    r.displayMemberIds,
+-                   \(Self.chatMetaNameSubquery) AS metaName
++                   COALESCE(\(Self.chatMetaNameSubquery),
++                       (SELECT NULLIF(linkName, '') FROM NTOpenLink WHERE linkId = r.linkId)) AS metaName
+             FROM NTChatRoom r
+             LEFT JOIN NTUser u ON r.directChatMemberUserId = u.userId AND u.linkId = 0
+             WHERE r.chatId = ?
+@@ -529,6 +531,7 @@ extension Chat.ChatType {
+         switch rawInt {
+         case 0: return .direct
+         case 1: return .group
++        case 4: return .openChat
+         case 5: return .selfChat
+         default: return .unknown
+         }
+diff --git a/Sources/KakaoCore/Messaging/ChatIdSender.swift b/Sources/KakaoCore/Messaging/ChatIdSender.swift
+index f74ea13..c681188 100644
+--- a/Sources/KakaoCore/Messaging/ChatIdSender.swift
++++ b/Sources/KakaoCore/Messaging/ChatIdSender.swift
+@@ -29,15 +29,16 @@ public enum ChatIdSender {
+             throw SendError.chatNotFound(chatId: chatId)
+         }
+ 
+-        // A malformed policy.json is logged and treated as "no policy" so a
+-        // bad edit doesn't silently lock the operator out; deleting the file
+-        // is the recovery path.
+-        let policy: Policy?
++        // Bridge sends require a valid persisted policy; malformed/missing
++        // policy must never turn enforcement off.
++        let policy: Policy
+         do {
+-            policy = try Policy.load()
++            guard let loaded = try Policy.load() else {
++                throw SendError.policyDenied("A valid send policy is required")
++            }
++            policy = loaded
+         } catch {
+-            fputs("policy: failed to load \(Policy.path): \(error). Treating as no policy.\n", stderr)
+-            policy = nil
++            throw SendError.policyDenied("A valid send policy is required")
+         }
+ 
+         // `try? Optional` returns a double optional — flatten so the verifier
