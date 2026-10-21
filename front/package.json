@@ -17,6 +17,7 @@
     "predev": "node scripts/provision-abuse-secret.cjs",
     "prestart": "node scripts/provision-abuse-secret.cjs",
     "test:api": "tsx scripts/check-presence.ts",
+    "test:bot": "tsx scripts/check-bot.ts",
     "cleanup:accounts": "tsx scripts/cleanup-account-data.ts"
   },
   "keywords": [],

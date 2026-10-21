@@ -14,3 +14,6 @@ plan/
 **/test-results/
 **/playwright-report/
 *.log
+kakaoBot/data/
+kakaoBot/media/
+kakaoBot/node_modules/

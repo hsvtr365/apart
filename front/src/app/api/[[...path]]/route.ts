@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
+import { prepareUpload } from "@/lib/upload-write";
+import { createPost } from "@/lib/post-write";
 import { uploadBytes } from "@/lib/upload-thumbnail";
 import { z } from "zod";
 import { HttpError, lockActiveAccount, lockPost } from "@/lib/write-guards";
@@ -544,29 +544,15 @@ async function handle(
         file.size === 0
       )
         throw new HttpError("8MB 이하의 사진을 선택해주세요.");
-      let image: Buffer;
-      try {
-        image = await sharp(Buffer.from(await file.arrayBuffer()), {
-          limitInputPixels: 25_000_000,
-        })
-          .rotate()
-          .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
-          .webp({ quality: 82 })
-          .toBuffer();
-      } catch {
-        throw new HttpError("지원하는 사진 파일을 선택해주세요.");
-      }
-      const name = randomBytes(16).toString("hex") + ".webp";
-      const dir = process.env.UPLOAD_DIR || "./data/uploads";
-      await mkdir(dir, { recursive: true });
-      await writeFile(path.join(dir, name), image);
+      const upload = await prepareUpload(file);
+      const name = upload.name;
       try {
         await db().$transaction(async (tx) => {
           await lockActiveAccount(tx, user.id);
           await tx.upload.create({ data: { id: name, userId: user.id } });
         });
       } catch (error) {
-        await unlink(path.join(dir, name)).catch(() => {});
+        await upload.remove();
         throw error;
       }
       return json({ url: "/api/uploads/" + name }, 201);
@@ -634,15 +620,7 @@ async function handle(
           });
           return json({ id: existing.id });
         }
-        const post = await tx.post.create({
-          data: {
-            ...fields,
-            authorId: user.id,
-            images: {
-              create: urls.map((url, position) => ({ url, position })),
-            },
-          },
-        });
+        const post = await createPost(tx, user.id, input);
         return json({ id: post.id }, 201);
       }
       if (resource === "posts" && id) {

@@ -216,3 +216,11 @@ model AccountSecurityEvent {
   @@index([identityId, createdAt])
   @@index([expiresAt])
 }
+
+model BotPublication {
+  requestKey String @id @db.VarChar(64)
+  postId String @unique
+  photoHash String @db.VarChar(64)
+  createdAt DateTime @default(now())
+  @@index([photoHash])
+}
